@@ -1,0 +1,304 @@
+/**
+ * 设计 token（唯一来源）
+ *
+ * 取值遵循 ui-design-spec-v2.md：
+ * - 主色：京东红 red-*（行动 / 选中 / 主 CTA；不承载价格文字）
+ * - 辅色：品质金 gold-*（克重、成色、金价、会员类信息强调，不作主行动色）
+ * - 中性：暖墨 ink-*
+ *
+ * 页面只允许引用这里的变量、或 @theme 映射出的 Tailwind 类；禁止裸 hex、禁止任意字号。
+ * 回收业务的状态色（待寄出 / 检测中 / 待确认报价 / 结算中 …）在业务页面落地时新增到独立文件。
+ */
+:root,
+:root.light {
+  /* ===== 品牌红（主色，京东红 #E1251B） ===== */
+  --red-50: #fff1f0;
+  --red-100: #ffe3e0;
+  --red-200: #ffc9c4;
+  --red-300: #ffa69e;
+  --red-400: #f77b6f;
+  --red-500: #e1251b;
+  --red-600: #c81e15;
+  --red-700: #a31610;
+  --red-800: #7d120d;
+  --red-900: #5a0d09;
+
+  /* ===== 品质金（品类辅色） ===== */
+  --gold-50: #fbf6eb;
+  --gold-100: #f6ebd4;
+  --gold-200: #edd9b3;
+  --gold-300: #dfc28b;
+  --gold-400: #cba55f;
+  --gold-500: #a97e3c;
+  --gold-600: #8a6329;
+  --gold-700: #6b4a1e;
+  --gold-800: #4a3416;
+  --gold-900: #2e2110;
+
+  /* ===== 中性色（warm ink） ===== */
+  --ink-900: #1c1915;
+  --ink-700: #4a443b;
+  --ink-500: #6e675c;
+  --ink-400: #928a7d;
+  --line: #e5e5e5;
+  --line-soft: #efefef;
+  --paper: #ffffff;
+  --canvas: #ffffff;
+
+  /* ===== 基础表面 ===== */
+  --background: var(--canvas);
+  --foreground: var(--ink-900);
+  --card: var(--paper);
+  --card-foreground: var(--ink-900);
+  --surface: #ffffff;
+  --surface-foreground: var(--ink-900);
+  --surface-2: #f3f4f5;
+  --surface-2-foreground: var(--ink-900);
+  --popover: var(--paper);
+  --popover-foreground: var(--ink-900);
+
+  /* ===== 主色 / 次级 / Accent ===== */
+  --primary: var(--red-500);
+  --primary-foreground: #ffffff;
+  /* 主色交互态与浅色态：组件层只用这三个别名，不直接引用 red-* */
+  --primary-active: var(--red-600);
+  --primary-soft: var(--red-50);
+  --primary-border: var(--red-200);
+  /* 价格/金额专用色阶（只用于价格文本，不用于按钮） */
+  --price: var(--red-700);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--ink-900);
+  --muted: #f5f5f5;
+  --muted-foreground: var(--ink-500);
+  --subtle-foreground: var(--ink-500);
+  --icon-strong: var(--ink-700);
+  --icon-muted: var(--ink-400);
+  --accent: var(--gold-100);
+  --accent-foreground: var(--gold-700);
+  --info: #34618a;
+  --info-foreground: #ffffff;
+  /* 文本内协议链接：登录页等位置的蓝链，独立于品牌红 */
+  --link: #2f6bf5;
+  --link-active: #2456cc;
+
+  /* ===== 语义色（与品牌红严格分工） ===== */
+  --destructive: #b3261e;
+  --destructive-foreground: #ffffff;
+  --success: #2f6b4f;
+  --success-foreground: #ffffff;
+  --warning: #9a5514;
+  --warning-500: #b4671c;
+  --warning-foreground: #ffffff;
+  --violet: #6b4a8c;
+  --violet-foreground: #ffffff;
+  --cyan: #34618a;
+  --cyan-foreground: #ffffff;
+
+  /* ===== 边框 / 输入 / 聚焦 ===== */
+  --border: var(--line);
+  --border-subtle: var(--line-soft);
+  --input: var(--line);
+  --ring: var(--red-500);
+  --overlay: rgb(28 25 21 / 0.45);
+
+  /* ===== 页面导航栏 ===== */
+  --nav-bar-background: var(--paper);
+  --nav-bar-foreground: var(--ink-900);
+  --nav-bar-border: var(--line);
+
+  /* ===== 图表 ===== */
+  --chart-1: var(--red-500);
+  --chart-2: var(--success);
+  --chart-3: var(--warning);
+  --chart-4: var(--violet);
+  --chart-5: var(--gold-500);
+
+  /* ===== 字体族（系统字体，无远程加载；微信内不会被字体拖慢） ===== */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei',
+    'Helvetica Neue', Arial, sans-serif;
+  --font-numeric:
+    -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei',
+    'Helvetica Neue', Arial, sans-serif;
+  --font-serif: 'Noto Serif SC', 'Songti SC', Georgia, Cambria, 'Times New Roman', serif;
+
+  /* ===== 圆角阶梯（4 级 + 胶囊；见 README「token 使用方式」） ===== */
+  --radius: 12px;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* ===== 阴影阶梯（4 级，纯黑多层、向下光） ===== */
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.04), 0 1px 1px rgb(0 0 0 / 0.03);
+  --shadow-sm: 0 2px 6px rgb(0 0 0 / 0.05), 0 1px 2px rgb(0 0 0 / 0.04);
+  --shadow-md: 0 6px 16px rgb(0 0 0 / 0.07), 0 2px 6px rgb(0 0 0 / 0.05);
+  --shadow-lg: 0 12px 32px rgb(0 0 0 / 0.1), 0 4px 12px rgb(0 0 0 / 0.06);
+
+  /* ===== 动效（时长梯度 + 曲线） ===== */
+  --motion-fast: 160ms;
+  --motion-base: 240ms;
+  --motion-slow: 320ms;
+  --motion-max: 640ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-spring: cubic-bezier(0.34, 1.2, 0.64, 1);
+
+  /* ===== 运行时变量 ===== */
+  /* 键盘弹起时由 useViewportFit 写入，Layout 用 padding 收起底部区域 */
+  --keyboard-inset: 0px;
+
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+}
+
+@theme inline {
+  /* ---- 品牌红 ---- */
+  --color-red-50: var(--red-50);
+  --color-red-100: var(--red-100);
+  --color-red-200: var(--red-200);
+  --color-red-300: var(--red-300);
+  --color-red-400: var(--red-400);
+  --color-red-500: var(--red-500);
+  --color-red-600: var(--red-600);
+  --color-red-700: var(--red-700);
+  --color-red-800: var(--red-800);
+  --color-red-900: var(--red-900);
+
+  /* ---- 品质金 ---- */
+  --color-gold-50: var(--gold-50);
+  --color-gold-100: var(--gold-100);
+  --color-gold-200: var(--gold-200);
+  --color-gold-300: var(--gold-300);
+  --color-gold-400: var(--gold-400);
+  --color-gold-500: var(--gold-500);
+  --color-gold-600: var(--gold-600);
+  --color-gold-700: var(--gold-700);
+  --color-gold-800: var(--gold-800);
+  --color-gold-900: var(--gold-900);
+
+  /* ---- 中性 ---- */
+  --color-ink-900: var(--ink-900);
+  --color-ink-700: var(--ink-700);
+  --color-ink-500: var(--ink-500);
+  --color-ink-400: var(--ink-400);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-paper: var(--paper);
+  --color-canvas: var(--canvas);
+
+  /* ---- 基础表面 ---- */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-surface: var(--surface);
+  --color-surface-foreground: var(--surface-foreground);
+  --color-surface-2: var(--surface-2);
+  --color-surface-2-foreground: var(--surface-2-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-active: var(--primary-active);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-border: var(--primary-border);
+  --color-price: var(--price);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-icon-strong: var(--icon-strong);
+  --color-icon-muted: var(--icon-muted);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-link: var(--link);
+  --color-link-active: var(--link-active);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-500: var(--warning-500);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-violet: var(--violet);
+  --color-violet-foreground: var(--violet-foreground);
+  --color-cyan: var(--cyan);
+  --color-cyan-foreground: var(--cyan-foreground);
+
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-overlay: var(--overlay);
+
+  --color-nav-bar-background: var(--nav-bar-background);
+  --color-nav-bar-foreground: var(--nav-bar-foreground);
+  --color-nav-bar-border: var(--nav-bar-border);
+
+  /* ---- 字号语义角色（6 档：36/28/21/16/14/12） ---- */
+  /* 回收报价主数字 */
+  --text-display: 36px;
+  --text-display--line-height: 54px;
+  --text-display--font-weight: 600;
+  /* 二级页面标题、大额数据 */
+  --text-title: 28px;
+  --text-title--line-height: 42px;
+  --text-title--font-weight: 600;
+  /* 区块标题 */
+  --text-section: 21px;
+  --text-section--line-height: 32px;
+  --text-section--font-weight: 600;
+  /* 卡片标题 */
+  --text-card-title: 16px;
+  --text-card-title--line-height: 24px;
+  --text-card-title--font-weight: 600;
+  /* 正文 */
+  --text-body: 14px;
+  --text-body--line-height: 21px;
+  --text-body--font-weight: 400;
+  /* 强调正文 / 主按钮文案 */
+  --text-body-strong: 14px;
+  --text-body-strong--line-height: 21px;
+  --text-body-strong--font-weight: 500;
+  /* 控件：按钮 / chip / Tab / 表单标签 */
+  --text-label: 14px;
+  --text-label--line-height: 20px;
+  --text-label--font-weight: 500;
+  /* 辅助：时间戳、单号、脚注、小数 */
+  --text-caption: 12px;
+  --text-caption--line-height: 18px;
+  --text-caption--font-weight: 400;
+  /* 辅助强调：徽章、标签 */
+  --text-caption-strong: 12px;
+  --text-caption-strong--line-height: 18px;
+  --text-caption-strong--font-weight: 500;
+
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei',
+    'Helvetica Neue', Arial, sans-serif;
+  --font-numeric:
+    -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei',
+    'Helvetica Neue', Arial, sans-serif;
+  --font-serif: 'Noto Serif SC', 'Songti SC', Georgia, Cambria, 'Times New Roman', serif;
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.04), 0 1px 1px rgb(0 0 0 / 0.03);
+  --shadow-sm: 0 2px 6px rgb(0 0 0 / 0.05), 0 1px 2px rgb(0 0 0 / 0.04);
+  --shadow-md: 0 6px 16px rgb(0 0 0 / 0.07), 0 2px 6px rgb(0 0 0 / 0.05);
+  --shadow-lg: 0 12px 32px rgb(0 0 0 / 0.1), 0 4px 12px rgb(0 0 0 / 0.06);
+
+  --default-transition-duration: 160ms;
+  --default-transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}

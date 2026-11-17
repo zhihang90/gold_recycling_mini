@@ -1,0 +1,13 @@
+node_modules
+dist
+logs
+.DS_Store
+*.local
+
+# 本地截图产物，不入库
+.screenshots
+.shots
+
+# 视觉回归：基线入库，实际截图与差异图不入库
+tests/visual/actual
+tests/visual/diff

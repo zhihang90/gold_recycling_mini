@@ -1,0 +1,116 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import './theme/tokens.css';
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  html {
+    /* 微信 iOS / 安卓 WebView 关闭横屏字号自动放大 */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* 避免 iOS 橡皮筋把整页拉出设备框 */
+    overscroll-behavior-y: none;
+  }
+
+  body {
+    margin: 0;
+    background: var(--canvas);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font-family: inherit;
+  }
+
+  /* 统一焦点可见性，桌面预览用金色描边（规范 §11），避免依赖浏览器默认蓝色 */
+  :focus-visible {
+    outline: 2px solid var(--gold-600);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .hide-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tabular {
+    font-family: var(--font-numeric);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 骨架屏底色呼吸：1.2s 在 line-soft 与 line 之间循环，减少动态偏好由全局降级 */
+  .skeleton {
+    background-color: var(--line-soft);
+    animation: skeleton-pulse 1.2s ease-in-out infinite;
+  }
+
+  /* 横向滑动区右缘渐隐，提示「还有更多」 */
+  .edge-fade {
+    -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 24px), transparent 100%);
+    mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 24px), transparent 100%);
+  }
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    background-color: var(--line-soft);
+  }
+  50% {
+    background-color: var(--line);
+  }
+}
+
+/* ==========================================================================
+   视口高度工具类：vh 兜底 + dvh 覆盖   --------------------------------------------------------------------------
+   不用「h-screen + h-dvh 两个类叠加」：输出顺序不由 class 书写顺序决定，
+   两个类谁的声明在后无法保证，兜底会失效。
+   这里给同一个类先写 vh、再用 @supports 写 dvh：
+   不支持 dvh 的内核拿 vh，支持的内核（iOS 15.4+ / Chromium 108+）用 dvh 覆盖。
+   注意：不用「同一规则里写两行 height」—— Tailwind 4 编译期（Lightning CSS）
+   会把同一规则内的重复声明去重，只留最后一条，兜底会凭空消失（已实测）。
+   放在 @layer 之外，避免被 Tailwind utilities 覆盖，也不与 h-dvh 类重名。
+   ========================================================================== */
+.app-h {
+  height: 100vh;
+}
+
+.app-min-h {
+  min-height: 100vh;
+}
+
+@supports (height: 100dvh) {
+  .app-h {
+    height: 100dvh;
+  }
+  .app-min-h {
+    min-height: 100dvh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

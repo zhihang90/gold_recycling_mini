@@ -1,0 +1,280 @@
+import { paths } from './paths'
+
+/** 桌面演示菜单的分组顺序，同时决定左栏展示顺序 */
+export const ROUTE_GROUPS = ['业务页面', '组件库', '黄金回收组件'] as const
+
+export type RouteGroup = (typeof ROUTE_GROUPS)[number]
+
+/** 底部 Tab 图标名：在这里只存字符串，真正的图标组件由 routes.config 映射 */
+export type TabIconName = 'home' | 'bag' | 'orders' | 'user'
+
+export interface TabMeta {
+  label: string
+  icon: TabIconName
+  order: number
+}
+
+/**
+ * 路由清单：新增页面只改两处——paths.ts 加一行路径、这里加一条记录。
+ * 路由注册、左栏菜单、底部 Tab、视觉基线都从本清单派生，不再各自维护。
+ */
+export interface RouteMeta {
+  /** 唯一标识，用点分层级；默认也用作视觉基线文件名（点转横线） */
+  id: string
+  path: string
+  /** 桌面左栏展示用的名称 */
+  label: string
+  group: RouteGroup
+  /** 左栏二级分组；缺省时页面直接挂在分组下 */
+  section?: string
+  /** 左栏排序，越小越靠前；缺省排在组尾 */
+  order?: number
+  /** 只注册路由，不进入桌面演示左栏 */
+  hiddenInNav?: boolean
+  /** 底部 Tab 元数据；有 tab 的就是一级页 */
+  tab?: TabMeta
+  /**
+   * src/pages 下的模块路径（不含扩展名）。
+   * 业务页约定导出「文件名 + Page」，组件库页约定导出「文件名 + GuidePage」。
+   */
+  page: string
+  /** 视觉基线文件名；缺省由 id 生成。基线已存在时不要随意改动 */
+  shot?: string
+  /** 是否参与视觉回归；缺省参与。依赖交互状态、首屏不稳定的页面设为 false */
+  visual?: boolean
+}
+
+export const ROUTE_MANIFEST: RouteMeta[] = [
+  {
+    id: 'home',
+    path: paths.home,
+    label: '首页',
+    group: '业务页面',
+    section: '入口 · 估价',
+    order: 1,
+    tab: { label: '首页', icon: 'home', order: 1 },
+    page: 'Home',
+  },
+  {
+    id: 'quote',
+    path: paths.quote,
+    label: '金价与估价',
+    group: '业务页面',
+    section: '入口 · 估价',
+    order: 2,
+    page: 'Quote',
+  },
+  {
+    id: 'quote.result',
+    path: paths.quoteResult,
+    label: '估价结果',
+    group: '业务页面',
+    section: '入口 · 估价',
+    order: 3,
+    page: 'QuoteResult',
+  },
+  {
+    id: 'login',
+    path: paths.login,
+    label: '登录授权',
+    group: '业务页面',
+    section: '入口 · 估价',
+    order: 4,
+    page: 'Login',
+  },
+  {
+    id: 'order.item',
+    path: paths.order.item,
+    label: '物品信息（第 1 步）',
+    group: '业务页面',
+    section: '回收下单',
+    order: 5,
+    page: 'OrderItem',
+    visual: false,
+  },
+  {
+    id: 'order.source',
+    path: paths.order.source,
+    label: '来源声明（第 2 步）',
+    group: '业务页面',
+    section: '回收下单',
+    order: 6,
+    page: 'OrderSource',
+  },
+  {
+    id: 'order.agreement',
+    path: paths.order.agreement,
+    label: '协议与破检（第 3 步）',
+    group: '业务页面',
+    section: '回收下单',
+    order: 7,
+    page: 'OrderAgreement',
+  },
+  {
+    id: 'order.shipping',
+    path: paths.order.shipping,
+    label: '寄件与保价（第 4 步）',
+    group: '业务页面',
+    section: '回收下单',
+    order: 8,
+    page: 'OrderShipping',
+  },
+  {
+    id: 'buy',
+    path: paths.buy,
+    label: '买金',
+    group: '业务页面',
+    section: '买金 · 账户',
+    order: 9,
+    tab: { label: '买金', icon: 'bag', order: 2 },
+    page: 'Buy',
+  },
+  {
+    id: 'orders',
+    path: paths.orders,
+    label: '订单',
+    group: '业务页面',
+    section: '买金 · 账户',
+    order: 10,
+    tab: { label: '订单', icon: 'orders', order: 3 },
+    page: 'Orders',
+  },
+  {
+    id: 'me',
+    path: paths.me,
+    label: '我的',
+    group: '业务页面',
+    section: '买金 · 账户',
+    order: 11,
+    tab: { label: '我的', icon: 'user', order: 4 },
+    page: 'Me',
+  },
+  {
+    id: 'ship.info',
+    path: paths.ship.info,
+    label: '寄件信息',
+    group: '业务页面',
+    section: '寄件 · 合同',
+    order: 12,
+    page: 'ShipInfo',
+  },
+  {
+    id: 'ship.addresses',
+    path: paths.ship.addresses,
+    label: '我的地址',
+    group: '业务页面',
+    section: '寄件 · 合同',
+    order: 13,
+    page: 'AddressBook',
+    shot: 'addresses',
+  },
+  {
+    id: 'ship.photos',
+    path: paths.ship.photos,
+    label: '上传实物照片',
+    group: '业务页面',
+    section: '寄件 · 合同',
+    order: 14,
+    page: 'ShipPhotos',
+    // 历史基线未覆盖该页，保持不参与，避免视觉检查每次报「缺少基线」
+    visual: false,
+  },
+  {
+    id: 'ship.contract',
+    path: paths.ship.contract,
+    label: '合同签署',
+    group: '业务页面',
+    section: '寄件 · 合同',
+    order: 15,
+    page: 'ShipContract',
+  },
+  {
+    id: 'ship.addressForm',
+    path: paths.ship.addressForm,
+    label: '新增地址',
+    group: '业务页面',
+    order: 16,
+    hiddenInNav: true,
+    page: 'AddressForm',
+    shot: 'address-form',
+  },
+  {
+    id: 'guide.common',
+    path: paths.guide.common,
+    label: '公共组件',
+    group: '组件库',
+    order: 10,
+    page: 'style-guide/Common',
+  },
+  {
+    id: 'guide.form',
+    path: paths.guide.form,
+    label: '表单组件',
+    group: '组件库',
+    order: 11,
+    page: 'style-guide/Form',
+  },
+  {
+    id: 'guide.feedback',
+    path: paths.guide.feedback,
+    label: '反馈组件',
+    group: '组件库',
+    order: 12,
+    page: 'style-guide/Feedback',
+  },
+  {
+    id: 'guide.display',
+    path: paths.guide.display,
+    label: '展示组件',
+    group: '组件库',
+    order: 13,
+    page: 'style-guide/Display',
+    visual: false,
+  },
+  {
+    id: 'guide.quote',
+    path: paths.guide.quote,
+    label: '报价与估价',
+    group: '黄金回收组件',
+    order: 20,
+    page: 'style-guide/Quote',
+    visual: false,
+  },
+  {
+    id: 'guide.assay',
+    path: paths.guide.assay,
+    label: '检测与合规',
+    group: '黄金回收组件',
+    order: 21,
+    page: 'style-guide/Assay',
+    visual: false,
+  },
+  {
+    id: 'guide.order',
+    path: paths.guide.order,
+    label: '订单与状态',
+    group: '黄金回收组件',
+    order: 22,
+    page: 'style-guide/Order',
+    visual: false,
+  },
+  {
+    id: 'guide.trade',
+    path: paths.guide.trade,
+    label: '交易与收货',
+    group: '黄金回收组件',
+    order: 23,
+    page: 'style-guide/Trade',
+    visual: false,
+  },
+]
+
+/** 视觉基线文件名：显式 shot 优先，否则 id 中的点转横线 */
+export function shotName(route: RouteMeta) {
+  return route.shot ?? route.id.replace(/\./g, '-')
+}
+
+/** 视觉回归路由表：构建时写入 dist/routes.json，由 scripts/visual.mjs 读取 */
+export const SCREENSHOT_ROUTES = ROUTE_MANIFEST.filter((route) => route.visual !== false).map(
+  (route) => ({ name: shotName(route), path: route.path }),
+)
