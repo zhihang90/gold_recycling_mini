@@ -9,6 +9,7 @@ import { FormField } from '@/components/FormField'
 import { BrandMark } from '@/components/BrandMark'
 import { TextLink } from '@/components/TextLink'
 import { Toast } from '@/components/Toast'
+import { isPhoneNumber, isSmsCode } from '@/lib/validation'
 import { saveMember } from '@/mocks/member'
 import { paths } from '@/routes/paths'
 
@@ -37,7 +38,7 @@ export function LoginPage() {
   }, [countdown])
 
   const handleSendCode = () => {
-    if (!/^1\d{10}$/.test(phone)) {
+    if (!isPhoneNumber(phone)) {
       setPhoneError('请输入正确的 11 位手机号')
       return
     }
@@ -53,11 +54,11 @@ export function LoginPage() {
       setHintTick((tick) => tick + 1)
       valid = false
     }
-    if (!/^1\d{10}$/.test(phone)) {
+    if (!isPhoneNumber(phone)) {
       setPhoneError('请输入正确的 11 位手机号')
       valid = false
     }
-    if (!/^\d{6}$/.test(code)) {
+    if (!isSmsCode(code)) {
       setCodeError('请输入 6 位验证码')
       valid = false
     }

@@ -8,6 +8,7 @@ import { DetailPage } from '@/components/DetailPage'
 import { FormField } from '@/components/FormField'
 import { InlineNotice } from '@/components/InlineNotice'
 import { TextLink } from '@/components/TextLink'
+import { useSubmitGuard } from '@/lib/useSubmitGuard'
 import {
   DECLARATION_VERSION,
   SOURCE_DECLARATION,
@@ -25,7 +26,7 @@ export function OrderSourcePage() {
   const [source, setSource] = useState(draft.source)
   const [note, setNote] = useState(draft.sourceNote)
   const [confirmed, setConfirmed] = useState(Boolean(draft.sourceConfirmedAt))
-  const [submitted, setSubmitted] = useState(false)
+  const { submitted, attempt, reset } = useSubmitGuard()
   const [fullOpen, setFullOpen] = useState(false)
 
   const noteRequired = source === 'other'
@@ -35,8 +36,8 @@ export function OrderSourcePage() {
   const agreementError = submitted && !confirmed ? '请勾选并确认来源声明' : undefined
 
   const handleNext = () => {
-    setSubmitted(true)
-    if (!source || (noteRequired && note.trim() === '') || !confirmed) return
+    const valid = Boolean(source) && (!noteRequired || note.trim() !== '') && confirmed
+    if (!attempt(valid)) return
 
     writeOrderDraft({
       source,
@@ -65,7 +66,7 @@ export function OrderSourcePage() {
           value={source}
           onChange={(next) => {
             setSource(next)
-            if (submitted) setSubmitted(false)
+            if (submitted) reset()
           }}
           options={SOURCE_OPTIONS}
           columns={2}
@@ -99,7 +100,7 @@ export function OrderSourcePage() {
           checked={confirmed}
           onChange={(next) => {
             setConfirmed(next)
-            if (next) setSubmitted(false)
+            if (next) reset()
           }}
           error={agreementError}
         >

@@ -11,6 +11,8 @@ import { QuoteRateCard } from '@/components/QuoteRateCard'
 import { SelectField } from '@/components/SelectField'
 import { Stepper } from '@/components/Stepper'
 import { TextLink } from '@/components/TextLink'
+import { useSubmitGuard } from '@/lib/useSubmitGuard'
+import { validateWeight } from '@/lib/validation'
 import {
   GOLD_RATE,
   PURITY_OPTIONS,
@@ -36,23 +38,14 @@ export function QuotePage() {
   const [quantity, setQuantity] = useState(1)
   const [updatedAt, setUpdatedAt] = useState(GOLD_RATE.updatedAt)
   const [explainOpen, setExplainOpen] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
+  const { submitted, attempt } = useSubmitGuard()
 
-  const weightValue = Number(weight)
-  const weightValid =
-    weight.trim() !== '' && Number.isFinite(weightValue) && weightValue > 0 && weightValue <= 1000
-  const weightError = (() => {
-    if (!submitted) return undefined
-    if (weight.trim() === '') return '请输入预估重量'
-    if (!weightValid) return '请输入 0.1–1000 克之间的重量'
-    return undefined
-  })()
+  const weightError = validateWeight(weight)
 
   const quote = calculateQuote({ category, weight, purity, quantity })
 
   const handleCalculate = () => {
-    setSubmitted(true)
-    if (!quote) return
+    if (!attempt(quote !== null) || !quote) return
     saveQuoteSnapshot({ category, weight, purity, quantity }, quote)
     navigate(paths.quoteResult)
   }
@@ -108,7 +101,7 @@ export function QuotePage() {
           inputMode="decimal"
           placeholder="请输入预估重量"
           unit="克"
-          error={weightError}
+          error={submitted ? weightError : undefined}
           hint="可参考发票、首饰印记或家用秤读数"
           required
         />

@@ -11,6 +11,7 @@ import { PickerSheet } from '@/components/PickerSheet'
 import { RadioRow } from '@/components/RadioRow'
 import { TextLink } from '@/components/TextLink'
 import { cn } from '@/lib/utils'
+import { isPhoneNumber } from '@/lib/validation'
 import {
   REGION_OPTIONS,
   readAddresses,
@@ -83,7 +84,7 @@ export function AddressFormPage() {
     editing ? readSelectedAddressId() === editing.id : readAddresses().length === 0,
   )
 
-  const phoneValid = /^1\d{10}$/.test(phone)
+  const phoneValid = isPhoneNumber(phone)
   const canSave = name.trim() !== '' && phoneValid && region !== '' && place.trim() !== ''
 
   const handleRecognize = () => {

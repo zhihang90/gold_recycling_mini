@@ -13,6 +13,8 @@ import { SelectField } from '@/components/SelectField'
 import { Stepper } from '@/components/Stepper'
 import { TextLink } from '@/components/TextLink'
 import { UploadGroup } from '@/components/UploadGroup'
+import { useSubmitGuard } from '@/lib/useSubmitGuard'
+import { validateWeight } from '@/lib/validation'
 import {
   CERTIFICATE_OPTIONS,
   ITEM_CATEGORIES,
@@ -57,26 +59,18 @@ export function OrderItemPage() {
   const [overall, setOverall] = useState(initial.photos.overall)
   const [mark, setMark] = useState(initial.photos.mark)
   const [detail, setDetail] = useState(initial.photos.detail)
-  const [submitted, setSubmitted] = useState(false)
+  const { submitted, attempt } = useSubmitGuard()
 
   const selectedCategory = findItemCategory(category)
   const blocked = selectedCategory !== undefined && !selectedCategory.supported
   const supported = selectedCategory?.supported === true
   const isBar = category === 'bar'
 
-  const weightValue = Number(weight)
-  const weightValid =
-    weight.trim() !== '' && Number.isFinite(weightValue) && weightValue > 0 && weightValue <= 1000
+  const weightError = validateWeight(weight)
   const photosValid = overall.length > 0
   const quote = supported ? calculateQuote({ category, weight, purity, quantity }) : null
 
   const categoryError = submitted && !selectedCategory ? '请选择物品品类' : undefined
-  const weightError = (() => {
-    if (!submitted) return undefined
-    if (weight.trim() === '') return '请输入预估重量'
-    if (!weightValid) return '请输入 0.1–1000 克之间的重量'
-    return undefined
-  })()
   const photosError =
     submitted && !blocked && !photosValid ? '请至少上传 1 张整体图' : undefined
 
@@ -87,8 +81,7 @@ export function OrderItemPage() {
   }
 
   const handleNext = () => {
-    setSubmitted(true)
-    if (!supported || !weightValid || !photosValid) return
+    if (!attempt(supported && !weightError && photosValid)) return
 
     writeOrderDraft({
       category,
@@ -164,7 +157,7 @@ export function OrderItemPage() {
               inputMode="decimal"
               placeholder="请输入预估重量"
               unit="克"
-              error={weightError}
+              error={submitted ? weightError : undefined}
               hint="以实物或发票重量为准，检测后按可熔重量结算"
               required
             />

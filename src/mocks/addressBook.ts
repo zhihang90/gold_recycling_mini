@@ -1,3 +1,5 @@
+import { readSession, writeSession } from './storage'
+
 export interface ShippingAddress {
   id: string
   name: string
@@ -82,38 +84,21 @@ export const LOCATION_OPTIONS: AddressLocation[] = [
 const ADDRESS_KEY = 'gold-recycling.addresses'
 const SELECTED_KEY = 'gold-recycling.selected-address'
 
-function readStorage<T>(key: string): T | null {
-  try {
-    const raw = window.sessionStorage.getItem(key)
-    return raw ? (JSON.parse(raw) as T) : null
-  } catch {
-    return null
-  }
-}
-
-function writeStorage(key: string, value: unknown) {
-  try {
-    window.sessionStorage.setItem(key, JSON.stringify(value))
-  } catch {
-    // 隐私模式下 storage 可能不可用，原型降级为内存态即可
-  }
-}
-
 export function readAddresses(): ShippingAddress[] {
-  const stored = readStorage<ShippingAddress[]>(ADDRESS_KEY)
+  const stored = readSession<ShippingAddress[]>(ADDRESS_KEY)
   return Array.isArray(stored) ? stored : DEFAULT_ADDRESSES
 }
 
 export function writeAddresses(addresses: ShippingAddress[]) {
-  writeStorage(ADDRESS_KEY, addresses)
+  writeSession(ADDRESS_KEY, addresses)
 }
 
 export function readSelectedAddressId(): string {
-  return readStorage<string>(SELECTED_KEY) ?? DEFAULT_ADDRESSES[0].id
+  return readSession<string>(SELECTED_KEY) ?? DEFAULT_ADDRESSES[0].id
 }
 
 export function selectAddress(id: string) {
-  writeStorage(SELECTED_KEY, id)
+  writeSession(SELECTED_KEY, id)
 }
 
 /** 勾选默认寄件地址：同时调整默认标记，保证列表与寄件页一致 */
