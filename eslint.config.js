@@ -23,6 +23,19 @@ export default tseslint.config(
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       'no-empty': ['error', { allowEmptyCatch: true }],
+      /** 推广 barrel import：`@/components` 单点导入优先，深路径 warn */
+      'no-restricted-imports': [
+        'warn',
+        {
+          patterns: [
+            {
+              group: ['@/components/*'],
+              message:
+                '请从 barrel 统一导入：`import { X } from "@/components"`（例外：内部文件之间的互相引用）。',
+            },
+          ],
+        },
+      ],
     },
   },
   {

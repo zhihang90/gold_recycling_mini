@@ -1,13 +1,6 @@
+import { AgreementCheck, BottomSheet, Button, Card, ChoiceGroup, DetailPage, FormField, InlineNotice, TextLink } from '@/components'
 import { useState } from 'react'
-import { AgreementCheck } from '@/components/AgreementCheck'
-import { BottomSheet } from '@/components/BottomSheet'
-import { Button } from '@/components/Button'
-import { Card } from '@/components/Card'
-import { ChoiceGroup } from '@/components/ChoiceGroup'
-import { DetailPage } from '@/components/DetailPage'
-import { FormField } from '@/components/FormField'
-import { InlineNotice } from '@/components/InlineNotice'
-import { TextLink } from '@/components/TextLink'
+
 import { useSubmitGuard } from '@/lib/useSubmitGuard'
 import {
   DECLARATION_VERSION,

@@ -37,7 +37,7 @@ gold_recycling_mini/
 │   ├── dev.mjs                 # 开发启动器（端口 8011，清孤儿进程）
 │   ├── build.sh                # rm dist → vite build → 清 .DS_Store
 │   ├── check-ui.mjs            # 样式红线检查（裸色值 / 任意值 / 页面裸 img）
-│   └── visual.mjs              # 视觉回归（375 / 900 双视口）
+│   └── visual.mjs              # 视觉回归（375 单视口）
 ├── tests/visual/               # 视觉基线 / 实际截图 / 差异图
 ├── src/
 │   ├── index.tsx               # HashRouter 挂载
@@ -92,7 +92,7 @@ gold_recycling_mini/
 | `npm run ui:check`                | 样式红线检查（裸色值 / 任意值 / 页面裸 img）              |
 | `npm run verify`                  | typecheck + lint + ui:check + build      |
 | `npm run visual:update`           | 生成 / 更新视觉回归基线                            |
-| `npm run visual:check`            | 375 / 900 双视口与基线对比                       |
+| `npm run visual:check`            | 375 视口与基线对比                           |
 | `npm run verify:full`             | verify + visual:check                    |
 | `npm run format` / `format:check` | Prettier 写入 / 校验                         |
 

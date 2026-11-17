@@ -1,14 +1,8 @@
+import { AddressCard, AmountSummary, Badge, Button, LegalDocument, LocationField, OrderStatusHeader, RuleSheet, UploadGroup } from '@/components'
+import type { LocationOption } from '@/components'
 import { useState } from 'react'
 import { images } from '@/assets/images'
-import { AddressCard } from '@/components/AddressCard'
-import { AmountSummary } from '@/components/AmountSummary'
-import { Badge } from '@/components/Badge'
-import { Button } from '@/components/Button'
-import { LegalDocument } from '@/components/LegalDocument'
-import { LocationField, type LocationOption } from '@/components/LocationField'
-import { OrderStatusHeader } from '@/components/OrderStatusHeader'
-import { RuleSheet } from '@/components/RuleSheet'
-import { UploadGroup } from '@/components/UploadGroup'
+
 import { GuideFooter, GuidePage, Section } from './shared'
 
 const LOCATIONS: LocationOption[] = [

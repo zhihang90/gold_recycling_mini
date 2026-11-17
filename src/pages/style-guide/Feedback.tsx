@@ -1,8 +1,6 @@
+import { Button, ConfirmDialog, ResultStatus, Skeleton } from '@/components'
 import { useState } from 'react'
-import { Button } from '@/components/Button'
-import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { ResultStatus } from '@/components/ResultStatus'
-import { Skeleton } from '@/components/Skeleton'
+
 import { GuideFooter, GuidePage, Section } from './shared'
 
 /** 反馈组件：加载、确认与结果页 */

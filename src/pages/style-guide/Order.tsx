@@ -1,9 +1,6 @@
+import { Button, CountdownBar, OrderCard, StatusSteps, StatusTimeline } from '@/components'
 import { useState } from 'react'
-import { Button } from '@/components/Button'
-import { CountdownBar } from '@/components/CountdownBar'
-import { OrderCard } from '@/components/OrderCard'
-import { StatusSteps } from '@/components/StatusSteps'
-import { StatusTimeline } from '@/components/StatusTimeline'
+
 import { GuideFooter, GuidePage, Section } from './shared'
 
 const STEPS = [

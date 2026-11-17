@@ -1,19 +1,7 @@
+import { AddressCard, AgreementCheck, Badge, BottomSheet, Button, Card, DetailPage, InlineNotice, KeyValueRow, PriceText, ResultStatus, RuleSheet, SelectField, TextLink } from '@/components'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AddressCard } from '@/components/AddressCard'
-import { AgreementCheck } from '@/components/AgreementCheck'
-import { Badge } from '@/components/Badge'
-import { BottomSheet } from '@/components/BottomSheet'
-import { Button } from '@/components/Button'
-import { Card } from '@/components/Card'
-import { DetailPage } from '@/components/DetailPage'
-import { InlineNotice } from '@/components/InlineNotice'
-import { KeyValueRow } from '@/components/KeyValueRow'
-import { PriceText } from '@/components/PriceText'
-import { ResultStatus } from '@/components/ResultStatus'
-import { RuleSheet } from '@/components/RuleSheet'
-import { SelectField } from '@/components/SelectField'
-import { TextLink } from '@/components/TextLink'
+
 import {
   maskPhone,
   readAddresses,

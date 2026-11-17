@@ -1,5 +1,5 @@
+import { STORAGE_KEYS } from "./keys"
 import { readSession, writeSession } from './storage'
-
 export interface ShippingAddress {
   id: string
   name: string
@@ -16,13 +16,11 @@ export interface ShippingAddress {
   /** 默认地址标记，由 setDefaultAddress 维护 */
   tag?: string
 }
-
 export interface AddressLocation {
   key: string
   label: string
   detail: string
 }
-
 /** 首期默认寄件地址；真实地址待业务确认后替换 */
 export const DEFAULT_ADDRESSES: ShippingAddress[] = [
   {
@@ -52,7 +50,6 @@ export const DEFAULT_ADDRESSES: ShippingAddress[] = [
     company: '广东法迈（梅州）律师事务所',
   },
 ]
-
 /** 省市区候选；真实数据应来自地址库接口 */
 export const REGION_OPTIONS: { value: string; label: string }[] = [
   { value: '广东省 深圳市 盐田区', label: '广东省 深圳市 盐田区' },
@@ -61,7 +58,6 @@ export const REGION_OPTIONS: { value: string; label: string }[] = [
   { value: '浙江省 嘉兴市 桐乡市', label: '浙江省 嘉兴市 桐乡市' },
   { value: '广东省 梅州市 五华县', label: '广东省 梅州市 五华县' },
 ]
-
 /** 模拟选址候选；接地图服务后换成 POI 搜索结果 */
 export const LOCATION_OPTIONS: AddressLocation[] = [
   {
@@ -80,27 +76,22 @@ export const LOCATION_OPTIONS: AddressLocation[] = [
     detail: '广东省 深圳市 福田区 泰然九路21号',
   },
 ]
-
-const ADDRESS_KEY = 'gold-recycling.addresses'
-const SELECTED_KEY = 'gold-recycling.selected-address'
-
 export function readAddresses(): ShippingAddress[] {
-  const stored = readSession<ShippingAddress[]>(ADDRESS_KEY)
+  const stored = readSession<ShippingAddress[]>(STORAGE_KEYS.ADDRESSES)
   return Array.isArray(stored) ? stored : DEFAULT_ADDRESSES
 }
-
 export function writeAddresses(addresses: ShippingAddress[]) {
-  writeSession(ADDRESS_KEY, addresses)
+  writeSession(STORAGE_KEYS.ADDRESSES, addresses)
 }
-
-export function readSelectedAddressId(): string {
-  return readSession<string>(SELECTED_KEY) ?? DEFAULT_ADDRESSES[0].id
+export function readSelectedAddressId(): string | null {
+  const stored = readSession<string>(STORAGE_KEYS.SELECTED_ADDRESS_ID)
+  // 默认不选中地址，用户需主动选择
+  if (stored) return stored
+  return null
 }
-
 export function selectAddress(id: string) {
-  writeSession(SELECTED_KEY, id)
+  writeSession(STORAGE_KEYS.SELECTED_ADDRESS_ID, id)
 }
-
 /** 勾选默认寄件地址：同时调整默认标记，保证列表与寄件页一致 */
 export function setDefaultAddress(id: string) {
   writeAddresses(
@@ -111,13 +102,12 @@ export function setDefaultAddress(id: string) {
   )
   selectAddress(id)
 }
-
-export function readSelectedAddress(): ShippingAddress {
+export function readSelectedAddress(): ShippingAddress | null {
   const addresses = readAddresses()
   const selectedId = readSelectedAddressId()
-  return addresses.find((address) => address.id === selectedId) ?? addresses[0] ?? DEFAULT_ADDRESSES[0]
+  if (!selectedId) return null
+  return addresses.find((address) => address.id === selectedId) ?? null
 }
-
 export function maskPhone(phone: string) {
   if (phone.length < 7) return phone
   return `${phone.slice(0, 3)}****${phone.slice(-4)}`

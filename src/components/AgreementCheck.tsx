@@ -14,6 +14,7 @@ export function AgreementCheck({
   error,
   shape = 'square',
   disabled = false,
+  align = 'start',
   className,
 }: {
   checked: boolean
@@ -23,11 +24,13 @@ export function AgreementCheck({
   /** circle 用于登录页这类轻量协议行，square 用于逐条确认的授权条款 */
   shape?: 'square' | 'circle'
   disabled?: boolean
+  /** start 顶部对齐（默认，适合多行内容）；center 垂直居中（适合单行协议行） */
+  align?: 'start' | 'center'
   className?: string
 }) {
   return (
     <div className={className}>
-      <div className="flex items-start gap-3 py-2">
+      <div className={cn('flex gap-3 py-2', align === 'center' ? 'items-center' : 'items-start')}>
         <button
           type="button"
           role="checkbox"
@@ -36,7 +39,8 @@ export function AgreementCheck({
           disabled={disabled}
           onClick={() => onChange(!checked)}
           className={cn(
-            'relative mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center ring-1 transition after:absolute after:-inset-3 after:content-[""]',
+            'relative flex h-5 w-5 shrink-0 items-center justify-center ring-1 transition after:absolute after:-inset-3 after:content-[""]',
+            align === 'start' && 'mt-0.5',
             shape === 'circle' ? 'rounded-full' : 'rounded-xs',
             checked
               ? 'bg-primary text-primary-foreground ring-primary'

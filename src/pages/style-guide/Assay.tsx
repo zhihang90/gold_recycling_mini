@@ -1,10 +1,7 @@
+import { AssayResultCard, BottomSheet, Button, CompareRows, Gallery, PrerequisiteList } from '@/components'
+import type { PrerequisiteState } from '@/components'
 import { useState } from 'react'
-import { AssayResultCard } from '@/components/AssayResultCard'
-import { BottomSheet } from '@/components/BottomSheet'
-import { Button } from '@/components/Button'
-import { CompareRows } from '@/components/CompareRows'
-import { Gallery } from '@/components/Gallery'
-import { PrerequisiteList, type PrerequisiteState } from '@/components/PrerequisiteList'
+
 import { isSignificantDiff } from '@/lib/diff'
 import { ASSAY_IMAGES } from './data'
 import { GuideFooter, GuidePage, Section } from './shared'

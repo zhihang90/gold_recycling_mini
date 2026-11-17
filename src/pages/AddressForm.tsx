@@ -1,15 +1,9 @@
+import { Button, Card, DetailPage, FormField, PasteRecognizeBox, PickerSheet, RadioRow, TextLink } from '@/components'
 import { useState } from 'react'
 import { ChevronRight, MapPin } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Button } from '@/components/Button'
-import { Card } from '@/components/Card'
-import { DetailPage } from '@/components/DetailPage'
-import { FormField } from '@/components/FormField'
-import { PasteRecognizeBox } from '@/components/PasteRecognizeBox'
-import { PickerSheet } from '@/components/PickerSheet'
-import { RadioRow } from '@/components/RadioRow'
-import { TextLink } from '@/components/TextLink'
+
 import { cn } from '@/lib/utils'
 import { isPhoneNumber } from '@/lib/validation'
 import {

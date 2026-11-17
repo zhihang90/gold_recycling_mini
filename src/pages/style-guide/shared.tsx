@@ -1,7 +1,5 @@
+import { PageHeader, PageShell, Card } from '@/components'
 import type { ReactNode } from 'react'
-import { PageHeader } from '@/components/PageHeader'
-import { PageShell } from '@/components/PageShell'
-import { Card } from '@/components/Card'
 
 /** 组件库样张页的共用外壳：只被 style-guide 下的样张页引用 */
 

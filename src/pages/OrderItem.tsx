@@ -1,23 +1,15 @@
+import { Badge, Button, Card, ChoiceGroup, DetailPage, FormField, InlineNotice, PriceText, SelectField, Stepper, TextLink, UploadGroup } from '@/components'
 import { useState } from 'react'
 import { ImagePlus } from 'lucide-react'
 import { images } from '@/assets/images'
-import { Badge } from '@/components/Badge'
-import { Button } from '@/components/Button'
-import { Card } from '@/components/Card'
-import { ChoiceGroup } from '@/components/ChoiceGroup'
-import { DetailPage } from '@/components/DetailPage'
-import { FormField } from '@/components/FormField'
-import { InlineNotice } from '@/components/InlineNotice'
-import { PriceText } from '@/components/PriceText'
-import { SelectField } from '@/components/SelectField'
-import { Stepper } from '@/components/Stepper'
-import { TextLink } from '@/components/TextLink'
-import { UploadGroup } from '@/components/UploadGroup'
+
 import { useSubmitGuard } from '@/lib/useSubmitGuard'
+import { useDemoScene } from '@/lib/useDemoScene'
 import { validateWeight } from '@/lib/validation'
 import {
   CERTIFICATE_OPTIONS,
   ITEM_CATEGORIES,
+  demoOrderDraft,
   findItemCategory,
   readOrderDraft,
   writeOrderDraft,
@@ -32,7 +24,10 @@ import { useOrderStep } from '@/flows/orderSteps'
  */
 export function OrderItemPage() {
   const { nextLabel, goNext } = useOrderStep('item')
+  const demoScene = useDemoScene()
   const [initial] = useState<OrderDraft>(() => {
+    if (demoScene === 'item') return demoOrderDraft()
+
     const saved = readOrderDraft()
     const snapshot = readQuoteSnapshot()
     if (!snapshot || snapshot.createdAt === saved.quoteSnapshotAt) return saved

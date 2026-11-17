@@ -1,8 +1,11 @@
+import { TabPage, Card, ListItem, BottomSheet, Button, ProfileCard, QuickActionGrid } from '@/components'
+import type { QuickAction } from '@/components'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BadgeCheck,
   CircleCheck,
+  CircleChevronRight,
   CircleHelp,
   CreditCard,
   Headphones,
@@ -12,33 +15,38 @@ import {
   ScanLine,
   Settings,
   ShieldCheck,
+  Truck,
   UserRound,
+  Wallet,
   WalletCards,
 } from 'lucide-react'
-import { TabPage } from '@/components/TabPage'
-import { Card } from '@/components/Card'
-import { ListItem } from '@/components/ListItem'
-import { BottomSheet } from '@/components/BottomSheet'
-import { Button } from '@/components/Button'
-import { ProfileCard } from '@/components/ProfileCard'
-import { QuickActionGrid } from '@/components/QuickActionGrid'
-import { TextLink } from '@/components/TextLink'
-import { clearMember, maskPhone, readMember } from '@/mocks/member'
-import { paths } from '@/routes/paths'
 
-const GUEST_ORDER_SHORTCUTS = [
-  { key: 'shipping', label: '待寄出', icon: Package },
-  { key: 'confirm', label: '待确认', icon: BadgeCheck },
-  { key: 'paying', label: '待打款', icon: WalletCards },
-  { key: 'done', label: '已完成', icon: CircleCheck },
+import { clearMember, isMemberVerified, maskPhone, readMember } from '@/mocks/member'
+import { DEMO_RECYCLE_ORDERS, type RecycleStatus } from '@/mocks/recycleOrders'
+import { readSalesOrders, type SalesStatus } from '@/mocks/salesOrders'
+import { ordersFilterPath, paths } from '@/routes/paths'
+
+/** 买金订单：销售订单的四个高频状态，不含自提；最后一格进入全部订单。 */
+const SALES_SHORTCUTS: { key: SalesStatus | 'all'; label: string; icon: typeof Wallet }[] = [
+  { key: 'pending-payment', label: '待付款', icon: Wallet },
+  { key: 'pending-shipment', label: '待发货', icon: Package },
+  { key: 'pending-receipt', label: '待收货', icon: Truck },
+  { key: 'completed', label: '已完成', icon: CircleCheck },
+  { key: 'all', label: '全部', icon: CircleChevronRight },
 ]
 
-const MEMBER_ORDER_SHORTCUTS = [
-  { key: 'shipping', label: '待寄出', icon: Package },
+/** 回收订单：沿用回收流程的四个业务节点，最后一格进入全部订单。 */
+const RECYCLE_SHORTCUTS: { key: RecycleStatus | 'all'; label: string; icon: typeof Wallet }[] = [
+  { key: 'pending-ship', label: '待寄出', icon: Package },
   { key: 'testing', label: '检测中', icon: ScanLine },
-  { key: 'confirm', label: '待确认', icon: BadgeCheck },
-  { key: 'paying', label: '待打款', icon: WalletCards },
+  { key: 'pending-confirm', label: '待确认', icon: BadgeCheck },
+  { key: 'pending-payment', label: '待打款', icon: WalletCards },
+  { key: 'all', label: '全部', icon: CircleChevronRight },
 ]
+
+/** 只给需要用户处理的节点显示角标，已完成与全部不打扰。 */
+const BADGED_SALES: SalesStatus[] = ['pending-payment', 'pending-receipt']
+const BADGED_RECYCLE: RecycleStatus[] = ['pending-confirm', 'pending-payment']
 
 type InfoSheet = 'faq' | 'service' | 'account' | 'identity' | 'privacy' | 'logout' | null
 
@@ -56,8 +64,9 @@ export function MePage() {
   const navigate = useNavigate()
   const [member, setMember] = useState(() => readMember())
   const [infoSheet, setInfoSheet] = useState<InfoSheet>(null)
+  const salesOrders = member ? readSalesOrders() : []
+  const recycleOrders = member ? DEMO_RECYCLE_ORDERS : []
   const goLogin = () => navigate(paths.login)
-  const goOrders = () => navigate(paths.orders)
 
   const handleLogout = () => {
     clearMember()
@@ -68,16 +77,37 @@ export function MePage() {
   return (
     <TabPage>
       {member ? (
-        <Card padding="md" className="bg-accent shadow-none ring-0">
-          <div className="flex items-center gap-3">
-            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-card text-accent-foreground ring-1 ring-border-subtle">
-              <UserRound size={30} aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-section text-foreground">黄金用户</p>
-              <p className="mt-1 text-body text-ink-700 tabular">{maskPhone(member.phone)}</p>
+        <Card
+          padding="md"
+          className="bg-gradient-to-br from-gold-800 to-gold-900 text-gold-50 shadow-none ring-0 transition active:brightness-95"
+        >
+          <button
+            type="button"
+            onClick={() => navigate(paths.meProfile)}
+            className="block w-full text-left"
+          >
+            <div className="flex items-center gap-3">
+              <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gold-50 text-gold-800">
+                <UserRound size={30} aria-hidden="true" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-section text-gold-50">黄金用户</p>
+                <p className="mt-1 text-body text-gold-50/80 tabular">{maskPhone(member.phone)}</p>
+              </div>
+              {isMemberVerified(member) ? (
+                <span className="shrink-0 rounded-full bg-gold-50/20 px-2.5 py-1 text-caption text-gold-50">
+                  已实名
+                </span>
+              ) : (
+                <span className="shrink-0 rounded-full bg-destructive/20 px-2.5 py-1 text-caption text-gold-50">
+                  未实名
+                </span>
+              )}
             </div>
-          </div>
+            <p className="mt-3 border-t border-gold-50/20 pt-3 text-caption text-gold-50/80">
+              买金与回收共用同一账户，订单与资金统一在这里管理。
+            </p>
+          </button>
         </Card>
       ) : (
         <ProfileCard
@@ -88,19 +118,34 @@ export function MePage() {
         />
       )}
 
-      <Card padding="md">
-        <div className="mb-2 flex items-center justify-between gap-3">
-          <h2 className="text-card-title text-foreground">我的订单</h2>
-          <TextLink onClick={member ? goOrders : goLogin} showArrow>
-            查看全部
-          </TextLink>
-        </div>
-        <QuickActionGrid
-          items={(member ? MEMBER_ORDER_SHORTCUTS : GUEST_ORDER_SHORTCUTS).map((item) => ({
-            ...item,
-            onClick: member ? goOrders : goLogin,
+      <Card padding="md" className="space-y-3">
+        <h2 className="text-card-title text-foreground">我的订单</h2>
+        <OrderRow
+          label="买金订单"
+          items={SALES_SHORTCUTS.map((item) => ({
+            key: item.key,
+            label: item.label,
+            icon: item.icon,
+            badge: badgeCount(salesOrders, item.key, BADGED_SALES),
+            onClick: member
+              ? () => navigate(ordersFilterPath('sales', item.key))
+              : goLogin,
           }))}
         />
+        <div className="border-t border-border-subtle pt-3">
+          <OrderRow
+            label="回收订单"
+            items={RECYCLE_SHORTCUTS.map((item) => ({
+              key: item.key,
+              label: item.label,
+              icon: item.icon,
+              badge: badgeCount(recycleOrders, item.key, BADGED_RECYCLE),
+              onClick: member
+                ? () => navigate(ordersFilterPath('recycle', item.key))
+                : goLogin,
+            }))}
+          />
+        </div>
       </Card>
 
       {member ? (
@@ -125,7 +170,7 @@ export function MePage() {
                   key: 'identity',
                   label: '实名认证',
                   icon: ShieldCheck,
-                  onClick: () => setInfoSheet('identity'),
+                  onClick: () => navigate(paths.meAuth),
                 },
                 {
                   key: 'service',
@@ -271,4 +316,24 @@ export function MePage() {
       </BottomSheet>
     </TabPage>
   )
+}
+
+/** 一类订单的状态入口：标题 + 一行五格（最后一格为全部）。 */
+function OrderRow({ label, items }: { label: string; items: QuickAction[] }) {
+  return (
+    <div>
+      <p className="mb-1 text-caption text-subtle-foreground">{label}</p>
+      <QuickActionGrid items={items} columns={5} />
+    </div>
+  )
+}
+
+/** 只为需要用户处理的节点计算角标，0 件时不显示。 */
+function badgeCount<T extends string>(
+  orders: { status: T }[],
+  status: T | 'all',
+  badged: readonly T[],
+) {
+  if (status === 'all' || !badged.includes(status)) return undefined
+  return orders.filter((order) => order.status === status).length || undefined
 }

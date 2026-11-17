@@ -1,12 +1,7 @@
+import { BottomSheet, Button, Gallery, KeyValueRow, ListItem, MediaVisual, PriceText } from '@/components'
 import { useState } from 'react'
 import { CreditCard, MessageSquare, ShieldCheck } from 'lucide-react'
-import { BottomSheet } from '@/components/BottomSheet'
-import { Button } from '@/components/Button'
-import { Gallery } from '@/components/Gallery'
-import { KeyValueRow } from '@/components/KeyValueRow'
-import { ListItem } from '@/components/ListItem'
-import { MediaVisual } from '@/components/MediaVisual'
-import { PriceText } from '@/components/PriceText'
+
 import { ASSAY_IMAGES } from './data'
 import { GuideFooter, GuidePage, Section } from './shared'
 

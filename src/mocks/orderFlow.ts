@@ -1,12 +1,13 @@
-import type { ChoiceOption } from '@/components/ChoiceGroup'
-import { readSession, removeSession, writeSession } from './storage'
+import type { ChoiceOption } from '@/components'
+import { STORAGE_KEYS } from "./keys"
+import { images } from '@/assets/images'
 
+import { readSession, removeSession, writeSession } from './storage'
 export interface ItemPhotoDraft {
   overall: string[]
   mark: string[]
   detail: string[]
 }
-
 export interface ShippingSnapshot {
   name: string
   phone: string
@@ -18,7 +19,6 @@ export interface ShippingSnapshot {
   insuranceFee: number | null
   confirmedAt: string
 }
-
 export interface OrderDraft {
   category: string
   weight: string
@@ -42,9 +42,6 @@ export interface OrderDraft {
   destructiveConfirmedAt: string
   shipping: ShippingSnapshot | null
 }
-
-const DRAFT_KEY = 'gold-recycling.order-draft'
-
 function emptyDraft(): OrderDraft {
   return {
     category: '',
@@ -69,12 +66,25 @@ function emptyDraft(): OrderDraft {
     shipping: null,
   }
 }
-
+/** 演示直达：?demo=item 用固定样例填充物品信息，不写入本地存储 */
+export function demoOrderDraft(): OrderDraft {
+  return {
+    ...emptyDraft(),
+    category: 'jewelry',
+    weight: '12.5',
+    purity: '999',
+    quantity: 1,
+    photos: {
+      overall: [images.photoOverallSample],
+      mark: [images.photoMarkSample],
+      detail: [],
+    },
+  }
+}
 export function readOrderDraft(): OrderDraft {
   const empty = emptyDraft()
-  const stored = readSession<Partial<OrderDraft>>(DRAFT_KEY)
+  const stored = readSession<Partial<OrderDraft>>(STORAGE_KEYS.ORDER_DRAFT)
   if (!stored) return empty
-
   return {
     ...empty,
     ...stored,
@@ -82,15 +92,12 @@ export function readOrderDraft(): OrderDraft {
     shipping: stored.shipping ?? null,
   }
 }
-
 export function writeOrderDraft(patch: Partial<OrderDraft>) {
-  writeSession(DRAFT_KEY, { ...readOrderDraft(), ...patch })
+  writeSession(STORAGE_KEYS.ORDER_DRAFT, { ...readOrderDraft(), ...patch })
 }
-
 export function resetOrderDraft() {
-  removeSession(DRAFT_KEY)
+  removeSession(STORAGE_KEYS.ORDER_DRAFT)
 }
-
 export interface ItemCategoryOption {
   value: string
   label: string
@@ -98,7 +105,6 @@ export interface ItemCategoryOption {
   supported: boolean
   blockReason?: string
 }
-
 /** P-08 唯一物品信息入口：不支持的品类可直接点选，用于就地拦截演示 */
 export const ITEM_CATEGORIES: ItemCategoryOption[] = [
   {
@@ -137,36 +143,29 @@ export const ITEM_CATEGORIES: ItemCategoryOption[] = [
     blockReason: '含非金配件的饰品暂不回收，请先拆除非金配件后重新评估。',
   },
 ]
-
 export function findItemCategory(value: string) {
   return ITEM_CATEGORIES.find((item) => item.value === value)
 }
-
 export const CERTIFICATE_OPTIONS: ChoiceOption[] = [
   { value: 'with', label: '有证书 / 质保卡', description: '可随寄证书或质保卡' },
   { value: 'without', label: '无证书', description: '不影响回收，按实物检测' },
   { value: 'unknown', label: '不确定', description: '可在寄件前再确认' },
 ]
-
 export const SOURCE_OPTIONS: ChoiceOption[] = [
   { value: 'self', label: '本人购买', description: '本人购买或自有' },
   { value: 'gift', label: '亲友赠与', description: '亲友赠送' },
   { value: 'inherit', label: '继承所得', description: '继承或受遗赠' },
   { value: 'other', label: '其他合法来源', description: '请在补充说明中描述' },
 ]
-
 export const DECLARATION_VERSION = '合法来源声明 v1.3'
-
 export const SOURCE_DECLARATION =
   '本人保证所出售黄金来源合法，系本人有权处分的财产，不存在盗窃、抢劫、诈骗等违法情形；如因来源不实产生纠纷，本人愿意承担相应法律责任，并配合平台依法处理。'
-
 export const AGREEMENT_VERSIONS = {
   service: 'v1.3',
   protection: 'v1.3',
   source: DECLARATION_VERSION,
   destructive: 'v1.3',
 }
-
 export function sourceLabel(value: string) {
   return SOURCE_OPTIONS.find((item) => item.value === value)?.label ?? '未选择'
 }

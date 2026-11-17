@@ -1,15 +1,8 @@
+import { AddressCard, Button, Card, DetailPage, InlineNotice, KeyValueRow, RuleSheet, SelectField, TextLink } from '@/components'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AddressCard } from '@/components/AddressCard'
-import { Button } from '@/components/Button'
-import { Card } from '@/components/Card'
-import { DetailPage } from '@/components/DetailPage'
-import { InlineNotice } from '@/components/InlineNotice'
-import { KeyValueRow } from '@/components/KeyValueRow'
-import { RuleSheet } from '@/components/RuleSheet'
-import { SelectField } from '@/components/SelectField'
-import { TextLink } from '@/components/TextLink'
-import { maskPhone, readSelectedAddress } from '@/mocks/addressBook'
+
+import { maskPhone, readAddresses, readSelectedAddress } from '@/mocks/addressBook'
 import { PICKUP_SLOTS, SHIPPING_RULES } from '@/mocks/shipping'
 import { paths } from '@/routes/paths'
 
@@ -19,7 +12,7 @@ import { paths } from '@/routes/paths'
  */
 export function ShipInfoPage() {
   const navigate = useNavigate()
-  const [address] = useState(() => readSelectedAddress())
+  const [address] = useState(() => readSelectedAddress() ?? readAddresses()[0])
   const [pickup, setPickup] = useState(PICKUP_SLOTS[0].value)
   const [rulesOpen, setRulesOpen] = useState(false)
 

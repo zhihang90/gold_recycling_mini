@@ -1,11 +1,8 @@
+import { AddressBookCard, Button, ConfirmDialog, EmptyState, ListPage } from '@/components'
 import { useState } from 'react'
 import { MapPin } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { AddressBookCard } from '@/components/AddressBookCard'
-import { Button } from '@/components/Button'
-import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { EmptyState } from '@/components/EmptyState'
-import { ListPage } from '@/components/ListPage'
+
 import {
   readAddresses,
   readSelectedAddressId,

@@ -137,9 +137,33 @@ export function Gallery({
         ))}
       </div>
       {images.length > 1 ? (
-        <div className="pointer-events-none absolute right-2 bottom-2 rounded-full bg-foreground/55 px-2 py-0.5 text-caption-strong text-paper tabular">
-          {active + 1}/{images.length}
-        </div>
+        <>
+          <div className="pointer-events-none absolute right-2 bottom-2 rounded-full bg-foreground/55 px-2 py-0.5 text-caption-strong text-paper tabular">
+            {active + 1}/{images.length}
+          </div>
+          <div
+            className="absolute inset-x-0 bottom-1 flex items-center justify-center"
+            onPointerDown={(event) => event.stopPropagation()}
+          >
+            {images.map((image, index) => (
+              <button
+                key={image.src}
+                type="button"
+                aria-label={`查看第 ${index + 1} 张图片`}
+                aria-current={active === index ? 'true' : undefined}
+                onClick={() => scrollTo(index)}
+                className="flex h-5 w-5 items-center justify-center"
+              >
+                <span
+                  className={cn(
+                    'h-1.5 rounded-full transition-all',
+                    active === index ? 'w-4 bg-gold-700' : 'w-1.5 bg-foreground/25',
+                  )}
+                />
+              </button>
+            ))}
+          </div>
+        </>
       ) : null}
     </div>
   )

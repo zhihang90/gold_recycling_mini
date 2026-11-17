@@ -1,24 +1,20 @@
+import { AmountSummary, Badge, Button, Card, DetailPage, EmptyState, FormulaExplainer, ItemSpecCard, PriceText } from '@/components'
 import { useNavigate } from 'react-router-dom'
 import { Calculator } from 'lucide-react'
-import { AmountSummary } from '@/components/AmountSummary'
-import { Badge } from '@/components/Badge'
-import { Button } from '@/components/Button'
-import { Card } from '@/components/Card'
-import { DetailPage } from '@/components/DetailPage'
-import { EmptyState } from '@/components/EmptyState'
-import { FormulaExplainer } from '@/components/FormulaExplainer'
-import { ItemSpecCard } from '@/components/ItemSpecCard'
-import { PriceText } from '@/components/PriceText'
-import { QUOTE_CATEGORIES, readQuoteSnapshot } from '@/mocks/quote'
+
+import { useDemoScene } from '@/lib/useDemoScene'
+import { QUOTE_CATEGORIES, demoQuoteSnapshot, readQuoteSnapshot } from '@/mocks/quote'
 import { paths } from '@/routes/paths'
 
 /**
  * 估价结果：金额按「预估货值 / 费用扣减 / 预计应付金额」三层展示。
  * 主按钮进入登录，估价快照留在本地，登录后带入物品信息页。
+ * 直接访问时可用 ?demo=quote 查看样例结果。
  */
 export function QuoteResultPage() {
   const navigate = useNavigate()
-  const snapshot = readQuoteSnapshot()
+  const demoScene = useDemoScene()
+  const snapshot = demoScene === 'quote' ? demoQuoteSnapshot() : readQuoteSnapshot()
 
   if (!snapshot) {
     return (

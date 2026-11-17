@@ -1,13 +1,6 @@
+import { Button, FormField, SelectField, ChoiceGroup, SwitchField, ListItem, PickerSheet, AgreementCheck, PhotoUploader } from '@/components'
 import { useState } from 'react'
-import { Button } from '@/components/Button'
-import { FormField } from '@/components/FormField'
-import { SelectField } from '@/components/SelectField'
-import { ChoiceGroup } from '@/components/ChoiceGroup'
-import { SwitchField } from '@/components/SwitchField'
-import { ListItem } from '@/components/ListItem'
-import { PickerSheet } from '@/components/PickerSheet'
-import { AgreementCheck } from '@/components/AgreementCheck'
-import { PhotoUploader } from '@/components/PhotoUploader'
+
 import { GuideFooter, GuidePage, Section } from './shared'
 
 const CATEGORY_OPTIONS = [

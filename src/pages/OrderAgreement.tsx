@@ -1,13 +1,6 @@
+import { AgreementCheck, Badge, BottomSheet, Button, Card, DetailPage, InlineNotice, RuleSheet, TextLink } from '@/components'
 import { useState } from 'react'
-import { AgreementCheck } from '@/components/AgreementCheck'
-import { Badge } from '@/components/Badge'
-import { BottomSheet } from '@/components/BottomSheet'
-import { Button } from '@/components/Button'
-import { Card } from '@/components/Card'
-import { DetailPage } from '@/components/DetailPage'
-import { InlineNotice } from '@/components/InlineNotice'
-import { RuleSheet } from '@/components/RuleSheet'
-import { TextLink } from '@/components/TextLink'
+
 import {
   AGREEMENT_VERSIONS,
   readOrderDraft,

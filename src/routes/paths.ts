@@ -4,8 +4,13 @@
 export const paths = {
   home: '/home',
   buy: '/buy',
+  buyDetail: '/buy/:productId',
+  cart: '/cart',
+  checkout: '/checkout',
   orders: '/orders',
   me: '/me',
+  meProfile: '/me/profile',
+  meAuth: '/me/auth',
   login: '/login',
   quote: '/quote',
   quoteResult: '/quote/result',
@@ -32,5 +37,15 @@ export const paths = {
     order: '/style-guide/order',
     trade: '/style-guide/trade',
   },
+}
+
+/** 商品详情：购物车、商品卡共用同一条跳转规则。 */
+export function buyDetailPath(productId: string) {
+  return `/buy/${productId}`
+}
+
+/** 个人中心订单入口：带业务类型与状态直达订单列表。 */
+export function ordersFilterPath(type: 'sales' | 'recycle', status: string) {
+  return `/orders?type=${type}&status=${status}`
 }
 

@@ -1,11 +1,6 @@
+import { Badge, BottomSheet, Gallery, InlineNotice, FormulaExplainer, ItemSpecCard, QuoteRateCard } from '@/components'
 import { useState } from 'react'
-import { Badge } from '@/components/Badge'
-import { BottomSheet } from '@/components/BottomSheet'
-import { Gallery } from '@/components/Gallery'
-import { InlineNotice } from '@/components/InlineNotice'
-import { FormulaExplainer } from '@/components/FormulaExplainer'
-import { ItemSpecCard } from '@/components/ItemSpecCard'
-import { QuoteRateCard } from '@/components/QuoteRateCard'
+
 import { ASSAY_IMAGES } from './data'
 import { GuideFooter, GuidePage, Section } from './shared'
 

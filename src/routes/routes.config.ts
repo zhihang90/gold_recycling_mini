@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { ClipboardList, Home, ShoppingBag, User } from 'lucide-react'
+import { ClipboardList, Home, ShoppingBag, ShoppingCart, User } from 'lucide-react'
 import {
   ROUTE_GROUPS,
   ROUTE_MANIFEST,
@@ -16,12 +16,16 @@ export interface AppTab {
   label: string
   icon: LucideIcon
   order: number
+  /** 视觉强化：Tab 栏中间入口用凸起金色按钮 */
+  emphasis?: boolean
 }
 
 export interface AppRoute {
   path: string
   /** 桌面左栏展示用的名称 */
   label: string
+  /** 页面自身标题（浏览器标题用它）；缺省回落到 label */
+  pageTitle?: string
   group: AppRouteGroup
   /** 左栏二级分组；缺省时页面直接挂在分组下 */
   section?: string
@@ -37,6 +41,7 @@ export interface AppRoute {
 const TAB_ICONS: Record<TabIconName, LucideIcon> = {
   home: Home,
   bag: ShoppingBag,
+  cart: ShoppingCart,
   orders: ClipboardList,
   user: User,
 }
@@ -66,12 +71,18 @@ function resolvePage(page: string): ComponentType {
 export const APP_ROUTES: AppRoute[] = ROUTE_MANIFEST.map((route) => ({
   path: route.path,
   label: route.label,
+  pageTitle: route.pageTitle,
   group: route.group,
   section: route.section,
   order: route.order,
   hiddenInNav: route.hiddenInNav,
   tab: route.tab
-    ? { label: route.tab.label, icon: TAB_ICONS[route.tab.icon], order: route.tab.order }
+    ? {
+        label: route.tab.label,
+        icon: TAB_ICONS[route.tab.icon],
+        order: route.tab.order,
+        emphasis: route.tab.emphasis,
+      }
     : undefined,
   component: resolvePage(route.page),
 }))

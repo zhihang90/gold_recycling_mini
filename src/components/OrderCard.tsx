@@ -1,7 +1,6 @@
+import { Badge, Card, PriceText } from '@/components'
+import type { BadgeTone } from '@/components'
 import type { ReactNode } from 'react'
-import { Badge, type BadgeTone } from '@/components/Badge'
-import { Card } from '@/components/Card'
-import { PriceText } from '@/components/PriceText'
 
 /**
  * 订单卡：列表里统一「单号 + 状态 + 物品摘要 + 金额 + 下一步」。

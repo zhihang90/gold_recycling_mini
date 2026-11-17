@@ -20,6 +20,7 @@ export function SegmentedTabs({
   size = 'md',
   wrap = false,
   sticky = false,
+  variant = 'pill',
 }: {
   items: TabItem[]
   value: string
@@ -28,13 +29,16 @@ export function SegmentedTabs({
   size?: 'sm' | 'md'
   wrap?: boolean
   sticky?: boolean
+  variant?: 'pill' | 'underline'
 }) {
   const track = (
     <div
+      role={variant === 'underline' ? 'tablist' : undefined}
       className={cn(
-        'flex gap-2',
+        'flex',
+        variant === 'pill' ? 'gap-2' : 'border-b border-border-subtle',
         wrap ? 'flex-wrap' : 'hide-scrollbar overflow-x-auto',
-        !wrap && 'edge-fade pb-1',
+        !wrap && variant === 'pill' && 'edge-fade pb-1',
       )}
     >
       {items.map((item) => {
@@ -44,12 +48,22 @@ export function SegmentedTabs({
             key={item.value}
             type="button"
             onClick={() => onChange(item.value)}
+            role={variant === 'underline' ? 'tab' : undefined}
+            aria-selected={variant === 'underline' ? active : undefined}
             className={cn(
-              'flex min-h-8 shrink-0 items-center rounded-full transition',
-              size === 'sm' ? 'px-3 text-label' : 'px-4 text-body-strong',
+              'flex min-h-8 shrink-0 items-center transition',
+              variant === 'underline'
+                ? 'relative min-h-11 flex-1 justify-center px-2 text-body'
+                : size === 'sm'
+                  ? 'rounded-full px-3 text-label'
+                  : 'rounded-full px-4 text-body-strong',
               active
-                ? 'bg-primary-soft text-primary-active ring-1 ring-primary-border'
-                : 'bg-card text-muted-foreground ring-1 ring-border',
+                ? variant === 'underline'
+                  ? 'text-body-strong text-gold-800 after:absolute after:inset-x-4 after:bottom-0 after:h-0.5 after:rounded-full after:bg-gold-700'
+                  : 'bg-primary-soft text-primary-active ring-1 ring-primary-border'
+                : variant === 'underline'
+                  ? 'text-muted-foreground'
+                  : 'bg-card text-muted-foreground ring-1 ring-border',
             )}
           >
             {item.label}

@@ -1,12 +1,8 @@
+import { Button, Card, DetailPage, InlineNotice, SegmentedTabs, UploadGroup } from '@/components'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { images } from '@/assets/images'
-import { Button } from '@/components/Button'
-import { Card } from '@/components/Card'
-import { DetailPage } from '@/components/DetailPage'
-import { InlineNotice } from '@/components/InlineNotice'
-import { SegmentedTabs } from '@/components/SegmentedTabs'
-import { UploadGroup } from '@/components/UploadGroup'
+
 import { GOLD_SOURCES } from '@/mocks/shipping'
 import { paths } from '@/routes/paths'
 

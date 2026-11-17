@@ -6,12 +6,14 @@ export const ROUTE_GROUPS = ['业务页面', '组件库', '黄金回收组件'] 
 export type RouteGroup = (typeof ROUTE_GROUPS)[number]
 
 /** 底部 Tab 图标名：在这里只存字符串，真正的图标组件由 routes.config 映射 */
-export type TabIconName = 'home' | 'bag' | 'orders' | 'user'
+export type TabIconName = 'home' | 'bag' | 'cart' | 'orders' | 'user'
 
 export interface TabMeta {
   label: string
   icon: TabIconName
   order: number
+  /** 视觉强化：底部栏中间入口用凸起金色按钮，区别于普通 Tab */
+  emphasis?: boolean
 }
 
 /**
@@ -24,6 +26,8 @@ export interface RouteMeta {
   path: string
   /** 桌面左栏展示用的名称 */
   label: string
+  /** 页面自身标题（浏览器标题用它）；缺省回落到 label */
+  pageTitle?: string
   group: RouteGroup
   /** 左栏二级分组；缺省时页面直接挂在分组下 */
   section?: string
@@ -42,6 +46,8 @@ export interface RouteMeta {
   shot?: string
   /** 是否参与视觉回归；缺省参与。依赖交互状态、首屏不稳定的页面设为 false */
   visual?: boolean
+  /** 视觉回归时追加的查询串，用于通过 ?demo= 直达确定性演示状态 */
+  visualQuery?: string
 }
 
 export const ROUTE_MANIFEST: RouteMeta[] = [
@@ -49,6 +55,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
     id: 'home',
     path: paths.home,
     label: '首页',
+    pageTitle: '安盛华黄金回收',
     group: '业务页面',
     section: '入口 · 估价',
     order: 1,
@@ -77,6 +84,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
     id: 'login',
     path: paths.login,
     label: '登录授权',
+    pageTitle: '用户登录',
     group: '业务页面',
     section: '入口 · 估价',
     order: 4,
@@ -86,16 +94,18 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
     id: 'order.item',
     path: paths.order.item,
     label: '物品信息（第 1 步）',
+    pageTitle: '物品信息',
     group: '业务页面',
     section: '回收下单',
     order: 5,
     page: 'OrderItem',
-    visual: false,
+    visualQuery: 'demo=item',
   },
   {
     id: 'order.source',
     path: paths.order.source,
     label: '来源声明（第 2 步）',
+    pageTitle: '合法来源声明',
     group: '业务页面',
     section: '回收下单',
     order: 6,
@@ -105,6 +115,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
     id: 'order.agreement',
     path: paths.order.agreement,
     label: '协议与破检（第 3 步）',
+    pageTitle: '协议与破检授权',
     group: '业务页面',
     section: '回收下单',
     order: 7,
@@ -114,6 +125,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
     id: 'order.shipping',
     path: paths.order.shipping,
     label: '寄件与保价（第 4 步）',
+    pageTitle: '寄件信息与强制保价',
     group: '业务页面',
     section: '回收下单',
     order: 8,
@@ -130,13 +142,47 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
     page: 'Buy',
   },
   {
+    id: 'buy.detail',
+    path: paths.buyDetail,
+    label: '商品详情',
+    group: '业务页面',
+    section: '买金 · 账户',
+    order: 9.5,
+    hiddenInNav: true,
+    page: 'BuyDetail',
+    // 依赖动态商品参数，视觉基线走 /buy 列表页覆盖，详情页单独手工验收
+    visual: false,
+  },
+  {
+    id: 'cart',
+    path: paths.cart,
+    label: '购物车',
+    group: '业务页面',
+    section: '买金 · 账户',
+    order: 10,
+    tab: { label: '购物车', icon: 'cart', order: 3, emphasis: true },
+    page: 'Cart',
+  },
+  {
+    id: 'checkout',
+    path: paths.checkout,
+    label: '确认订单',
+    pageTitle: '确认订单',
+    group: '业务页面',
+    section: '买金 · 账户',
+    order: 10.5,
+    hiddenInNav: true,
+    page: 'BuyCheckout',
+    visual: false,
+  },
+  {
     id: 'orders',
     path: paths.orders,
     label: '订单',
     group: '业务页面',
     section: '买金 · 账户',
-    order: 10,
-    tab: { label: '订单', icon: 'orders', order: 3 },
+    order: 11,
+    tab: { label: '订单', icon: 'orders', order: 4 },
     page: 'Orders',
   },
   {
@@ -145,9 +191,29 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
     label: '我的',
     group: '业务页面',
     section: '买金 · 账户',
-    order: 11,
-    tab: { label: '我的', icon: 'user', order: 4 },
+    order: 12,
+    tab: { label: '我的', icon: 'user', order: 5 },
     page: 'Me',
+  },
+  {
+    id: 'me.profile',
+    path: paths.meProfile,
+    label: '个人中心',
+    group: '业务页面',
+    order: 13,
+    hiddenInNav: true,
+    page: 'ProfileInfo',
+    visual: false,
+  },
+  {
+    id: 'me.auth',
+    path: paths.meAuth,
+    label: '实名认证',
+    group: '业务页面',
+    order: 14,
+    hiddenInNav: true,
+    page: 'RealNameAuth',
+    visual: false,
   },
   {
     id: 'ship.info',
@@ -276,5 +342,8 @@ export function shotName(route: RouteMeta) {
 
 /** 视觉回归路由表：构建时写入 dist/routes.json，由 scripts/visual.mjs 读取 */
 export const SCREENSHOT_ROUTES = ROUTE_MANIFEST.filter((route) => route.visual !== false).map(
-  (route) => ({ name: shotName(route), path: route.path }),
+  (route) => ({
+    name: shotName(route),
+    path: route.visualQuery ? `${route.path}?${route.visualQuery}` : route.path,
+  }),
 )

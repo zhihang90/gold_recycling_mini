@@ -1,7 +1,7 @@
+import { BottomSheet, Button } from '@/components'
 import { useEffect, useState } from 'react'
 import { CircleCheck } from 'lucide-react'
-import { BottomSheet } from '@/components/BottomSheet'
-import { Button } from '@/components/Button'
+
 import { cn } from '@/lib/utils'
 
 export type PickerOption = {

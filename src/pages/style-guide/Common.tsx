@@ -1,10 +1,7 @@
+import { Badge, Button, IconButton, Card, InlineNotice, PriceText } from '@/components'
+import type { BadgeTone } from '@/components'
 import { Heart, Share2 } from 'lucide-react'
-import { Badge, type BadgeTone } from '@/components/Badge'
-import { Button } from '@/components/Button'
-import { IconButton } from '@/components/IconButton'
-import { Card } from '@/components/Card'
-import { InlineNotice } from '@/components/InlineNotice'
-import { PriceText } from '@/components/PriceText'
+
 import { CHECKS, GOLD, INK, RED, TYPE_SCALE } from './data'
 import { GuideFooter, GuidePage, Section, SwatchRow } from './shared'
 

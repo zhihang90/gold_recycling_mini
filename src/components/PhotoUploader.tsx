@@ -1,6 +1,7 @@
+import { MediaVisual } from '@/components'
 import { useRef } from 'react'
 import { Plus, X } from 'lucide-react'
-import { MediaVisual } from '@/components/MediaVisual'
+
 import { cn } from '@/lib/utils'
 
 function readAsDataUrl(file: File) {

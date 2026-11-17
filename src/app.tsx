@@ -1,10 +1,18 @@
+import { Layout, PrototypeNav, EmptyState, PageHeader, PageShell } from '@/components'
+import { useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import { Layout } from '@/components/Layout'
-import { PrototypeNav } from '@/components/PrototypeNav'
-import { EmptyState } from '@/components/EmptyState'
-import { PageHeader } from '@/components/PageHeader'
-import { PageShell } from '@/components/PageShell'
+
 import { APP_ROUTES, isTabPath } from '@/routes/routes.config'
+
+/** 浏览器标题跟随当前页面：按路由清单取页面标题，动态段按通配匹配。 */
+function matchRoute(pathname: string) {
+  return (
+    APP_ROUTES.find((route) => route.path === pathname) ??
+    APP_ROUTES.find((route) =>
+      new RegExp(`^${route.path.replace(/:[^/]+/g, '[^/]+')}$`).test(pathname),
+    )
+  )
+}
 
 function NotFoundPage() {
   return (
@@ -17,6 +25,11 @@ function NotFoundPage() {
 
 export default function App() {
   const { pathname } = useLocation()
+
+  useEffect(() => {
+    const route = matchRoute(pathname)
+    document.title = route ? (route.pageTitle ?? route.label) : '页面不存在'
+  }, [pathname])
 
   // 只有一级页（首页 / 买金 / 订单 / 我的）展示底部 Tab
   return (

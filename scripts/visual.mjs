@@ -4,7 +4,8 @@
  *   npm run visual:update   # 生成/更新基线（确认当前视觉是期望值后再跑）
  *   npm run visual:check    # 与基线对比，差异超阈值即失败
  *
- * 只覆盖不依赖外链图片的稳定页面；路由表来自构建产物 dist/routes.json，
+ * 只覆盖手机视口下首屏稳定的页面；依赖上一步数据的页面通过 manifest 的
+ * visualQuery（?demo=）直达确定性演示状态。视觉路由表来自构建产物 dist/routes.json，
  * 源头是 src/routes/manifest.ts，这里不再手抄。
  * 基线目录 tests/visual/baseline 需要提交到仓库，换电脑后可直接对比。
  */
@@ -32,10 +33,8 @@ const DIFF_DIR = join(ROOT, 'tests/visual/diff')
 const MAX_DIFF_RATIO = 0.002
 const ROUTES_FILE = join(ROOT, 'dist/routes.json')
 
-const VIEWPORTS = [
-  { name: '375', width: 375, height: 812 },
-  { name: '900', width: 900, height: 900 },
-]
+// 只覆盖手机视口：桌面 ≥900px 仅叠加演示导航与设备框，不承载页面布局差异
+const VIEWPORTS = [{ name: '375', width: 375, height: 812 }]
 
 async function waitForServer(timeoutMs = 30000) {
   const deadline = Date.now() + timeoutMs

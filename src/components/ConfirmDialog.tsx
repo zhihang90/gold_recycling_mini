@@ -1,6 +1,8 @@
+import { Button } from '@/components'
 import { createPortal } from 'react-dom'
-import { useEffect, useId, useRef } from 'react'
-import { Button } from '@/components/Button'
+import { useId, useRef } from 'react'
+
+import { useDialogGuard } from '@/lib/useDialogGuard'
 
 /**
  * 居中确认框：不可逆操作与关键决策的最后一道确认。
@@ -29,42 +31,9 @@ export function ConfirmDialog({
   const titleId = useId()
   const descriptionId = useId()
   const panelRef = useRef<HTMLDivElement>(null)
-  const onCloseRef = useRef(onClose)
-  onCloseRef.current = onClose
 
-  useEffect(() => {
-    if (!open) return
-    const scrollRoot = document.querySelector('[data-phone-scroll]') as HTMLElement | null
-    const prevOverflow = scrollRoot?.style.overflowY ?? ''
-    if (scrollRoot) scrollRoot.style.overflowY = 'hidden'
-    const previousFocus = document.activeElement as HTMLElement | null
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onCloseRef.current()
-    }
-    window.addEventListener('keydown', onKeyDown)
-
-    let pushed = false
-    try {
-      window.history.pushState({ ...(window.history.state ?? {}), __dialog: true }, '')
-      pushed = true
-    } catch {
-      pushed = false
-    }
-    const onPop = () => onCloseRef.current()
-    window.addEventListener('popstate', onPop)
-
-    const focusTimer = window.setTimeout(() => panelRef.current?.focus(), 0)
-
-    return () => {
-      window.clearTimeout(focusTimer)
-      window.removeEventListener('keydown', onKeyDown)
-      window.removeEventListener('popstate', onPop)
-      if (scrollRoot) scrollRoot.style.overflowY = prevOverflow
-      previousFocus?.focus?.()
-      if (pushed && window.history.state?.__dialog) window.history.back()
-    }
-  }, [open])
+  // 滚动锁 + Esc + popstate + focus 归还
+  useDialogGuard({ open, onClose, panelRef, historyKey: '__dialog' })
 
   if (!open) return null
 
@@ -92,13 +61,12 @@ export function ConfirmDialog({
         ) : null}
 
         <div className="mt-4 flex gap-2">
-          <Button variant="secondary" block onClick={onClose}>
+          <Button variant="secondary" className="flex-1" onClick={onClose}>
             {cancelText}
           </Button>
           <Button
             variant="primary"
-            block
-            className={tone === 'danger' ? 'bg-destructive active:bg-destructive' : undefined}
+            className={`flex-1 ${tone === 'danger' ? 'bg-destructive active:bg-destructive' : ''}`}
             onClick={onConfirm}
           >
             {confirmText}

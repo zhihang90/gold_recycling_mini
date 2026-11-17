@@ -1,9 +1,7 @@
+import { Button, DetailPage, LegalDocument, ResultStatus } from '@/components'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button } from '@/components/Button'
-import { DetailPage } from '@/components/DetailPage'
-import { LegalDocument } from '@/components/LegalDocument'
-import { ResultStatus } from '@/components/ResultStatus'
+
 import { paths } from '@/routes/paths'
 
 /**

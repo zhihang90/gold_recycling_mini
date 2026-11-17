@@ -1,16 +1,8 @@
+import { BottomSheet, Button, Card, ChoiceGroup, DetailPage, FormField, QuoteRateCard, SelectField, Stepper, TextLink } from '@/components'
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { RefreshCw } from 'lucide-react'
-import { BottomSheet } from '@/components/BottomSheet'
-import { Button } from '@/components/Button'
-import { Card } from '@/components/Card'
-import { ChoiceGroup } from '@/components/ChoiceGroup'
-import { DetailPage } from '@/components/DetailPage'
-import { FormField } from '@/components/FormField'
-import { QuoteRateCard } from '@/components/QuoteRateCard'
-import { SelectField } from '@/components/SelectField'
-import { Stepper } from '@/components/Stepper'
-import { TextLink } from '@/components/TextLink'
+
 import { useSubmitGuard } from '@/lib/useSubmitGuard'
 import { validateWeight } from '@/lib/validation'
 import {

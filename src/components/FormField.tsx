@@ -129,18 +129,27 @@ export function FormField({
           className,
         )}
       >
-        <input
-          {...shared}
-          ref={inputRef}
-          type={type}
-          inputMode={inputMode}
-          maxLength={maxLength}
-          placeholder={placeholder ?? label}
-          autoComplete={autoComplete}
-          aria-label={label}
-          aria-required={required || undefined}
-          className={cn(shared.className, 'h-11 w-full bg-transparent')}
-        />
+        <div className={cn('flex items-center gap-3', inline && 'min-h-12')}>
+          {inline ? (
+            <label htmlFor={id} className="w-16 shrink-0 text-body text-foreground">
+              {label}
+              {required ? <span className="ml-1 text-primary">*</span> : null}
+            </label>
+          ) : null}
+          <input
+            {...shared}
+            ref={inputRef}
+            type={type}
+            inputMode={inputMode}
+            maxLength={maxLength}
+            placeholder={placeholder ?? label}
+            autoComplete={autoComplete}
+            aria-label={label}
+            aria-required={required || undefined}
+            className={cn(shared.className, 'h-11 min-w-0 flex-1 bg-transparent')}
+          />
+          {clearable ? <ClearButton label={label} onClick={handleClear} /> : null}
+        </div>
         {error ? (
           <p id={`${id}-error`} className="pb-1 text-caption text-destructive">
             {error}

@@ -19,3 +19,22 @@ export function validateWeight(value: string) {
   }
   return undefined
 }
+
+/**
+ * 中国大陆居民身份证号验证：
+ * - 18 位：前 17 位数字 + 最后一位数字或 X
+ * - 生日位 6 位必须是合法日期（如 19900101）
+ * 不做精确的校验码算法，原型场景够用。
+ */
+export function isIdCard(value: string) {
+  const v = value.trim()
+  if (!/^\d{17}[\dXx]$/.test(v)) return false
+  const yyyy = Number(v.slice(6, 10))
+  const mm = Number(v.slice(10, 12))
+  const dd = Number(v.slice(12, 14))
+  if (yyyy < 1900 || yyyy > new Date().getFullYear()) return false
+  if (mm < 1 || mm > 12) return false
+  const lastDay = new Date(yyyy, mm, 0).getDate()
+  if (dd < 1 || dd > lastDay) return false
+  return true
+}
