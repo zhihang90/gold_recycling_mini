@@ -23,7 +23,7 @@ import {
   type SalesStatus,
 } from '@/mocks/salesOrders'
 import { cn } from '@/lib/utils'
-import { paths } from '@/routes/paths'
+import { paths, orderDetailPath } from '@/routes/paths'
 
 type OrderTab = 'sales' | 'recycle'
 
@@ -169,7 +169,18 @@ export function OrdersPage() {
           salesRows.map((order) => (
             <article
               key={order.id}
-              className="space-y-3 rounded-lg bg-card p-3 ring-1 ring-border-subtle"
+              role="link"
+              tabIndex={0}
+              aria-label={`查看订单 ${order.id} 详情`}
+              onClick={() => navigate(orderDetailPath(order.id))}
+              onKeyDown={(event) => {
+                if (event.target !== event.currentTarget) return
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  navigate(orderDetailPath(order.id))
+                }
+              }}
+              className="cursor-pointer space-y-3 rounded-lg bg-card p-3 ring-1 ring-border-subtle transition active:bg-surface-2"
             >
               <div className="flex items-center justify-between gap-3">
                 <span className="flex items-center gap-1.5 text-caption-strong text-foreground">
@@ -229,7 +240,10 @@ export function OrdersPage() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap justify-end gap-2">
+              <div
+                className="flex flex-wrap justify-end gap-2"
+                onClick={(event) => event.stopPropagation()}
+              >
                 {order.status === 'pending-payment' ? (
                   <>
                     <Button

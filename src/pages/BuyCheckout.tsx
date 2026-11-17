@@ -1,4 +1,4 @@
-import { AddressCard, AgreementCheck, BottomActionBar, BottomSheet, Button, FormField, MediaVisual, PageHeader, PageShell, PriceText, Stepper, TextLink, Toast } from '@/components'
+import { AddressCard, AgreementCheck, BottomActionBar, BottomSheet, Button, FormField, MediaVisual, PageHeader, PageShell, PaymentPasswordSheet, PriceText, Stepper, TextLink, Toast } from '@/components'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ChevronRight, MapPinPlus, ShieldCheck } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -10,13 +10,22 @@ import {
   readAddresses,
   readSelectedAddress,
   selectAddress,
+  DEFAULT_ADDRESSES,
   type ShippingAddress,
 } from '@/mocks/addressBook'
-import { readCheckout, type CheckoutItem } from '@/mocks/checkout'
-import { clearCheckout, writeCheckout } from '@/mocks/checkout'
-import { readCart, writeCart } from '@/mocks/cart'
+import { readCheckout, type CheckoutEntry, type CheckoutItem } from '@/mocks/checkout'
+import { clearCheckout, writeCheckout, writeCheckoutResult } from '@/mocks/checkout'
+import { DEMO_CART, readCart, writeCart } from '@/mocks/cart'
 import { findProduct, variantsOf, type GoldProduct, type GoldVariant } from '@/mocks/goldShop'
-import { paths } from '@/routes/paths'
+import { useDemoScene } from '@/lib/useDemoScene'
+import {
+  createSalesOrder,
+  readSalesOrders,
+  salesTimeNow,
+  updateSalesOrder,
+  writeSalesOrders,
+} from '@/mocks/salesOrders'
+import { orderDetailPath, paths } from '@/routes/paths'
 
 type PayMethod = 'wechat' | 'alipay' | 'unionpay'
 
@@ -137,16 +146,25 @@ const NOTICE_PARAGRAPHS: { title?: string; body: ReactNode }[] = [
 /** 全屏确认订单页（立即购买与购物车结算共用） */
 export function BuyCheckoutPage() {
   const navigate = useNavigate()
-  const [address, setAddress] = useState<ShippingAddress | null>(() => readSelectedAddress())
+  /** 演示直达：?demo=checkout 用购物车样例渲染，不依赖上一步数据 */
+  const demo = useDemoScene() === 'checkout'
+  const [demoItems, setDemoItems] = useState<CheckoutItem[]>(() =>
+    demo ? toCheckoutItems(DEMO_CART) : [],
+  )
+  const [address, setAddress] = useState<ShippingAddress | null>(() =>
+    demo ? (DEFAULT_ADDRESSES[0] ?? null) : readSelectedAddress(),
+  )
   const [addressSheet, setAddressSheet] = useState(false)
   const [note, setNote] = useState('')
   const [payMethod, setPayMethod] = useState<PayMethod>('wechat')
   const [agree, setAgree] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
-  const [submitted, setSubmitted] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
   const [noticeSheet, setNoticeSheet] = useState(false)
   const [noticeSeconds, setNoticeSeconds] = useState(0)
+  const [payOpen, setPayOpen] = useState(false)
+  /** 拉起支付前已落单，取消支付时用它进入订单详情 */
+  const [payOrderId, setPayOrderId] = useState<string | null>(null)
 
   // 购买须知抽屉：打开后 5 秒倒计时，到 0 按钮自动可点
   useEffect(() => {
@@ -168,20 +186,13 @@ export function BuyCheckoutPage() {
   const innerScrollRef = useRef<HTMLDivElement>(null)
 
   // 还原 checkout items（reloadKey 用于数量变化后强制刷新）
-  const items = useMemo<CheckoutItem[]>(() => {
+  const storedItems = useMemo<CheckoutItem[]>(() => {
     const raw = readCheckout()
-    if (!raw) return []
-    const result: CheckoutItem[] = []
-    for (const entry of raw) {
-      const product = findProduct(entry.productId)
-      if (!product) continue
-      const variant = variantsOf(product).find((v) => v.id === entry.variantId)
-      if (!variant) continue
-      result.push({ product, variant, quantity: entry.quantity })
-    }
-    return result
+    return raw ? toCheckoutItems(raw) : []
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reloadKey])
+
+  const items = demo ? demoItems : storedItems
 
   useEffect(() => {
     return () => {
@@ -194,6 +205,14 @@ export function BuyCheckoutPage() {
   const shipping = 0 // 免运费
 
   const updateQuantity = (variantId: string, value: number) => {
+    if (demo) {
+      // 演示直达只改内存，不写 checkout / cart
+      setDemoItems((prev) =>
+        prev.map((item) => (item.variant.id === variantId ? { ...item, quantity: value } : item)),
+      )
+      return
+    }
+
     const raw = readCheckout() ?? []
     const next = raw.map((r) =>
       r.variantId === variantId ? { ...r, quantity: value } : r,
@@ -211,6 +230,7 @@ export function BuyCheckoutPage() {
 
   const openAddressSheet = () => setAddressSheet(true)
 
+  /** 提交即创建待付款订单，再拉起支付密码面板 */
   const submit = () => {
     if (!address) {
       setToast('请先选择收货地址')
@@ -220,57 +240,57 @@ export function BuyCheckoutPage() {
       setToast('请先同意《金银制品购买须知》')
       return
     }
-    setSubmitted(true)
 
+    const order = createSalesOrder({
+      address,
+      note,
+      payMethod,
+      lines: items.map(({ product, variant, quantity }) => ({
+        productId: product.id,
+        variantId: variant.id,
+        spec: variant.label,
+        quantity,
+        price: variant.price,
+      })),
+    })
+    writeSalesOrders([order, ...readSalesOrders()])
+
+    // 订单已承接商品明细，清掉购物车与结算数据，避免重复下单
     const raw = readCheckout()
-    const cart = readCart()
     if (raw) {
       const variantIds = new Set(raw.map((r) => r.variantId))
-      const remaining = cart.filter((c) => !variantIds.has(c.variantId))
-      writeCart(remaining)
+      writeCart(readCart().filter((item) => !variantIds.has(item.variantId)))
     }
     clearCheckout()
+
+    setPayOrderId(order.id)
+    setPayOpen(true)
   }
 
-  if (items.length === 0 && !submitted) {
+  /** 支付成功：订单转为待发货，写入结果快照后进入支付成功页 */
+  const completePayment = () => {
+    if (payOrderId) {
+      updateSalesOrder(payOrderId, { status: 'pending-shipment', paidAt: salesTimeNow() })
+    }
+    writeCheckoutResult({ amount: total + shipping, count, createdAt: Date.now() })
+    setPayOpen(false)
+    // 成功页是独立路由：replace 掉确认订单，返回时不会回到已清空的结算页
+    navigate(paths.checkoutSuccess, { replace: true })
+  }
+
+  /** 取消支付：订单已创建，直接进入详情页继续付款 */
+  const cancelPayment = () => {
+    setPayOpen(false)
+    if (payOrderId) navigate(orderDetailPath(payOrderId), { replace: true })
+  }
+
+  if (items.length === 0) {
     return (
       <PageShell>
         <PageHeader title="确认订单" />
         <div className="flex flex-1 flex-col items-center justify-center gap-3 py-20 text-center">
           <p className="text-body text-muted-foreground">没有待结算的商品</p>
           <TextLink onClick={() => navigate(paths.buy)}>去买金看看</TextLink>
-        </div>
-      </PageShell>
-    )
-  }
-
-  if (submitted) {
-    return (
-      <PageShell>
-        <PageHeader title="订单提交成功" />
-        <div className="flex flex-1 flex-col items-center gap-4 px-4 pt-12 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gold-50">
-            <ShieldCheck size={32} strokeWidth={1.5} className="text-gold-700" />
-          </div>
-          <h2 className="text-section text-foreground">订单提交成功</h2>
-          <p className="text-body text-muted-foreground">演示订单已生成，无需支付</p>
-          <div className="mt-2 rounded-md bg-gold-50 px-8 py-4">
-            <PriceText value={total} size="section" tone="price" />
-            <p className="mt-1 text-caption text-subtle-foreground">共 {count} 件商品 · 顺丰速运</p>
-          </div>
-          <div className="mt-6 flex w-full gap-3">
-            <Button
-              variant="secondary"
-              block
-              className="rounded-full"
-              onClick={() => navigate(paths.orders)}
-            >
-              查看订单
-            </Button>
-            <Button block className="rounded-full bg-gold-800 text-gold-50" onClick={() => navigate(paths.buy)}>
-              继续买金
-            </Button>
-          </div>
         </div>
       </PageShell>
     )
@@ -506,9 +526,30 @@ export function BuyCheckoutPage() {
         </div>
       </BottomSheet>
 
+      <PaymentPasswordSheet
+        open={payOpen}
+        amount={total + shipping}
+        channel={PAY_OPTIONS.find((option) => option.id === payMethod)?.label}
+        onClose={cancelPayment}
+        onPaid={completePayment}
+      />
+
       <Toast open={Boolean(toast)} message={toast ?? ''} onClose={() => setToast(null)} />
     </PageShell>
   )
+}
+
+/** 把轻量条目还原成完整商品对象，无法匹配的条目直接丢弃 */
+function toCheckoutItems(entries: CheckoutEntry[]): CheckoutItem[] {
+  const result: CheckoutItem[] = []
+  for (const entry of entries) {
+    const product = findProduct(entry.productId)
+    if (!product) continue
+    const variant = variantsOf(product).find((v) => v.id === entry.variantId)
+    if (!variant) continue
+    result.push({ product, variant, quantity: entry.quantity })
+  }
+  return result
 }
 
 function Row({ label, value, muted }: { label: string; value: string; muted?: boolean }) {

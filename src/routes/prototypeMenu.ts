@@ -19,16 +19,16 @@ export interface PrototypeMenuGroup {
 /**
  * 桌面演示左栏菜单：只从正式路由表生成，不硬编码第二份路径。
  * 三级结构：分组（group）→ 二级分组（section）→ 页面；
- * 组内与段内按 order 排序，hiddenInNav 的页面不展示，空分组自动隐藏。
+ * 组内与段内按 order 排序，所有独立路由都展示，空分组自动隐藏。
  */
 export const PROTOTYPE_MENU: PrototypeMenuGroup[] = ROUTE_GROUPS.map((title) => {
   const sections: PrototypeMenuSection[] = []
 
-  APP_ROUTES.filter((route) => route.group === title && !route.hiddenInNav)
+  APP_ROUTES.filter((route) => route.group === title)
     .sort((a, b) => (a.order ?? 100) - (b.order ?? 100))
     .forEach((route) => {
       const section = sections.find((item) => item.title === route.section)
-      const entry = { label: route.label, path: route.path }
+      const entry = { label: route.label, path: route.menuPath ?? route.path }
 
       if (section) {
         section.items.push(entry)

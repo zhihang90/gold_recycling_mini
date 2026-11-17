@@ -17,17 +17,20 @@ export interface QuickAction {
 export function QuickActionGrid({
   items,
   columns = 4,
+  separateLast = true,
   className,
 }: {
   items: QuickAction[]
   columns?: 4 | 5
+  /** 5 列时最后一项默认用竖线与前四项分组（订单「全部」入口）；同权入口传 false */
+  separateLast?: boolean
   className?: string
 }) {
   return (
     <div className={cn('grid gap-2', columns === 5 ? 'grid-cols-5' : 'grid-cols-4', className)}>
       {items.map((item, index) => {
         const Icon = item.icon
-        const isLastInFive = columns === 5 && index === items.length - 1
+        const isLastInFive = separateLast && columns === 5 && index === items.length - 1
         return (
           <button
             key={item.key}

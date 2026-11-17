@@ -1,4 +1,4 @@
-import { Card, ListItem, PageShell, PageHeader, Button, Toast } from '@/components'
+import { Button, Card, DetailPage, ListItem, Toast } from '@/components'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ShieldCheck, ShieldX } from 'lucide-react'
@@ -26,15 +26,13 @@ export function ProfileInfoPage() {
   }
 
   return (
-    <PageShell padded>
-      <PageHeader title="个人中心" />
-
+    <DetailPage title="个人中心" contentClassName="space-y-3">
       <Card className="overflow-hidden">
         <ListItem
           title="头像"
           showArrow
           right={
-            <span className="h-9 w-9 rounded-full bg-gold-50 text-gold-800 flex items-center justify-center text-caption font-medium">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gold-50 text-caption font-medium text-gold-800">
               G
             </span>
           }
@@ -49,59 +47,44 @@ export function ProfileInfoPage() {
         />
       </Card>
 
-      <Card className="mt-3 overflow-hidden">
-        <p className="px-4 pt-3 text-caption text-subtle-foreground">账号安全</p>
-        <ListItem
-          title="修改手机号码"
-          right={member ? maskPhone(member.phone) : ''}
-          showArrow
-          divider
-          onClick={() => setToast('暂不支持换绑手机号')}
-        />
-        <ListItem
-          title="实名认证"
-          icon={verified ? ShieldCheck : ShieldX}
-          right={
-            <span className={verified ? 'text-emerald-600' : 'text-destructive'}>
-              {verified ? '已认证' : '未认证'}
-            </span>
-          }
-          showArrow
-          divider
-          onClick={() =>
-            verified
-              ? handleRevokeAuth() // 演示用：点击已认证可撤销
-              : navigate(paths.meAuth)
-          }
-        />
-        <ListItem
-          title="注销账户"
-          showArrow
-          divider={false}
-          onClick={() => setToast('注销账户请联系客服')}
-        />
-      </Card>
+      <section>
+        <p className="mb-1 px-1 text-caption text-subtle-foreground">账号安全</p>
+        <Card className="overflow-hidden">
+          <ListItem
+            title="手机号"
+            right={member ? maskPhone(member.phone) : ''}
+            showArrow
+            divider
+            onClick={() => setToast('暂不支持换绑手机号')}
+          />
+          <ListItem
+            title="实名认证"
+            icon={verified ? ShieldCheck : ShieldX}
+            right={
+              <span className={verified ? 'text-success' : 'text-destructive'}>
+                {verified ? '已认证' : '未认证'}
+              </span>
+            }
+            showArrow
+            divider={false}
+            onClick={() =>
+              verified
+                ? handleRevokeAuth() // 演示用：点击已认证可撤销
+                : navigate(paths.meAuth)
+            }
+          />
+        </Card>
+      </section>
 
-      <div className="mt-3 text-center text-caption text-subtle-foreground">
-        注销后无法恢复，请谨慎操作
-      </div>
-
-      <div className="mt-6 px-4">
-        <Button
-          variant="secondary"
-          className="w-full"
-          onClick={handleLogout}
-          disabled={!member}
-        >
-          退出登录
-        </Button>
-      </div>
+      <Button variant="secondary" block onClick={handleLogout} disabled={!member}>
+        退出登录
+      </Button>
 
       <Toast
         open={toast !== null}
         message={toast ?? ''}
         onClose={() => setToast(null)}
       />
-    </PageShell>
+    </DetailPage>
   )
 }

@@ -32,8 +32,8 @@ export interface AppRoute {
   component: ComponentType
   /** 左栏排序，越小越靠前；缺省排在组尾 */
   order?: number
-  /** 只注册路由，不进入桌面演示左栏 */
-  hiddenInNav?: boolean
+  /** 左栏演示入口；带动态参数的页面填可用示例路径，缺省用 path */
+  menuPath?: string
   /** 底部 Tab 元数据；同时决定 Layout 是否展示 Tab 栏 */
   tab?: AppTab
 }
@@ -75,7 +75,7 @@ export const APP_ROUTES: AppRoute[] = ROUTE_MANIFEST.map((route) => ({
   group: route.group,
   section: route.section,
   order: route.order,
-  hiddenInNav: route.hiddenInNav,
+  menuPath: route.menuPath,
   tab: route.tab
     ? {
         label: route.tab.label,

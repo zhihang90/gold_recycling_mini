@@ -9,11 +9,9 @@ import {
   CircleHelp,
   CreditCard,
   Headphones,
-  LogOut,
   MapPin,
   Package,
   ScanLine,
-  Settings,
   ShieldCheck,
   Truck,
   UserRound,
@@ -21,7 +19,7 @@ import {
   WalletCards,
 } from 'lucide-react'
 
-import { clearMember, isMemberVerified, maskPhone, readMember } from '@/mocks/member'
+import { isMemberVerified, maskPhone, readMember } from '@/mocks/member'
 import { DEMO_RECYCLE_ORDERS, type RecycleStatus } from '@/mocks/recycleOrders'
 import { readSalesOrders, type SalesStatus } from '@/mocks/salesOrders'
 import { ordersFilterPath, paths } from '@/routes/paths'
@@ -48,31 +46,23 @@ const RECYCLE_SHORTCUTS: { key: RecycleStatus | 'all'; label: string; icon: type
 const BADGED_SALES: SalesStatus[] = ['pending-payment', 'pending-receipt']
 const BADGED_RECYCLE: RecycleStatus[] = ['pending-confirm', 'pending-payment']
 
-type InfoSheet = 'faq' | 'service' | 'account' | 'identity' | 'privacy' | 'logout' | null
+type InfoSheet = 'faq' | 'service' | 'account' | 'identity' | null
 
 const SHEET_TITLES: Record<Exclude<InfoSheet, null>, string> = {
   faq: '常见问题',
   service: '客服与投诉',
   account: '收款账户',
   identity: '实名认证',
-  privacy: '隐私设置',
-  logout: '退出登录',
 }
 
 /** 个人中心：未登录引导登录，已登录展示订单状态、常用服务与账户入口。 */
 export function MePage() {
   const navigate = useNavigate()
-  const [member, setMember] = useState(() => readMember())
+  const [member] = useState(() => readMember())
   const [infoSheet, setInfoSheet] = useState<InfoSheet>(null)
   const salesOrders = member ? readSalesOrders() : []
   const recycleOrders = member ? DEMO_RECYCLE_ORDERS : []
   const goLogin = () => navigate(paths.login)
-
-  const handleLogout = () => {
-    clearMember()
-    setMember(null)
-    setInfoSheet(null)
-  }
 
   return (
     <TabPage>
@@ -95,18 +85,15 @@ export function MePage() {
                 <p className="mt-1 text-body text-gold-50/80 tabular">{maskPhone(member.phone)}</p>
               </div>
               {isMemberVerified(member) ? (
-                <span className="shrink-0 rounded-full bg-gold-50/20 px-2.5 py-1 text-caption text-gold-50">
+                <span className="shrink-0 rounded-full bg-gold-50 px-2.5 py-1 text-caption-strong text-gold-800">
                   已实名
                 </span>
               ) : (
-                <span className="shrink-0 rounded-full bg-destructive/20 px-2.5 py-1 text-caption text-gold-50">
+                <span className="shrink-0 rounded-full bg-destructive px-2.5 py-1 text-caption-strong text-destructive-foreground">
                   未实名
                 </span>
               )}
             </div>
-            <p className="mt-3 border-t border-gold-50/20 pt-3 text-caption text-gold-50/80">
-              买金与回收共用同一账户，订单与资金统一在这里管理。
-            </p>
           </button>
         </Card>
       ) : (
@@ -153,6 +140,8 @@ export function MePage() {
           <Card padding="md">
             <h2 className="mb-2 text-card-title text-foreground">我的服务</h2>
             <QuickActionGrid
+              columns={5}
+              separateLast={false}
               items={[
                 {
                   key: 'address',
@@ -178,36 +167,13 @@ export function MePage() {
                   icon: Headphones,
                   onClick: () => setInfoSheet('service'),
                 },
+                {
+                  key: 'faq',
+                  label: '常见问题',
+                  icon: CircleHelp,
+                  onClick: () => setInfoSheet('faq'),
+                },
               ]}
-            />
-          </Card>
-
-          <Card className="overflow-hidden">
-            <ListItem
-              title="常见问题"
-              icon={CircleHelp}
-              showArrow
-              divider
-              onClick={() => setInfoSheet('faq')}
-            />
-            <ListItem
-              title="客服与投诉"
-              icon={Headphones}
-              showArrow
-              divider
-              onClick={() => setInfoSheet('service')}
-            />
-            <ListItem
-              title="隐私设置"
-              icon={Settings}
-              showArrow
-              divider
-              onClick={() => setInfoSheet('privacy')}
-            />
-            <ListItem
-              title="退出登录"
-              icon={LogOut}
-              onClick={() => setInfoSheet('logout')}
             />
           </Card>
         </>
@@ -224,17 +190,8 @@ export function MePage() {
               title="常见问题"
               icon={CircleHelp}
               showArrow
-              divider
               onClick={() => setInfoSheet('faq')}
             />
-            <ListItem
-              title="客服与投诉"
-              icon={Headphones}
-              showArrow
-              divider
-              onClick={() => setInfoSheet('service')}
-            />
-            <ListItem title="隐私设置" icon={Settings} showArrow onClick={goLogin} />
           </Card>
         </>
       )}
@@ -244,20 +201,9 @@ export function MePage() {
         onClose={() => setInfoSheet(null)}
         title={infoSheet ? SHEET_TITLES[infoSheet] : ''}
         footer={
-          infoSheet === 'logout' ? (
-            <div className="flex gap-3">
-              <Button variant="secondary" block onClick={() => setInfoSheet(null)}>
-                取消
-              </Button>
-              <Button block onClick={handleLogout}>
-                退出登录
-              </Button>
-            </div>
-          ) : (
-            <Button block onClick={() => setInfoSheet(null)}>
-              知道了
-            </Button>
-          )
+          <Button block onClick={() => setInfoSheet(null)}>
+            知道了
+          </Button>
         }
       >
         {infoSheet === 'faq' ? (
@@ -298,19 +244,6 @@ export function MePage() {
         {infoSheet === 'identity' ? (
           <p className="text-body text-muted-foreground">
             按监管要求，寄件回收需完成实名认证。进入回收流程后，按页面提示上传证件即可。
-          </p>
-        ) : null}
-
-        {infoSheet === 'privacy' ? (
-          <div className="space-y-3 text-body text-muted-foreground">
-            <p>我们仅在提供回收服务所必需的范围内使用您的信息。</p>
-            <p>如需注销账户或撤回授权，可联系客服处理。</p>
-          </div>
-        ) : null}
-
-        {infoSheet === 'logout' ? (
-          <p className="text-body text-muted-foreground">
-            退出后需重新登录才能查看订单与收款信息。
           </p>
         ) : null}
       </BottomSheet>

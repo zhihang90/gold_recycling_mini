@@ -12,6 +12,8 @@ export const STORAGE_KEYS = {
   CART: 'gold_cart_items',
   /** 确认订单（buy） */
   CHECKOUT: 'gold_buy_checkout',
+  /** 买金订单提交结果（成功页快照） */
+  CHECKOUT_RESULT: 'gold-recycling.checkout-result',
   /** 登录会员信息 */
   MEMBER: 'gold-recycling.member',
   /** 寄件订单草稿（回收流程） */

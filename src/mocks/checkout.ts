@@ -20,3 +20,23 @@ export function readCheckout(): CheckoutEntry[] | null {
 export function clearCheckout() {
   removeSession(STORAGE_KEYS.CHECKOUT)
 }
+
+/** 提交成功后写入的结果快照：独立成功页靠它恢复金额与件数 */
+export interface CheckoutResult {
+  amount: number
+  count: number
+  createdAt: number
+}
+
+/** 结果快照有效期：超过 30 分钟视为过期，避免直达成功页看到旧订单 */
+const RESULT_TTL = 30 * 60 * 1000
+
+export function writeCheckoutResult(result: CheckoutResult) {
+  writeSession(STORAGE_KEYS.CHECKOUT_RESULT, result)
+}
+
+export function readCheckoutResult(): CheckoutResult | null {
+  const result = readSession<CheckoutResult>(STORAGE_KEYS.CHECKOUT_RESULT)
+  if (!result) return null
+  return Date.now() - result.createdAt < RESULT_TTL ? result : null
+}

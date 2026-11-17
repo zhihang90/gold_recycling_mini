@@ -516,8 +516,9 @@ public/assets/products/p{NN}-wear.jpg     # 佩戴 / 细节图
 ### 7.15 演示左栏 PrototypeNav
 
 - 定位：桌面评审辅助 UI，只服务页面跳转，**不属于产品界面规范**，不得进入正式页面或作为复用样式。
-- 字号 `text-label` 14/500；3 列网格（`grid-cols-3 gap-2`），侧栏宽 300；单项 `min-h-9`（36）、`whitespace-nowrap`、居中。
+- 字号 `text-label` 14/500；4 列网格（`grid-cols-4 gap-2`），侧栏宽 340；单项 `min-h-9`（36）、居中；所有独立路由都必须出现在菜单中。
 - 选中态：品牌红文字 + 浅红底。
+- 分组顺序：入口 · 估价 → 回收下单 → 买金 → 订单 → 账户 → 寄件 · 合同；动态路由用 `menuPath` 指向可用的示例页面。
 
 ### 7.16 轮播 Carousel
 

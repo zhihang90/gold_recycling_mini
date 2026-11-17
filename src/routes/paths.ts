@@ -7,7 +7,9 @@ export const paths = {
   buyDetail: '/buy/:productId',
   cart: '/cart',
   checkout: '/checkout',
+  checkoutSuccess: '/checkout/success',
   orders: '/orders',
+  orderDetail: '/orders/:orderId',
   me: '/me',
   meProfile: '/me/profile',
   meAuth: '/me/auth',
@@ -42,6 +44,11 @@ export const paths = {
 /** 商品详情：购物车、商品卡共用同一条跳转规则。 */
 export function buyDetailPath(productId: string) {
   return `/buy/${productId}`
+}
+
+/** 买金订单详情：订单列表唯一入口。 */
+export function orderDetailPath(orderId: string) {
+  return `/orders/${orderId}`
 }
 
 /** 个人中心订单入口：带业务类型与状态直达订单列表。 */

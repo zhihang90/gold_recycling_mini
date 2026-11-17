@@ -7,7 +7,7 @@ import { BottomTabNav } from './BottomTabNav'
 /**
  * 演示外壳：
  * - < 900px：内容列最大 430 宽并居中，不做全宽拉伸（PC 窄窗口 / 平板都不失真）
- * - ≥ 900px：左侧 300px 演示导航 + 393px 设备框（净内容宽 375 = 设计基准）
+ * - ≥ 900px：左侧 340px 演示导航 + 393px 设备框（净内容宽 375 = 设计基准）
  * - 高度用 .app-h 双声明（先 vh 后 dvh），旧内核也有兜底
  * - 键盘弹起时用 --keyboard-inset 收掉底部，避免吸底栏压住输入框
  */
@@ -21,7 +21,7 @@ export function Layout({ children, showTab }: { children: ReactNode; showTab: bo
   }, [pathname])
 
   return (
-    <div className="app-h w-full bg-canvas min-[900px]:flex min-[900px]:items-center min-[900px]:justify-center min-[900px]:bg-surface-2 min-[900px]:pl-[300px]">
+    <div className="app-h w-full bg-canvas min-[900px]:flex min-[900px]:items-center min-[900px]:justify-center min-[900px]:bg-surface-2 min-[900px]:pl-[340px]">
       {/* ui-allow: PC 评审设备外框，圆角与固定高度属于演示壳，不是页面 UI */}
       <div
         data-phone-frame

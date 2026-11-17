@@ -33,8 +33,8 @@ export interface RouteMeta {
   section?: string
   /** 左栏排序，越小越靠前；缺省排在组尾 */
   order?: number
-  /** 只注册路由，不进入桌面演示左栏 */
-  hiddenInNav?: boolean
+  /** 左栏演示入口；带动态参数的页面填一个可用的示例路径，缺省用 path */
+  menuPath?: string
   /** 底部 Tab 元数据；有 tab 的就是一级页 */
   tab?: TabMeta
   /**
@@ -136,7 +136,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
     path: paths.buy,
     label: '买金',
     group: '业务页面',
-    section: '买金 · 账户',
+    section: '买金',
     order: 9,
     tab: { label: '买金', icon: 'bag', order: 2 },
     page: 'Buy',
@@ -146,9 +146,10 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
     path: paths.buyDetail,
     label: '商品详情',
     group: '业务页面',
-    section: '买金 · 账户',
+    section: '买金',
     order: 9.5,
-    hiddenInNav: true,
+    // 评审入口指向在售商品，避免落到「商品不存在」空态
+    menuPath: paths.buyDetail.replace(':productId', 'bar-sheet'),
     page: 'BuyDetail',
     // 依赖动态商品参数，视觉基线走 /buy 列表页覆盖，详情页单独手工验收
     visual: false,
@@ -158,7 +159,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
     path: paths.cart,
     label: '购物车',
     group: '业务页面',
-    section: '买金 · 账户',
+    section: '买金',
     order: 10,
     tab: { label: '购物车', icon: 'cart', order: 3, emphasis: true },
     page: 'Cart',
@@ -169,28 +170,55 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
     label: '确认订单',
     pageTitle: '确认订单',
     group: '业务页面',
-    section: '买金 · 账户',
+    section: '买金',
     order: 10.5,
-    hiddenInNav: true,
+    // 评审入口直达样例订单，避免落到「没有待结算商品」空态
+    menuPath: `${paths.checkout}?demo=checkout`,
     page: 'BuyCheckout',
+    visual: false,
+  },
+  {
+    id: 'checkout.success',
+    path: paths.checkoutSuccess,
+    label: '支付成功',
+    pageTitle: '支付成功',
+    group: '业务页面',
+    section: '买金',
+    order: 10.6,
+    // 评审入口直达成功态，不依赖刚完成的支付
+    menuPath: `${paths.checkoutSuccess}?demo=success`,
+    page: 'BuyCheckoutSuccess',
     visual: false,
   },
   {
     id: 'orders',
     path: paths.orders,
-    label: '订单',
+    label: '订单列表',
     group: '业务页面',
-    section: '买金 · 账户',
+    section: '订单',
     order: 11,
     tab: { label: '订单', icon: 'orders', order: 4 },
     page: 'Orders',
+  },
+  {
+    id: 'orders.detail',
+    path: paths.orderDetail,
+    label: '订单详情',
+    pageTitle: '订单详情',
+    group: '业务页面',
+    section: '订单',
+    order: 11.5,
+    // 评审入口指向演示订单（待收货，可看到物流卡片）
+    menuPath: paths.orderDetail.replace(':orderId', 'SO20261105003'),
+    page: 'BuyOrderDetail',
+    visual: false,
   },
   {
     id: 'me',
     path: paths.me,
     label: '我的',
     group: '业务页面',
-    section: '买金 · 账户',
+    section: '账户',
     order: 12,
     tab: { label: '我的', icon: 'user', order: 5 },
     page: 'Me',
@@ -200,8 +228,8 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
     path: paths.meProfile,
     label: '个人中心',
     group: '业务页面',
+    section: '账户',
     order: 13,
-    hiddenInNav: true,
     page: 'ProfileInfo',
     visual: false,
   },
@@ -210,8 +238,8 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
     path: paths.meAuth,
     label: '实名认证',
     group: '业务页面',
+    section: '账户',
     order: 14,
-    hiddenInNav: true,
     page: 'RealNameAuth',
     visual: false,
   },
@@ -221,7 +249,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
     label: '寄件信息',
     group: '业务页面',
     section: '寄件 · 合同',
-    order: 12,
+    order: 15,
     page: 'ShipInfo',
   },
   {
@@ -230,7 +258,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
     label: '我的地址',
     group: '业务页面',
     section: '寄件 · 合同',
-    order: 13,
+    order: 16,
     page: 'AddressBook',
     shot: 'addresses',
   },
@@ -240,7 +268,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
     label: '上传实物照片',
     group: '业务页面',
     section: '寄件 · 合同',
-    order: 14,
+    order: 17,
     page: 'ShipPhotos',
     // 历史基线未覆盖该页，保持不参与，避免视觉检查每次报「缺少基线」
     visual: false,
@@ -251,7 +279,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
     label: '合同签署',
     group: '业务页面',
     section: '寄件 · 合同',
-    order: 15,
+    order: 19,
     page: 'ShipContract',
   },
   {
@@ -259,8 +287,8 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
     path: paths.ship.addressForm,
     label: '新增地址',
     group: '业务页面',
-    order: 16,
-    hiddenInNav: true,
+    section: '寄件 · 合同',
+    order: 18,
     page: 'AddressForm',
     shot: 'address-form',
   },

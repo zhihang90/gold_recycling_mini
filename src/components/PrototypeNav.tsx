@@ -13,7 +13,7 @@ export function PrototypeNav() {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-[300px] flex-col border-r border-border bg-card/95 px-4 py-4 backdrop-blur min-[900px]:flex">
+    <aside className="fixed inset-y-0 left-0 z-40 hidden w-[340px] flex-col border-r border-border bg-card/95 px-4 py-4 backdrop-blur min-[900px]:flex">
       <div className="mb-4 flex items-start gap-3 px-1">
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-soft text-primary-active">
           <Recycle size={16} />
@@ -27,7 +27,7 @@ export function PrototypeNav() {
       <div className="hide-scrollbar min-h-0 flex-1 overflow-y-auto pr-1">
         {PROTOTYPE_MENU.map((group) => {
           const groupActive = group.sections.some((section) =>
-            section.items.some((item) => item.path === pathname),
+            section.items.some((item) => item.path.split('?')[0] === pathname),
           )
 
           return (
@@ -65,9 +65,9 @@ export function PrototypeNav() {
                           {section.title}
                         </div>
                       ) : null}
-                      <div className="grid grid-cols-3 gap-1.5 px-2 pb-2">
+                      <div className="grid grid-cols-4 gap-1.5 px-2 pb-2">
                         {section.items.map((item) => {
-                          const active = item.path === pathname
+                          const active = item.path.split('?')[0] === pathname
                           return (
                             <Link
                               key={item.path}
