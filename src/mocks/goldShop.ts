@@ -1,13 +1,11 @@
 import { images } from '@/assets/images'
 
-/** 投资金销售页的静态数据：金价、公告、商品。真实售价以提交订单时为准。 */
+/** 投资金销售页的静态数据：金价与商品。真实售价以提交订单时为准。 */
 export const SALE_RATE = {
   price: 608,
   source: '上海金交所 Au99.99',
   updatedAt: '今天 10:30',
 }
-
-export const SHOP_ANNOUNCEMENT = '安盛华集团 · 检测背书，买金与卖金共用一个账户'
 
 export type GoldCategory = 'bar' | 'coin' | 'zodiac'
 

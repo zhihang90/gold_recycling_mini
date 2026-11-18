@@ -1,4 +1,4 @@
-import { AddressCard, AgreementCheck, BottomActionBar, BottomSheet, Button, FormField, MediaVisual, PageHeader, PageShell, PaymentPasswordSheet, PriceText, Stepper, TextLink, Toast } from '@/components'
+import { AddressCard, AgreementCheck, BottomActionBar, BottomSheet, Button, Card, FormField, MediaVisual, PageHeader, PageShell, PaymentPasswordSheet, PriceText, Stepper, TextLink, Toast } from '@/components'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ChevronRight, MapPinPlus, ShieldCheck } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -305,42 +305,44 @@ export function BuyCheckoutPage() {
       <div className="flex min-h-0 flex-1 flex-col">
         <div ref={innerScrollRef} className="hide-scrollbar min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-24">
           {/* 收货地址 */}
-          <button
-            type="button"
-            onClick={openAddressSheet}
-            className="block w-full rounded-md bg-card p-4 text-left ring-1 ring-border-subtle transition active:bg-surface-2"
-          >
-            {address ? (
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-body-strong text-foreground">{address.name}</span>
-                    <span className="text-body text-muted-foreground">{maskPhone(address.phone)}</span>
-                    {address.tag ? (
-                      <span className="rounded bg-gold-100 px-1.5 py-0.5 text-[10px] text-gold-800">{/* ui-allow: 地址标签 */}
-                        {address.tag}
-                      </span>
-                    ) : null}
+          <Card padding="none" className="overflow-hidden">
+            <button
+              type="button"
+              onClick={openAddressSheet}
+              className="block w-full p-4 text-left transition active:bg-surface-2"
+            >
+              {address ? (
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-body-strong text-foreground">{address.name}</span>
+                      <span className="text-body text-muted-foreground">{maskPhone(address.phone)}</span>
+                      {address.tag ? (
+                        <span className="rounded bg-gold-100 px-1.5 py-0.5 text-[10px] text-gold-800">{/* ui-allow: 地址标签 */}
+                          {address.tag}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-1 line-clamp-2 text-caption text-subtle-foreground">
+                      {address.region} {address.place}
+                      {address.doorNo ? ` ${address.doorNo}` : ''}
+                    </p>
                   </div>
-                  <p className="mt-1 line-clamp-2 text-caption text-subtle-foreground">
-                    {address.region} {address.place}
-                    {address.doorNo ? ` ${address.doorNo}` : ''}
-                  </p>
+                  <ChevronRight size={18} className="mt-1 shrink-0 text-muted-foreground" />
                 </div>
-                <ChevronRight size={18} className="mt-1 shrink-0 text-muted-foreground" />
-              </div>
-            ) : (
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-body text-subtle-foreground">
-                  <span>请选择收货地址</span>
-                  <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] text-destructive">{/* ui-allow: 必填标记 */}
-                    必填
-                  </span>
+              ) : (
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-body text-subtle-foreground">
+                    <span>请选择收货地址</span>
+                    <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] text-destructive">{/* ui-allow: 必填标记 */}
+                      必填
+                    </span>
+                  </div>
+                  <ChevronRight size={18} className="shrink-0 text-muted-foreground" />
                 </div>
-                <ChevronRight size={18} className="shrink-0 text-muted-foreground" />
-              </div>
-            )}
-          </button>
+              )}
+            </button>
+          </Card>
 
           {/* 保障说明（商品卡片上方） */}
           <div className="mt-3 flex items-center gap-1.5 rounded-md bg-gold-50 px-3 py-2 text-caption text-gold-800">
@@ -349,7 +351,7 @@ export function BuyCheckoutPage() {
           </div>
 
           {/* 商品列表 */}
-          <div className="mt-3 rounded-md bg-card p-4 ring-1 ring-border-subtle">
+          <Card padding="md" className="mt-3">
             <div className="space-y-3">
               {items.map(({ product, variant, quantity }) => (
                 <CheckoutRow
@@ -361,7 +363,7 @@ export function BuyCheckoutPage() {
                 />
               ))}
             </div>
-          </div>
+          </Card>
 
           {/* 配送方式 */}
           <div className="mt-3">
@@ -381,17 +383,17 @@ export function BuyCheckoutPage() {
           />
 
           {/* 金额明细 */}
-          <div className="mt-3 rounded-md bg-card p-4 ring-1 ring-border-subtle">
+          <Card padding="md" className="mt-3">
             <AmountRow label="订单总金额" value={total} />
             <AmountRow label="运费" value={shipping} />
             <div className="mt-2 flex items-center justify-between border-t border-border-subtle pt-2">
               <span className="text-body text-foreground">小计</span>
               <PriceText value={total + shipping} size="section" tone="price" />
             </div>
-          </div>
+          </Card>
 
           {/* 选择支付方式 */}
-          <div className="mt-3 rounded-md bg-card p-4 ring-1 ring-border-subtle">
+          <Card padding="md" className="mt-3">
             <p className="mb-3 text-body-strong text-foreground">选择支付方式</p>
             <div className="space-y-1">
               {PAY_OPTIONS.map((opt) => {
@@ -419,7 +421,7 @@ export function BuyCheckoutPage() {
                 )
               })}
             </div>
-          </div>
+          </Card>
 
           {/* 购买须知 —— 方形复选框 + 点击打开抽屉 */}
           <AgreementCheck
@@ -459,7 +461,7 @@ export function BuyCheckoutPage() {
                 </div>
               </div>
               <Button
-                className="h-11 shrink-0 rounded-full bg-gold-800 px-6 text-gold-50"
+                className="shrink-0"
                 onClick={submit}
               >
                 提交订单
@@ -493,7 +495,6 @@ export function BuyCheckoutPage() {
         footer={
           <Button
             block
-            className="rounded-full bg-gold-800 text-gold-50"
             disabled={noticeSeconds > 0}
             onClick={() => {
               setAgree(true)

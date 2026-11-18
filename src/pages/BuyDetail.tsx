@@ -110,13 +110,13 @@ export function BuyDetailPage() {
           </span>
           <Button
             variant="secondary"
-            className="h-11 flex-1 rounded-full bg-gold-100 text-gold-900 ring-gold-300"
+            className="flex-1"
             onClick={() => openSku('add')}
           >
             加入购物车
           </Button>
           <Button
-            className="h-11 flex-1 rounded-full bg-gold-800 text-gold-50"
+            className="flex-1"
             onClick={() => {
               // 立即购买：写入 checkout storage 后跳转到全屏确认订单页
               writeCheckout([{ productId: product.id, variantId: variant.id, quantity }])
@@ -145,7 +145,7 @@ export function BuyDetailPage() {
           </div>
         </Card>
 
-        <div className="overflow-hidden rounded-lg bg-card ring-1 ring-border-subtle">
+        <Card padding="none" className="overflow-hidden">
           <button
             type="button"
             onClick={() => openSku('edit')}
@@ -168,7 +168,7 @@ export function BuyDetailPage() {
           <div className="border-t border-border-subtle px-4 py-3">
             <p className="text-caption text-primary">贵金属商品 · 不支持 7 天无理由退换</p>
           </div>
-        </div>
+        </Card>
 
         <Card padding="md" className="grid grid-cols-3 gap-2">
           {SERVICES.map(({ icon: Icon, title, text }) => (

@@ -1,13 +1,12 @@
-import { Badge, Button, MediaVisual, PriceText, ProductSkuSheet, TabPage, Toast } from '@/components'
+import { Badge, Button, Card, Chip, IconButton, MediaVisual, PriceText, ProductSkuSheet, TabPage, Toast } from '@/components'
 import { useState } from 'react'
-import { ShoppingCart, TrendingUp, Volume2 } from 'lucide-react'
+import { ShoppingCart, TrendingUp } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { images } from '@/assets/images'
 
 import { addToCart } from '@/mocks/cart'
-import { GOLD_PRODUCTS, SALE_RATE, SHOP_ANNOUNCEMENT, SHOP_CATEGORIES, variantsOf } from '@/mocks/goldShop'
+import { GOLD_PRODUCTS, SALE_RATE, SHOP_CATEGORIES, variantsOf } from '@/mocks/goldShop'
 import type { GoldCategory, GoldProduct } from '@/mocks/goldShop'
-import { cn } from '@/lib/utils'
 import { buyDetailPath, paths } from '@/routes/paths'
 
 /** 买金：投资金销售入口，与回收共用同一账号与订单体系。 */
@@ -56,45 +55,26 @@ export function BuyPage() {
           </div>
         </div>
         <Button
-          className="h-9 shrink-0 rounded-full bg-gold-800 px-4 text-gold-50"
+          variant="secondary"
+          size="sm"
           onClick={() => navigate(paths.home)}
         >
           我要卖金
         </Button>
       </div>
 
-      <div className="flex items-center gap-2 rounded-md bg-gold-50 px-3 py-2">
-        <Volume2 size={14} className="shrink-0 text-gold-700" />
-        <p className="truncate text-caption text-gold-800">{SHOP_ANNOUNCEMENT}</p>
-      </div>
-
       <div className="space-y-2.5">
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 className="text-card-title text-foreground">投资金精选</h2>
-          <span className="text-caption text-subtle-foreground">共 {products.length} 件</span>
-        </div>
-
         {/* 上下留 1px 余量：overflow 容器会同时裁切纵向内容，避免胶囊描边被切掉 */}
         <div className="hide-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 py-1">
-          {SHOP_CATEGORIES.map((item) => {
-            const active = category === item.value
-            return (
-              <Button
-                key={item.value}
-                size="sm"
-                variant="tertiary"
-                className={cn(
-                  'h-8 shrink-0 rounded-full px-3.5',
-                  active
-                    ? 'bg-gold-800 text-gold-50'
-                    : 'bg-gold-50 text-gold-800 ring-1 ring-gold-200',
-                )}
-                onClick={() => setCategory(item.value)}
-              >
-                {item.label}
-              </Button>
-            )
-          })}
+          {SHOP_CATEGORIES.map((item) => (
+            <Chip
+              key={item.value}
+              active={category === item.value}
+              onClick={() => setCategory(item.value)}
+            >
+              {item.label}
+            </Chip>
+          ))}
         </div>
       </div>
 
@@ -102,9 +82,10 @@ export function BuyPage() {
         {products.map((product) => {
           const variants = variantsOf(product)
           return (
-            <article
+            <Card
               key={product.id}
-              className="flex h-full flex-col overflow-hidden rounded-lg bg-card ring-1 ring-gold-200/70"
+              padding="none"
+              className="flex h-full flex-col overflow-hidden"
             >
               <Link to={buyDetailPath(product.id)} className="block">
                 <div className="relative">
@@ -113,8 +94,18 @@ export function BuyPage() {
                     alt={product.name}
                     className="bg-gold-50"
                   />
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-2 top-2 flex items-center gap-1"
+                  >
+                    <span className="h-1 w-1 rotate-45 bg-gold-500/70" />
+                    <span className="font-serif text-caption-strong text-gold-800/55">
+                      安盛华黄金
+                    </span>
+                  </span>
                   {product.isNew ? (
-                    <span className="absolute right-0 top-2 rounded-l-xs bg-primary px-1.5 py-0.5 text-caption text-primary-foreground">
+                    <span className="absolute right-2 top-2 inline-flex h-5 items-center gap-1 rounded-pill bg-ink-900/90 px-2 text-caption-strong text-gold-100 shadow-xs ring-1 ring-gold-400/25">
+                      <span aria-hidden="true" className="h-1 w-1 rounded-pill bg-gold-400" />
                       焕新升级
                     </span>
                   ) : null}
@@ -131,26 +122,21 @@ export function BuyPage() {
               </Link>
 
               <div className="mt-auto flex items-end justify-between gap-1 px-3 pb-3 pt-1.5">
-                <span className="flex items-baseline gap-0.5">
-                  <PriceText value={variants[0].price} size="body" tone="gold" />
-                  <span className="text-caption text-gold-700">起</span>
-                </span>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="h-9 w-9 rounded-full px-0 text-gold-700 ring-gold-300"
-                  aria-label={`选择${product.name}规格`}
+                <PriceText value={variants[0].price} size="body" tone="gold" />
+                <IconButton
+                  icon={ShoppingCart}
+                  label={`选择${product.name}规格`}
+                  variant="outline"
+                  className="h-9 w-9 text-gold-700 ring-gold-300"
                   onClick={() => {
                     setSelectedProduct(product)
                     setVariantId(variants[0].id)
                     setQuantity(1)
                     setSheetOpen(true)
                   }}
-                >
-                  <ShoppingCart size={18} strokeWidth={2.2} aria-hidden="true" />
-                </Button>
+                />
               </div>
-            </article>
+            </Card>
           )
         })}
       </div>

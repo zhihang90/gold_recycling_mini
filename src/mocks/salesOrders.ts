@@ -1,6 +1,7 @@
 import { STORAGE_KEYS } from './keys'
 import { readSession, writeSession } from './storage'
 import { DEFAULT_ADDRESSES, type ShippingAddress } from './addressBook'
+import type { OrderStatusTone } from '@/lib/statusTone'
 /**
  * 买金（销售）订单：与回收订单并行的一类订单，共用登录态。
  * 状态取自业务给定的流转图，不含「自提」。
@@ -39,6 +40,15 @@ export const SALES_STATUS_LABEL: Record<SalesStatus, string> = {
   completed: '已完成',
   'after-sale': '售后中',
   cancelled: '已取消',
+}
+/** 状态语义色：列表与详情共用，取值见 ui-design-spec-v2.md §3.2。 */
+export const SALES_STATUS_TONE: Record<SalesStatus, OrderStatusTone> = {
+  'pending-payment': 'warning',
+  'pending-shipment': 'success',
+  'pending-receipt': 'info',
+  completed: 'muted',
+  'after-sale': 'violet',
+  cancelled: 'muted',
 }
 export const SALES_PAY_LABEL: Record<SalesPayMethod, string> = {
   wechat: '微信支付',

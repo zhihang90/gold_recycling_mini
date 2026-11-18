@@ -1,5 +1,5 @@
-import { Button, EmptyState, PageHeader, PageShell } from '@/components'
-import { ReceiptText, ShieldCheck } from 'lucide-react'
+import { Button, EmptyState, PageHeader, PageShell, ResultStatus } from '@/components'
+import { ReceiptText } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 import { readCheckoutResult } from '@/mocks/checkout'
@@ -31,25 +31,22 @@ export function BuyCheckoutSuccessPage() {
   return (
     <PageShell>
       <PageHeader title="支付成功" onBack={backToOrders} />
-      <div className="flex flex-1 flex-col items-center gap-4 px-4 pt-12 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gold-50">
-          <ShieldCheck size={32} strokeWidth={1.5} className="text-gold-700" />
-        </div>
-        <h2 className="text-section text-foreground">支付成功</h2>
-        <p className="text-body text-muted-foreground">我们已收到您的付款，将尽快安排发货</p>
-        <div className="mt-6 grid w-full grid-cols-2 gap-3">
-          <Button
-            variant="secondary"
-            block
-            className="rounded-full"
-            onClick={backToOrders}
-          >
-            查看订单
-          </Button>
-          <Button block className="rounded-full" onClick={() => navigate(paths.buy)}>
-            继续买金
-          </Button>
-        </div>
+      <div className="flex flex-1 flex-col px-4 pt-12">
+        <ResultStatus
+          status="success"
+          title="支付成功"
+          description="我们已收到您的付款，将尽快安排发货"
+          primaryAction={
+            <div className="grid w-full grid-cols-2 gap-3">
+              <Button variant="secondary" block onClick={backToOrders}>
+                查看订单
+              </Button>
+              <Button block onClick={() => navigate(paths.buy)}>
+                继续买金
+              </Button>
+            </div>
+          }
+        />
       </div>
     </PageShell>
   )

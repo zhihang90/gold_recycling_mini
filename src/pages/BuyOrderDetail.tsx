@@ -25,6 +25,7 @@ import { findProduct } from '@/mocks/goldShop'
 import {
   SALES_PAY_LABEL,
   SALES_STATUS_LABEL,
+  SALES_STATUS_TONE,
   findSalesOrder,
   salesCount,
   salesTimeNow,
@@ -34,18 +35,6 @@ import {
   type SalesStatus,
 } from '@/mocks/salesOrders'
 import { paths } from '@/routes/paths'
-
-const STATUS_TONE: Record<
-  SalesStatus,
-  'default' | 'success' | 'warning' | 'destructive'
-> = {
-  'pending-payment': 'warning',
-  'pending-shipment': 'warning',
-  'pending-receipt': 'default',
-  completed: 'success',
-  'after-sale': 'warning',
-  cancelled: 'destructive',
-}
 
 const LOGISTICS_STEPS: TimelineItem[] = [
   {
@@ -179,7 +168,7 @@ export function BuyOrderDetailPage() {
       <OrderStatusHeader
         status={SALES_STATUS_LABEL[order.status]}
         note={`共 ${count} 件商品 · 合计 ¥${total.toLocaleString()}`}
-        tone={STATUS_TONE[order.status]}
+        tone={SALES_STATUS_TONE[order.status]}
       />
 
       {order.address ? (

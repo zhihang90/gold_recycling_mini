@@ -1,4 +1,4 @@
-import { BottomActionBar, Button, MediaVisual, PriceText, Stepper, TabPage, TextLink } from '@/components'
+import { BottomActionBar, Button, Card, MediaVisual, PriceText, Stepper, TabPage, TextLink } from '@/components'
 import { useState } from 'react'
 import { Check, ShoppingCart } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -114,20 +114,17 @@ export function CartPage() {
         <div className="flex flex-1 flex-col items-center justify-center pb-16">
           <ShoppingCart size={72} strokeWidth={1.2} className="text-gold-200" />
           <p className="mt-4 text-body text-muted-foreground">购物车空空如也，去逛逛吧～</p>
-          <Button
-            variant="tertiary"
-            className="mt-4 rounded-full bg-gold-50 px-6 text-gold-800 ring-1 ring-gold-300"
-            onClick={() => navigate(paths.buy)}
-          >
+          <Button className="mt-4" onClick={() => navigate(paths.buy)}>
             去逛买金
           </Button>
         </div>
       ) : (
         <div className="flex-1 space-y-3">
           {rows.map(({ item, product, variant }) => (
-            <div
+            <Card
               key={item.variantId}
-              className="flex items-start gap-3 rounded-lg bg-card p-3 shadow-sm ring-1 ring-border-subtle"
+              padding="sm"
+              className="flex items-start gap-3"
             >
               <span className="pt-6">
                 <CartCheck
@@ -165,7 +162,7 @@ export function CartPage() {
                   )}
                 </div>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
@@ -181,7 +178,7 @@ export function CartPage() {
             <PriceText value={total} size="section" tone="price" />
           </div>
           <Button
-            className="h-10 shrink-0 rounded-full bg-gold-800 px-5 text-gold-50"
+            className="shrink-0"
             disabled={selectedCount === 0}
             onClick={() => {
               writeCheckout(

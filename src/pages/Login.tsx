@@ -11,7 +11,7 @@ type ProtocolSheet = 'service' | 'privacy' | null
 
 /**
  * 登录：手机号 + 验证码单列表单，不使用微信授权。
- * 协议不默认勾选；登录成功后进入物品信息页，不立刻要求实名。
+ * 协议不默认勾选；登录成功后进入买金，不立刻要求实名。
  */
 export function LoginPage() {
   const navigate = useNavigate()
@@ -59,7 +59,7 @@ export function LoginPage() {
     if (!valid) return
 
     saveMember(phone)
-    navigate(paths.order.item, { replace: true })
+    navigate(paths.buy, { replace: true })
   }
 
   return (

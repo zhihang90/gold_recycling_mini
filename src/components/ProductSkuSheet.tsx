@@ -37,7 +37,7 @@ export function ProductSkuSheet({
       onClose={onClose}
       title="选择规格"
       footer={
-        <Button block className="rounded-full bg-gold-800 text-gold-50" onClick={onConfirm}>
+        <Button block onClick={onConfirm}>
           {confirmLabel}
         </Button>
       }

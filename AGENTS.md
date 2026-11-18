@@ -37,7 +37,8 @@
 - Tab 标签、Tab 顺序与桌面左栏菜单只由 `routes.config.ts` 派生。
 - 所有有独立路由的页面都必须出现在桌面左栏菜单中（评审不漏页）；带动态参数的路由用 `menuPath` 指定可用的示例入口；分组按业务流程归类，不把订单、账户混在同一组。
 - 依赖前置数据的页面支持 `?demo=<scene>` 直达样例状态（`useDemoScene`），左栏 `menuPath` 直接带上该参数；demo 首屏只读样例，不依赖上一步留下的存储。
-- 按钮只用 `Button`（primary / secondary / tertiary / text / danger；lg / md / sm / icon）、`buttonStyles()` 与 `IconButton`；卡片只用 `Card` 的内边距档位。
+- 按钮只用 `Button`（primary / secondary / tertiary / text / danger；lg / md / sm / icon）、`buttonStyles()` 与 `IconButton`；卡片只用 `Card` 的内边距档位；分类 / 筛选用 `Chip`，不用 `Button` 覆写胶囊。
+- 订单状态色只在 `src/mocks/<flow>.ts` 定义 tone（`SALES_STATUS_TONE` / `RECYCLE_STATUS_TONE`），展示统一取 `ORDER_STATUS_TONE_CLASS`，页面不另建映射。
 - 表单只用 `FormField`、`SelectField`、`PickerSheet`、`ChoiceGroup`、`SwitchField`、`AgreementCheck`。
 - 吸底 CTA 用 `BottomActionBar`，弹层用 `BottomSheet`，图片用 `MediaVisual` / `Gallery`。
 - 新页面按 `docs/workflow/screenshot-to-page.md`：`paths.ts` → 模板页面 → `routes.config.ts` 注册；mock 放 `src/mocks/<flow>.ts`，图片地址只放 `src/assets/images.ts`。
@@ -55,5 +56,6 @@
 `npm run verify`（typecheck + lint + ui:check + build）、`npm run visual:check`、`npm run verify:full`。
 
 - `ui:check` 例外只允许单行 `// ui-allow`；视觉基线变更确认后再 `visual:update`。
+- `ui:check` 额外拦截：`Button` 内 `rounded-full` / 金色实底、`bg-gold-800|900`、页面本地 `const *STATUS_TONE`。
 - 产物抽查：`dist/assets/*.css` 中 `@layer` 为 0 次；`dist/index.html` 含 `build-stamp` 与 `?v=`。
 - 375 宽无横向溢出，≥900px 显示设备框。

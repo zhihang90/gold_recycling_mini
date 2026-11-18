@@ -1,4 +1,4 @@
-import { BottomSheet, Button, EmptyState, MediaVisual, PriceText, TabPage, Toast } from '@/components'
+import { BottomSheet, Button, Card, Chip, EmptyState, MediaVisual, PriceText, TabPage, Toast } from '@/components'
 import { useEffect, useState } from 'react'
 import { ClipboardList, Store } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -8,6 +8,7 @@ import { findProduct } from '@/mocks/goldShop'
 import {
   RECYCLE_FILTERS,
   RECYCLE_STATUS_LABEL,
+  RECYCLE_STATUS_TONE,
   RECYCLE_STEPS,
   DEMO_RECYCLE_ORDERS,
   type RecycleStatus,
@@ -15,6 +16,7 @@ import {
 import {
   SALES_FILTERS,
   SALES_STATUS_LABEL,
+  SALES_STATUS_TONE,
   readSalesOrders,
   salesCount,
   salesTotal,
@@ -23,6 +25,7 @@ import {
   type SalesStatus,
 } from '@/mocks/salesOrders'
 import { cn } from '@/lib/utils'
+import { ORDER_STATUS_TONE_CLASS } from '@/lib/statusTone'
 import { paths, orderDetailPath } from '@/routes/paths'
 
 type OrderTab = 'sales' | 'recycle'
@@ -133,29 +136,19 @@ export function OrdersPage() {
       </div>
 
       <div className="hide-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4">
-        {filters.map((item) => {
-          const active = activeFilter === item.value
-          return (
-            <button
-              key={item.value}
-              type="button"
-              aria-pressed={active}
-              className={cn(
-                'shrink-0 rounded-md px-3 py-1.5 text-body transition',
-                active
-                  ? 'bg-gold-900 text-gold-50'
-                  : 'bg-surface-2 text-foreground',
-              )}
-              onClick={() =>
-                tab === 'sales'
-                  ? setSalesFilter(item.value as 'all' | SalesStatus)
-                  : setRecycleFilter(item.value as 'all' | RecycleStatus)
-              }
-            >
-              {item.label}
-            </button>
-          )
-        })}
+        {filters.map((item) => (
+          <Chip
+            key={item.value}
+            active={activeFilter === item.value}
+            onClick={() =>
+              tab === 'sales'
+                ? setSalesFilter(item.value as 'all' | SalesStatus)
+                : setRecycleFilter(item.value as 'all' | RecycleStatus)
+            }
+          >
+            {item.label}
+          </Chip>
+        ))}
       </div>
 
       {tab === 'sales' ? (
@@ -167,8 +160,9 @@ export function OrdersPage() {
           />
         ) : (
           salesRows.map((order) => (
-            <article
+            <Card
               key={order.id}
+              padding="sm"
               role="link"
               tabIndex={0}
               aria-label={`查看订单 ${order.id} 详情`}
@@ -180,7 +174,7 @@ export function OrdersPage() {
                   navigate(orderDetailPath(order.id))
                 }
               }}
-              className="cursor-pointer space-y-3 rounded-lg bg-card p-3 ring-1 ring-border-subtle transition active:bg-surface-2"
+              className="cursor-pointer space-y-3 transition active:bg-surface-2"
             >
               <div className="flex items-center justify-between gap-3">
                 <span className="flex items-center gap-1.5 text-caption-strong text-foreground">
@@ -190,9 +184,7 @@ export function OrdersPage() {
                 <span
                   className={cn(
                     'text-caption-strong',
-                    order.status === 'cancelled' || order.status === 'completed'
-                      ? 'text-subtle-foreground'
-                      : 'text-gold-700',
+                    ORDER_STATUS_TONE_CLASS[SALES_STATUS_TONE[order.status]],
                   )}
                 >
                   {SALES_STATUS_LABEL[order.status]}
@@ -249,14 +241,12 @@ export function OrdersPage() {
                     <Button
                       size="sm"
                       variant="secondary"
-                      className="rounded-full text-gold-800 ring-gold-200"
                       onClick={() => setCancelId(order.id)}
                     >
                       取消订单
                     </Button>
                     <Button
                       size="sm"
-                      className="rounded-full bg-gold-800 text-gold-50"
                       onClick={() => {
                         moveOrder(order.id, 'pending-shipment')
                         setToast('支付成功，等待发货')
@@ -271,7 +261,6 @@ export function OrdersPage() {
                   <Button
                     size="sm"
                     variant="secondary"
-                    className="rounded-full text-gold-800 ring-gold-200"
                     onClick={() => setToast('客服将在 9:00–21:00 回复')}
                   >
                     联系客服
@@ -283,7 +272,6 @@ export function OrdersPage() {
                     <Button
                       size="sm"
                       variant="secondary"
-                      className="rounded-full text-gold-800 ring-gold-200"
                       onClick={() =>
                         setTimeline({
                           title: '物流进度',
@@ -296,7 +284,6 @@ export function OrdersPage() {
                     </Button>
                     <Button
                       size="sm"
-                      className="rounded-full bg-gold-800 text-gold-50"
                       onClick={() => {
                         moveOrder(order.id, 'completed')
                         setToast('已确认收货')
@@ -312,14 +299,12 @@ export function OrdersPage() {
                     <Button
                       size="sm"
                       variant="secondary"
-                      className="rounded-full text-gold-800 ring-gold-200"
                       onClick={() => setToast('售后申请已提交，客服会尽快联系您')}
                     >
                       申请售后
                     </Button>
                     <Button
                       size="sm"
-                      className="rounded-full bg-gold-800 text-gold-50"
                       onClick={() => rebuy(order)}
                     >
                       再次购买
@@ -331,7 +316,6 @@ export function OrdersPage() {
                   <Button
                     size="sm"
                     variant="secondary"
-                    className="rounded-full text-gold-800 ring-gold-200"
                     onClick={() => setToast('售后处理中，预计 1 个工作日内反馈')}
                   >
                     售后进度
@@ -342,14 +326,13 @@ export function OrdersPage() {
                   <Button
                     size="sm"
                     variant="secondary"
-                    className="rounded-full"
                     onClick={() => rebuy(order)}
                   >
                     再次购买
                   </Button>
                 ) : null}
               </div>
-            </article>
+            </Card>
           ))
         )
       ) : recycleRows.length === 0 ? (
@@ -360,16 +343,17 @@ export function OrdersPage() {
         />
       ) : (
         recycleRows.map((order) => (
-          <article
+          <Card
             key={order.id}
-            className="space-y-3 rounded-lg bg-card p-3 ring-1 ring-border-subtle"
+            padding="sm"
+            className="space-y-3"
           >
             <div className="flex items-center justify-between gap-3">
               <span className="text-caption-strong text-foreground">黄金回收</span>
               <span
                 className={cn(
                   'text-caption-strong',
-                  order.status === 'completed' ? 'text-subtle-foreground' : 'text-gold-700',
+                  ORDER_STATUS_TONE_CLASS[RECYCLE_STATUS_TONE[order.status]],
                 )}
               >
                 {RECYCLE_STATUS_LABEL[order.status]}
@@ -399,14 +383,12 @@ export function OrdersPage() {
               <Button
                 size="sm"
                 variant="secondary"
-                className="rounded-full text-gold-800 ring-gold-200"
                 onClick={() => setToast('客服将在 9:00–21:00 回复')}
               >
                 联系客服
               </Button>
               <Button
                 size="sm"
-                className="rounded-full bg-gold-800 text-gold-50"
                 onClick={() => {
                   const current = RECYCLE_STEPS.findIndex((step) => step.key === order.status)
                   setTimeline({
@@ -422,7 +404,7 @@ export function OrdersPage() {
                 查看进度
               </Button>
             </div>
-          </article>
+          </Card>
         ))
       )}
 
@@ -436,8 +418,8 @@ export function OrdersPage() {
               再想想
             </Button>
             <Button
+              variant="danger"
               block
-              className="rounded-full bg-gold-800 text-gold-50"
               onClick={() => {
                 if (cancelId) moveOrder(cancelId, 'cancelled')
                 setCancelId(null)
@@ -461,7 +443,6 @@ export function OrdersPage() {
         footer={
           <Button
             block
-            className="rounded-full bg-gold-800 text-gold-50"
             onClick={() => setTimeline(null)}
           >
             知道了

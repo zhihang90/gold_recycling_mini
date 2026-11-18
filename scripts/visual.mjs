@@ -99,7 +99,11 @@ async function main() {
   try {
     await waitForServer()
 
-    browser = await chromium.launch({ args: ['--no-sandbox'] })
+    // CHROME_PATH 可复用本机已装 Chromium，避免每次都下载 Playwright 自带浏览器
+    browser = await chromium.launch({
+      args: ['--no-sandbox'],
+      executablePath: process.env.CHROME_PATH || undefined,
+    })
 
     for (const viewport of VIEWPORTS) {
       const context = await browser.newContext({

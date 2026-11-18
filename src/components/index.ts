@@ -17,6 +17,7 @@ export * from './Button'
 // BuyCheckoutSheet 已于 2026-11 废弃，checkout 功能统一由 src/pages/BuyCheckout.tsx 全屏页承载
 export * from './Card'
 export * from './Carousel'
+export * from './Chip'
 export * from './ChoiceGroup'
 export * from './CompareRows'
 export * from './ConfirmDialog'

@@ -1,4 +1,6 @@
 /** 回收订单：与买金订单并行展示，状态沿用回收流程的四个业务节点。 */
+import type { OrderStatusTone } from '@/lib/statusTone'
+
 export type RecycleStatus =
   | 'pending-ship'
   | 'testing'
@@ -22,6 +24,15 @@ export const RECYCLE_STATUS_LABEL: Record<RecycleStatus, string> = {
   'pending-confirm': '待确认',
   'pending-payment': '待打款',
   completed: '已完成',
+}
+
+/** 状态语义色：待用户处理用橙、进行中用蓝、待打款用绿、完结用中性。 */
+export const RECYCLE_STATUS_TONE: Record<RecycleStatus, OrderStatusTone> = {
+  'pending-ship': 'warning',
+  testing: 'info',
+  'pending-confirm': 'warning',
+  'pending-payment': 'success',
+  completed: 'muted',
 }
 
 export const RECYCLE_FILTERS: { value: 'all' | RecycleStatus; label: string }[] = [

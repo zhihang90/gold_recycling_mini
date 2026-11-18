@@ -70,7 +70,7 @@ export function BuyCheckoutSheet({
       title={submitted ? '订单提交成功' : view === 'address' ? '选择收货地址' : '确认订单'}
       footer={
         submitted ? (
-          <Button block className="rounded-full bg-gold-800 text-gold-50" onClick={onClose}>
+          <Button block onClick={onClose}>
             完成
           </Button>
         ) : view === 'checkout' ? (
@@ -82,7 +82,7 @@ export function BuyCheckoutSheet({
                 <PriceText value={total} size="section" tone="price" />
               </div>
             </div>
-            <Button className="h-11 shrink-0 rounded-full bg-gold-800 px-6 text-gold-50" onClick={submit}>
+            <Button className="shrink-0" onClick={submit}>
               提交订单
             </Button>
           </div>

@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 import { APP_ROUTES, isTabPath } from '@/routes/routes.config'
+import { paths } from '@/routes/paths'
 
 /** 浏览器标题跟随当前页面：按路由清单取页面标题，动态段按通配匹配。 */
 function matchRoute(pathname: string) {
@@ -37,7 +38,8 @@ export default function App() {
       <PrototypeNav />
       <Layout showTab={isTabPath(pathname)}>
         <Routes>
-          <Route path="/" element={<Navigate to="/home" replace />} />
+          {/* 默认入口先进登录页，登录成功后再进入买金 */}
+          <Route path="/" element={<Navigate to={paths.login} replace />} />
           {APP_ROUTES.map((route) => {
             const Component = route.component
             return <Route key={route.path} path={route.path} element={<Component />} />

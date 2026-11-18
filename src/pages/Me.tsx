@@ -1,4 +1,4 @@
-import { TabPage, Card, ListItem, BottomSheet, Button, ProfileCard, QuickActionGrid } from '@/components'
+import { TabPage, Card, BottomSheet, Button, ProfileCard, QuickActionGrid } from '@/components'
 import type { QuickAction } from '@/components'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -12,7 +12,6 @@ import {
   MapPin,
   Package,
   ScanLine,
-  ShieldCheck,
   Truck,
   UserRound,
   Wallet,
@@ -46,13 +45,12 @@ const RECYCLE_SHORTCUTS: { key: RecycleStatus | 'all'; label: string; icon: type
 const BADGED_SALES: SalesStatus[] = ['pending-payment', 'pending-receipt']
 const BADGED_RECYCLE: RecycleStatus[] = ['pending-confirm', 'pending-payment']
 
-type InfoSheet = 'faq' | 'service' | 'account' | 'identity' | null
+type InfoSheet = 'faq' | 'service' | 'account' | null
 
 const SHEET_TITLES: Record<Exclude<InfoSheet, null>, string> = {
   faq: '常见问题',
   service: '客服与投诉',
   account: '收款账户',
-  identity: '实名认证',
 }
 
 /** 个人中心：未登录引导登录，已登录展示订单状态、常用服务与账户入口。 */
@@ -135,66 +133,39 @@ export function MePage() {
         </div>
       </Card>
 
-      {member ? (
-        <>
-          <Card padding="md">
-            <h2 className="mb-2 text-card-title text-foreground">我的服务</h2>
-            <QuickActionGrid
-              columns={5}
-              separateLast={false}
-              items={[
-                {
-                  key: 'address',
-                  label: '寄件地址',
-                  icon: MapPin,
-                  onClick: () => navigate(paths.ship.addresses),
-                },
-                {
-                  key: 'account',
-                  label: '收款账户',
-                  icon: CreditCard,
-                  onClick: () => setInfoSheet('account'),
-                },
-                {
-                  key: 'identity',
-                  label: '实名认证',
-                  icon: ShieldCheck,
-                  onClick: () => navigate(paths.meAuth),
-                },
-                {
-                  key: 'service',
-                  label: '联系客服',
-                  icon: Headphones,
-                  onClick: () => setInfoSheet('service'),
-                },
-                {
-                  key: 'faq',
-                  label: '常见问题',
-                  icon: CircleHelp,
-                  onClick: () => setInfoSheet('faq'),
-                },
-              ]}
-            />
-          </Card>
-        </>
-      ) : (
-        <>
-          <Card className="overflow-hidden">
-            <ListItem title="收款账户" icon={CreditCard} showArrow divider onClick={goLogin} />
-            <ListItem title="实名认证" icon={ShieldCheck} showArrow divider onClick={goLogin} />
-            <ListItem title="寄件地址" icon={MapPin} showArrow onClick={goLogin} />
-          </Card>
-
-          <Card className="overflow-hidden">
-            <ListItem
-              title="常见问题"
-              icon={CircleHelp}
-              showArrow
-              onClick={() => setInfoSheet('faq')}
-            />
-          </Card>
-        </>
-      )}
+      <Card padding="md">
+        <h2 className="mb-2 text-card-title text-foreground">我的服务</h2>
+        <QuickActionGrid
+          columns={4}
+          separateLast={false}
+          items={[
+            {
+              key: 'address',
+              label: '寄件地址',
+              icon: MapPin,
+              onClick: member ? () => navigate(paths.ship.addresses) : goLogin,
+            },
+            {
+              key: 'account',
+              label: '收款账户',
+              icon: CreditCard,
+              onClick: member ? () => setInfoSheet('account') : goLogin,
+            },
+            {
+              key: 'service',
+              label: '联系客服',
+              icon: Headphones,
+              onClick: () => setInfoSheet('service'),
+            },
+            {
+              key: 'faq',
+              label: '常见问题',
+              icon: CircleHelp,
+              onClick: () => setInfoSheet('faq'),
+            },
+          ]}
+        />
+      </Card>
 
       <BottomSheet
         open={infoSheet !== null}
@@ -238,12 +209,6 @@ export function MePage() {
         {infoSheet === 'account' ? (
           <p className="text-body text-muted-foreground">
             收款账户在完成实名认证后绑定，回收款将打款至该账户；具体到账时间以订单进度为准。
-          </p>
-        ) : null}
-
-        {infoSheet === 'identity' ? (
-          <p className="text-body text-muted-foreground">
-            按监管要求，寄件回收需完成实名认证。进入回收流程后，按页面提示上传证件即可。
           </p>
         ) : null}
       </BottomSheet>

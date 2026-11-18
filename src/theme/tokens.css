@@ -75,24 +75,9 @@
   --icon-muted: var(--ink-400);
   --accent: var(--gold-100);
   --accent-foreground: var(--gold-700);
-  --info: #34618a;
-  --info-foreground: #ffffff;
   /* 文本内协议链接：登录页等位置的蓝链，独立于品牌红 */
   --link: #2f6bf5;
   --link-active: #2456cc;
-
-  /* ===== 语义色（与品牌红严格分工） ===== */
-  --destructive: #b3261e;
-  --destructive-foreground: #ffffff;
-  --success: #2f6b4f;
-  --success-foreground: #ffffff;
-  --warning: #9a5514;
-  --warning-500: #b4671c;
-  --warning-foreground: #ffffff;
-  --violet: #6b4a8c;
-  --violet-foreground: #ffffff;
-  --cyan: #34618a;
-  --cyan-foreground: #ffffff;
 
   /* ===== 边框 / 输入 / 聚焦 ===== */
   --border: var(--line);
@@ -108,9 +93,9 @@
 
   /* ===== 图表 ===== */
   --chart-1: var(--red-500);
-  --chart-2: var(--success);
-  --chart-3: var(--warning);
-  --chart-4: var(--violet);
+  --chart-2: var(--color-success);
+  --chart-3: var(--color-warning);
+  --chart-4: var(--color-violet);
   --chart-5: var(--gold-500);
 
   /* ===== 字体族（系统字体，无远程加载；微信内不会被字体拖慢） ===== */
@@ -216,21 +201,22 @@
   --color-icon-muted: var(--icon-muted);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-  --color-info: var(--info);
-  --color-info-foreground: var(--info-foreground);
   --color-link: var(--link);
   --color-link-active: var(--link-active);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-success: var(--success);
-  --color-success-foreground: var(--success-foreground);
-  --color-warning: var(--warning);
-  --color-warning-500: var(--warning-500);
-  --color-warning-foreground: var(--warning-foreground);
-  --color-violet: var(--violet);
-  --color-violet-foreground: var(--violet-foreground);
-  --color-cyan: var(--cyan);
-  --color-cyan-foreground: var(--cyan-foreground);
+  /* ---- 语义色：写死字面值，Tailwind 才能生成 bg-success/10 这类透明度变体 ---- */
+  --color-info: #34618a;
+  --color-info-foreground: #ffffff;
+  --color-destructive: #b3261e;
+  --color-destructive-foreground: #ffffff;
+  --color-success: #2f6b4f;
+  --color-success-foreground: #ffffff;
+  --color-warning: #9a5514;
+  --color-warning-500: #b4671c;
+  --color-warning-foreground: #ffffff;
+  --color-violet: #6b4a8c;
+  --color-violet-foreground: #ffffff;
+  --color-cyan: #34618a;
+  --color-cyan-foreground: #ffffff;
 
   --color-border: var(--border);
   --color-border-subtle: var(--border-subtle);
