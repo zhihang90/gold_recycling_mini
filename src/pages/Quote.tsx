@@ -358,7 +358,7 @@ export function QuotePage() {
   return (
     <>
       <DetailPage
-        title="安盛华黄金回收"
+        title="回收预约"
         padded={false}
         footer={
           <>

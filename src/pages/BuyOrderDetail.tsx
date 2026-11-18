@@ -64,9 +64,6 @@ export function BuyOrderDetailPage() {
   const [order, setOrder] = useState<SalesOrder | undefined>(() =>
     orderId ? findSalesOrder(orderId) : undefined,
   )
-  const [cancelOpen, setCancelOpen] = useState(false)
-  const [payOpen, setPayOpen] = useState(false)
-  const [toast, setToast] = useState<string | null>(null)
 
   // 订单详情之间切换时同步重新读取，避免沿用上一笔订单的状态
   useEffect(() => {
@@ -86,12 +83,37 @@ export function BuyOrderDetailPage() {
     )
   }
 
+  return <BuyOrderDetailView order={order} onOrderChange={setOrder} persist />
+}
+
+/**
+ * 订单详情主体：真实订单与「按状态的演示页」共用同一套内容与操作。
+ * persist 为 true 时操作写回会话订单；演示状态页只改当前页面，保证每次进入都是同一状态。
+ */
+export function BuyOrderDetailView({
+  order,
+  onOrderChange,
+  persist = false,
+}: {
+  order: SalesOrder
+  onOrderChange: (order: SalesOrder) => void
+  persist?: boolean
+}) {
+  const navigate = useNavigate()
+  const [cancelOpen, setCancelOpen] = useState(false)
+  const [payOpen, setPayOpen] = useState(false)
+  const [toast, setToast] = useState<string | null>(null)
+
   const total = salesTotal(order)
   const count = salesCount(order)
 
   const applyStatus = (status: SalesStatus, patch: Partial<SalesOrder> = {}) => {
+    if (!persist) {
+      onOrderChange({ ...order, status, ...patch })
+      return
+    }
     const next = updateSalesOrder(order.id, { status, ...patch })
-    if (next) setOrder(next)
+    if (next) onOrderChange(next)
   }
 
   const contact = () => setToast('客服将在 9:00–21:00 回复')

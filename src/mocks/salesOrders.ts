@@ -122,6 +122,16 @@ export const DEMO_SALES_ORDERS: SalesOrder[] = [
     paidAt: '2026-10-20 11:31',
     express: { company: '顺丰速运', no: 'SF4567890123456' },
   },
+  {
+    id: 'SO20261015006',
+    status: 'cancelled',
+    createdAt: '2026-10-15 20:12',
+    lines: [
+      { productId: 'bar-sheet', variantId: 'bar-sheet:10g', spec: '10g', quantity: 1, price: 6380 },
+    ],
+    address: DEMO_ADDRESS,
+    payMethod: 'wechat',
+  },
 ]
 /** 兼容早期写入的会话订单：补齐收货地址与待收货运单，避免详情页缺块 */
 function normalizeOrder(order: SalesOrder): SalesOrder {

@@ -24,7 +24,7 @@ export interface PrototypeMenuGroup {
 export const PROTOTYPE_MENU: PrototypeMenuGroup[] = ROUTE_GROUPS.map((title) => {
   const sections: PrototypeMenuSection[] = []
 
-  APP_ROUTES.filter((route) => route.group === title)
+  APP_ROUTES.filter((route) => route.group === title && !route.hidden)
     .sort((a, b) => (a.order ?? 100) - (b.order ?? 100))
     .forEach((route) => {
       const section = sections.find((item) => item.title === route.section)

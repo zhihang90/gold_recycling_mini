@@ -9,7 +9,6 @@ import {
   RECYCLE_FILTERS,
   RECYCLE_STATUS_LABEL,
   RECYCLE_STATUS_TONE,
-  RECYCLE_STEPS,
   DEMO_RECYCLE_ORDERS,
   type RecycleStatus,
 } from '@/mocks/recycleOrders'
@@ -26,7 +25,7 @@ import {
 } from '@/mocks/salesOrders'
 import { cn } from '@/lib/utils'
 import { ORDER_STATUS_TONE_CLASS } from '@/lib/statusTone'
-import { paths, orderDetailPath } from '@/routes/paths'
+import { paths, orderDetailPath, recycleOrderDetailPath } from '@/routes/paths'
 
 type OrderTab = 'sales' | 'recycle'
 
@@ -106,7 +105,7 @@ export function OrdersPage() {
     <TabPage contentClassName="space-y-3">
       <div className="-mx-4 flex items-center gap-7 border-b border-border-subtle px-4">
         {[
-          { key: 'sales' as const, label: '买金订单' },
+          { key: 'sales' as const, label: '购买订单' },
           { key: 'recycle' as const, label: '回收订单' },
         ].map((item) => {
           const active = tab === item.key
@@ -346,7 +345,18 @@ export function OrdersPage() {
           <Card
             key={order.id}
             padding="sm"
-            className="space-y-3"
+            role="link"
+            tabIndex={0}
+            aria-label={`查看回收订单 ${order.id} 详情`}
+            onClick={() => navigate(recycleOrderDetailPath(order.status))}
+            onKeyDown={(event) => {
+              if (event.target !== event.currentTarget) return
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                navigate(recycleOrderDetailPath(order.status))
+              }
+            }}
+            className="cursor-pointer space-y-3 transition active:bg-surface-2"
           >
             <div className="flex items-center justify-between gap-3">
               <span className="text-caption-strong text-foreground">黄金回收</span>
@@ -379,7 +389,10 @@ export function OrdersPage() {
               </p>
             </div>
 
-            <div className="flex justify-end gap-2">
+            <div
+              className="flex justify-end gap-2"
+              onClick={(event) => event.stopPropagation()}
+            >
               <Button
                 size="sm"
                 variant="secondary"
@@ -389,19 +402,9 @@ export function OrdersPage() {
               </Button>
               <Button
                 size="sm"
-                onClick={() => {
-                  const current = RECYCLE_STEPS.findIndex((step) => step.key === order.status)
-                  setTimeline({
-                    title: '回收进度',
-                    current: Math.max(current, 0),
-                    steps: RECYCLE_STEPS.map((step) => ({
-                      label: step.label,
-                      description: step.description,
-                    })),
-                  })
-                }}
+                onClick={() => navigate(recycleOrderDetailPath(order.status))}
               >
-                查看进度
+                查看详情
               </Button>
             </div>
           </Card>

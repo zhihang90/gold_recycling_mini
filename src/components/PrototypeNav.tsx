@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ChevronDown, Recycle } from 'lucide-react'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { PROTOTYPE_MENU } from '@/routes/prototypeMenu'
 import { cn } from '@/lib/utils'
 
@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
  */
 export function PrototypeNav() {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
 
   return (
@@ -19,7 +20,9 @@ export function PrototypeNav() {
           <Recycle size={16} />
         </div>
         <div className="min-w-0">
-          <div className="font-serif text-body-strong text-foreground">黄金回收</div>
+          <div className="font-serif text-body-strong text-foreground">
+            安盛华 · 黄金买卖平台
+          </div>
           <div className="mt-1 text-caption text-subtle-foreground">H5 原型 · 页面导航</div>
         </div>
       </div>
@@ -69,20 +72,21 @@ export function PrototypeNav() {
                         {section.items.map((item) => {
                           const active = item.path.split('?')[0] === pathname
                           return (
-                            <Link
+                            <button
                               key={item.path}
-                              to={item.path}
+                              type="button"
                               title={item.label}
                               aria-current={active ? 'page' : undefined}
+                              onClick={() => navigate(item.path)}
                               className={cn(
-                                'flex min-h-10 items-center justify-center rounded-md px-1 py-1.5 text-center text-caption leading-tight transition',
+                                'flex min-h-10 w-full items-center justify-center rounded-md px-1 py-1.5 text-center text-caption leading-tight transition',
                                 active
                                   ? 'bg-primary text-primary-foreground'
                                   : 'bg-card text-muted-foreground ring-1 ring-border hover:text-foreground',
                               )}
                             >
                               {item.label}
-                            </Link>
+                            </button>
                           )
                         })}
                       </div>

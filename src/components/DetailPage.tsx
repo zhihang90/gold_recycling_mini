@@ -15,6 +15,7 @@ export function DetailPage({
   right,
   onBack,
   footer,
+  stickyBar,
   padded = true,
   header = true,
   children,
@@ -25,6 +26,8 @@ export function DetailPage({
   right?: ReactNode
   onBack?: () => void
   footer?: ReactNode
+  /** 吸顶横幅：进滚动区但贴在页头下方，用于订单进度这类常驻信息 */
+  stickyBar?: ReactNode
   padded?: boolean
   /** 登录等无返回路径的入口页可整块去掉标题栏。 */
   header?: boolean
@@ -39,6 +42,11 @@ export function DetailPage({
         data-page-scroll
         className="hide-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain"
       >
+        {stickyBar ? (
+          <div className="sticky top-0 z-20 shrink-0 border-b border-border-subtle bg-card/95 backdrop-blur">
+            {stickyBar}
+          </div>
+        ) : null}
         <div className={cn('flex-1', padded && 'space-y-4 px-4 pt-4 pb-6', contentClassName)}>
           {children}
         </div>

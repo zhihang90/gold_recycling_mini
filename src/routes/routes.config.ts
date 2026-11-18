@@ -36,6 +36,8 @@ export interface AppRoute {
   menuPath?: string
   /** 底部 Tab 元数据；同时决定 Layout 是否展示 Tab 栏 */
   tab?: AppTab
+  /** 路由存在但从演示菜单隐藏 */
+  hidden?: boolean
 }
 
 const TAB_ICONS: Record<TabIconName, LucideIcon> = {
@@ -76,6 +78,7 @@ export const APP_ROUTES: AppRoute[] = ROUTE_MANIFEST.map((route) => ({
   section: route.section,
   order: route.order,
   menuPath: route.menuPath,
+  hidden: route.hidden,
   tab: route.tab
     ? {
         label: route.tab.label,

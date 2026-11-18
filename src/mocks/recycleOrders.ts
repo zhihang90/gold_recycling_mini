@@ -1,4 +1,4 @@
-/** 回收订单：与买金订单并行展示，状态沿用回收流程的四个业务节点。 */
+/** 回收订单：与买金订单并行展示，状态沿用回收流程的五个业务节点。 */
 import type { OrderStatusTone } from '@/lib/statusTone'
 
 export type RecycleStatus =
@@ -16,6 +16,34 @@ export interface RecycleOrder {
   weight: string
   purity: string
   estimate: number
+  /** 回收方式：顺丰上门取件 / 到店回收 */
+  method: string
+  /** 黄金来源，与协议确认页的选择一致 */
+  source: string
+  /** 上门取件信息 */
+  pickup?: {
+    name: string
+    phone: string
+    region: string
+    detail: string
+    window: string
+  }
+  /** 检测机构 */
+  center?: string
+  /** 检测结果：用于待确认 / 待打款 / 已完成 */
+  inspection?: {
+    weight: string
+    purity: string
+    amount: number
+    finishedAt: string
+  }
+  /** 打款信息 */
+  payment?: {
+    account: string
+    amount: number
+    eta?: string
+    paidAt?: string
+  }
 }
 
 export const RECYCLE_STATUS_LABEL: Record<RecycleStatus, string> = {
@@ -53,6 +81,14 @@ export const RECYCLE_STEPS = [
   { key: 'completed', label: '已完成', description: '款项已到账' },
 ] as const
 
+const PICKUP = {
+  name: '陈先生',
+  phone: '176****5090',
+  region: '广东省深圳市盐田区',
+  detail: '梧桐路太平洋工业区 3 栋 6 楼',
+  window: '11 月 20 日（后天）19:00 – 20:00',
+}
+
 export const DEMO_RECYCLE_ORDERS: RecycleOrder[] = [
   {
     id: 'RC20261114008',
@@ -62,6 +98,10 @@ export const DEMO_RECYCLE_ORDERS: RecycleOrder[] = [
     weight: '12.5g',
     purity: '足金 999',
     estimate: 7320,
+    method: '顺丰上门取件',
+    source: '个人持有',
+    center: '南京国检中心',
+    pickup: PICKUP,
   },
   {
     id: 'RC20261109007',
@@ -71,6 +111,29 @@ export const DEMO_RECYCLE_ORDERS: RecycleOrder[] = [
     weight: '20g',
     purity: '足金 999.9',
     estimate: 11860,
+    method: '顺丰上门取件',
+    source: '他人赠与',
+    center: '南京国检中心',
+    pickup: PICKUP,
+  },
+  {
+    id: 'RC20261106009',
+    status: 'pending-confirm',
+    createdAt: '2026-11-06 09:18',
+    category: '足金首饰',
+    weight: '8.3g',
+    purity: '足金 999',
+    estimate: 4860,
+    method: '顺丰上门取件',
+    source: '个人持有',
+    center: '南京国检中心',
+    pickup: PICKUP,
+    inspection: {
+      weight: '8.16g',
+      purity: '足金 999',
+      amount: 4790,
+      finishedAt: '2026-11-06 17:20',
+    },
   },
   {
     id: 'RC20261103006',
@@ -80,6 +143,21 @@ export const DEMO_RECYCLE_ORDERS: RecycleOrder[] = [
     weight: '8.2g',
     purity: '足金 999',
     estimate: 4820,
+    method: '顺丰上门取件',
+    source: '个人持有',
+    center: '南京国检中心',
+    pickup: PICKUP,
+    inspection: {
+      weight: '8.16g',
+      purity: '足金 999',
+      amount: 4790,
+      finishedAt: '2026-11-03 17:20',
+    },
+    payment: {
+      account: '平安银行 **** 9455',
+      amount: 4790,
+      eta: '预计 2 小时内到账',
+    },
   },
   {
     id: 'RC20261026005',
@@ -89,5 +167,20 @@ export const DEMO_RECYCLE_ORDERS: RecycleOrder[] = [
     weight: '5g',
     purity: '足金 999',
     estimate: 2960,
+    method: '顺丰上门取件',
+    source: '活动获得',
+    center: '南京国检中心',
+    pickup: PICKUP,
+    inspection: {
+      weight: '4.96g',
+      purity: '足金 999',
+      amount: 2952,
+      finishedAt: '2026-10-26 14:40',
+    },
+    payment: {
+      account: '平安银行 **** 9455',
+      amount: 2952,
+      paidAt: '2026-10-26 15:08',
+    },
   },
 ]
