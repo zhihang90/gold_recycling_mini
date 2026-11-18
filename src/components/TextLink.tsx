@@ -28,7 +28,7 @@ export function TextLink({
       onClick={onClick}
       className={cn(
         'text-body transition',
-        inline ? 'inline align-baseline' : 'inline-flex min-h-11 items-center gap-1',
+        inline ? 'inline p-0 align-baseline' : 'inline-flex min-h-11 items-center gap-1',
         tone === 'muted' && 'text-muted-foreground active:text-foreground',
         tone === 'primary' && 'text-primary active:text-primary-active',
         tone === 'link' && 'text-link active:text-link-active',

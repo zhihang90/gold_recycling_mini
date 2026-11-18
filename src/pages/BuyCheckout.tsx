@@ -1,6 +1,6 @@
-import { AddressCard, AgreementCheck, BottomActionBar, BottomSheet, Button, Card, FormField, MediaVisual, PageHeader, PageShell, PaymentPasswordSheet, PriceText, Stepper, TextLink, Toast } from '@/components'
+import { AddressPickerSheet, AgreementCheck, BottomActionBar, BottomSheet, Button, Card, FormField, MediaVisual, PageHeader, PageShell, PaymentPasswordSheet, PriceText, Stepper, SummaryActionBar, TextLink, Toast } from '@/components'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { ChevronRight, MapPinPlus, ShieldCheck } from 'lucide-react'
+import { ChevronRight, ShieldCheck } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 import { images } from '@/assets/images'
@@ -451,26 +451,17 @@ export function BuyCheckoutPage() {
 
       {/* 吸底操作栏：absolute 贴 PageShell 底部，永远可见，不跟随任何滚动 */}
       <BottomActionBar className="absolute bottom-0 left-0 right-0">
-            <div className="flex items-center gap-3">
-              {/* 件数左对齐 */}
-              <div className="min-w-0 flex-1">
-                <p className="text-caption text-subtle-foreground">共 {count} 件商品</p>
-                <div className="mt-0.5 flex items-baseline gap-1">
-                  <span className="text-caption text-foreground">合计</span>
-                  <PriceText value={total + shipping} size="section" tone="price" />
-                </div>
-              </div>
-              <Button
-                className="shrink-0"
-                onClick={submit}
-              >
-                提交订单
-              </Button>
-            </div>
+        <SummaryActionBar
+          caption={`共 ${count} 件商品`}
+          label="合计"
+          amount={total + shipping}
+          onAction={submit}
+          actionLabel="提交订单"
+        />
       </BottomActionBar>
 
       {/* 地址选择抽屉—— disablePortal 就地渲染 */}
-      <AddressSheet
+      <AddressPickerSheet
         open={addressSheet}
         onClose={() => setAddressSheet(false)}
         addresses={readAddresses()}
@@ -617,68 +608,3 @@ function CheckoutRow({
   )
 }
 
-/** 地址选择抽屉：空态时显示提示 + 底部添加入口；有地址时正常列出 */
-function AddressSheet({
-  open,
-  onClose,
-  addresses,
-  selectedId,
-  onSelect,
-  onAdd,
-  extraScrollLocks,
-  disablePortal,
-}: {
-  open: boolean
-  onClose: () => void
-  addresses: ShippingAddress[]
-  selectedId: string | null
-  onSelect: (item: ShippingAddress) => void
-  onAdd: () => void
-  extraScrollLocks?: React.RefObject<HTMLElement | null>[]
-  disablePortal?: boolean
-}) {
-  const empty = addresses.length === 0
-
-  return (
-    <BottomSheet
-      open={open}
-      onClose={onClose}
-      title="选择收货地址"
-      extraScrollLocks={extraScrollLocks}
-      disablePortal={disablePortal}
-      footer={
-        <Button size="lg" block onClick={onAdd} variant="secondary">
-          添加新地址
-        </Button>
-      }
-    >
-      {empty ? (
-        <div className="flex flex-col items-center gap-2 py-10 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gold-50">
-            <MapPinPlus size={24} strokeWidth={1.5} className="text-gold-700" />
-          </div>
-          <p className="text-body-strong text-foreground">还没有收货地址</p>
-          <p className="text-caption text-subtle-foreground">
-            点击下方按钮添加，才能继续提交订单
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3 pb-2">
-          {addresses.map((item) => (
-            <AddressCard
-              key={item.id}
-              name={item.name}
-              phone={maskPhone(item.phone)}
-              region={item.region}
-              detail={`${item.place}${item.doorNo}`}
-              tag={item.tag}
-              mode="select"
-              selected={selectedId === item.id}
-              onClick={() => onSelect(item)}
-            />
-          ))}
-        </div>
-      )}
-    </BottomSheet>
-  )
-}

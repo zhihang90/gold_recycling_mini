@@ -3,6 +3,8 @@ import { cn } from '@/lib/utils'
 
 /**
  * 吸底操作栏：回收流程的「立即估价 / 提交回收单」用它。
+ * 在 DetailPage / ListPage 里作为外层 flex 的最后一个子项，位于滚动区之外，
+ * 因此始终贴在屏幕底部；不要在页面里自己写 position: fixed。
  * 底部必须让开 iPhone Home 指示条 —— 微信内 env(safe-area-inset-bottom) 有值，
  * 但不支持 env() 的旧内核要拿到 12px 的兜底，所以用 max()。
  */
@@ -18,7 +20,7 @@ export function BottomActionBar({
   return (
     <div
       className={cn(
-        'sticky bottom-0 z-30 border-t border-border-subtle bg-card/95 px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] shadow-md backdrop-blur',
+        'sticky bottom-0 z-30 shrink-0 border-t border-border-subtle bg-card/95 px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] shadow-md backdrop-blur',
         className,
       )}
     >

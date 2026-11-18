@@ -16,10 +16,10 @@ export const STORAGE_KEYS = {
   CHECKOUT_RESULT: 'gold-recycling.checkout-result',
   /** 登录会员信息 */
   MEMBER: 'gold-recycling.member',
-  /** 寄件订单草稿（回收流程） */
-  ORDER_DRAFT: 'gold-recycling.order-draft',
   /** 估价快照（跨页面恢复报价结果） */
   QUOTE_SNAPSHOT: 'gold-recycling.quote-snapshot',
+  /** 协议阅读确认结果（含黄金来源） */
+  AGREEMENT_CONFIRMATION: 'gold-recycling.agreement-confirmation',
   /** 买金订单（演示 mock） */
   SALES_ORDERS: 'gold_sales_orders',
 } as const

@@ -38,21 +38,26 @@ export function ListPage({
   contentClassName?: string
 }) {
   return (
-    <PageShell className={className}>
+    <PageShell padded={false} className={cn('h-full overflow-hidden', className)}>
       <PageHeader title={title} right={right} onBack={onBack} showBack={showBack} />
-      {filters ? <div className="px-4 pt-3">{filters}</div> : null}
-      <div className={cn('flex-1 px-4 pt-3', footer && 'pb-4', contentClassName)}>
-        {loading ? (
-          <div className="space-y-3">
-            <Skeleton />
-            <Skeleton />
-            <Skeleton />
-          </div>
-        ) : isEmpty ? (
-          (empty ?? <EmptyState title="暂无内容" />)
-        ) : (
-          <div className="space-y-3">{children}</div>
-        )}
+      <div
+        data-page-scroll
+        className="hide-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain"
+      >
+        {filters ? <div className="px-4 pt-3">{filters}</div> : null}
+        <div className={cn('flex-1 px-4 pt-3 pb-6', contentClassName)}>
+          {loading ? (
+            <div className="space-y-3">
+              <Skeleton />
+              <Skeleton />
+              <Skeleton />
+            </div>
+          ) : isEmpty ? (
+            (empty ?? <EmptyState title="暂无内容" />)
+          ) : (
+            <div className="space-y-3">{children}</div>
+          )}
+        </div>
       </div>
       {footer ? <BottomActionBar>{footer}</BottomActionBar> : null}
     </PageShell>

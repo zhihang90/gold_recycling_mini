@@ -3,42 +3,6 @@ import type { RuleSection } from '@/components/RuleSheet'
 /** 协议版本号：与页面展示保持一致，统一在此维护 */
 export const RULE_VERSION = 'v1.3'
 
-/** 首页「回收规则」摘要：与下单页引用同一口径，未定项不写承诺 */
-export const HOME_RULE_SUMMARY: RuleSection[] = [
-  {
-    key: 'category',
-    title: '品类范围',
-    items: [
-      '支持足金首饰、投资金条与投资金币。',
-      'K 金、镶嵌类、含非金配件暂不回收；误寄将被拒收退回。',
-    ],
-  },
-  {
-    key: 'price',
-    title: '金价与费用',
-    items: [
-      '页面展示的是参考回收金价，不是最终结算价。',
-      '服务费、运保费与保价费以订单协议为准。',
-    ],
-  },
-  {
-    key: 'assay',
-    title: '破检与终价',
-    items: [
-      '检测为破坏性检测，检测后品相不可还原。',
-      '最终按检测结果与检测时点金价结算，终价需您在 30 分钟内确认。',
-    ],
-  },
-  {
-    key: 'return',
-    title: '退回与直播',
-    items: [
-      '不接受终价可申请退回，退回费用与时限以协议为准。',
-      '检测全程直播，录像保存 3 年。',
-    ],
-  },
-]
-
 export const SERVICE_AGREEMENT_RULES: RuleSection[] = [
   {
     key: 'service',

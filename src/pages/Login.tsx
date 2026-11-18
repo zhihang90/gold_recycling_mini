@@ -63,10 +63,10 @@ export function LoginPage() {
   }
 
   return (
-    <DetailPage title="用户登录" padded={false} contentClassName="flex flex-1 flex-col px-4">
+    <DetailPage header={false} padded={false} contentClassName="flex flex-1 flex-col px-4">
       <div className="flex flex-col items-center pb-8 pt-10">
         <BrandMark icon={Scale} />
-        <h1 className="mt-3 text-section text-foreground">安盛华黄金回收</h1>
+        <h1 className="mt-3 text-section text-foreground">安盛华 黄金买卖平台</h1>
       </div>
 
       <form

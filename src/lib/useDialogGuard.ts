@@ -35,16 +35,16 @@ export function useDialogGuard({
   useEffect(() => {
     if (!open) return
 
-    // 1) 锁滚动：默认 [data-phone-scroll] + 调用方传入的额外容器
+    // 1) 锁滚动：默认 [data-phone-scroll] + 页面内层滚动区 [data-page-scroll] + 调用方传入的额外容器
     const locks: { el: HTMLElement; prev: string }[] = []
+    const locked = new Set<HTMLElement>()
     const root = document.querySelector('[data-phone-scroll]') as HTMLElement | null
-    if (root) {
-      locks.push({ el: root, prev: root.style.overflowY })
-      root.style.overflowY = 'hidden'
-    }
+    if (root) locked.add(root)
+    document.querySelectorAll<HTMLElement>('[data-page-scroll]').forEach((el) => locked.add(el))
     for (const ref of extraScrollLocks) {
-      const el = ref.current
-      if (!el) continue
+      if (ref.current) locked.add(ref.current)
+    }
+    for (const el of locked) {
       locks.push({ el, prev: el.style.overflowY })
       el.style.overflowY = 'hidden'
     }

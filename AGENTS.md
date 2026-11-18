@@ -59,3 +59,4 @@
 - `ui:check` 额外拦截：`Button` 内 `rounded-full` / 金色实底、`bg-gold-800|900`、页面本地 `const *STATUS_TONE`。
 - 产物抽查：`dist/assets/*.css` 中 `@layer` 为 0 次；`dist/index.html` 含 `build-stamp` 与 `?v=`。
 - 375 宽无横向溢出，≥900px 显示设备框。
+- 每次代码更新后直接部署发布到线上站点（站点 `37kaueba3k2prexzd8k`），以线上地址作为评审入口；本地开发服务只作过程预览，不作为交付物。

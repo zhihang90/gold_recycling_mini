@@ -31,9 +31,9 @@ export function ListItem({
     <>
       {Icon ? <Icon size={20} className="shrink-0 text-icon-strong" /> : null}
       <span className="min-w-0 flex-1">
-        <span className="block text-card-title text-foreground">{title}</span>
+        <span className="block text-body text-foreground">{title}</span>
         {description ? (
-          <span className="mt-1 block text-body text-muted-foreground">{description}</span>
+          <span className="mt-0.5 block text-caption text-muted-foreground">{description}</span>
         ) : null}
       </span>
       {right ? <span className="shrink-0 text-body text-muted-foreground">{right}</span> : null}

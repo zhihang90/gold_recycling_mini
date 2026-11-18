@@ -30,7 +30,7 @@ export function AgreementCheck({
 }) {
   return (
     <div className={className}>
-      <div className={cn('flex gap-3 py-2', align === 'center' ? 'items-center' : 'items-start')}>
+      <div className={cn('flex gap-2 py-2', align === 'center' ? 'items-center' : 'items-start')}>
         <button
           type="button"
           role="checkbox"

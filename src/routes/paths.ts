@@ -15,13 +15,9 @@ export const paths = {
   meAuth: '/me/auth',
   login: '/login',
   quote: '/quote',
-  quoteResult: '/quote/result',
-  order: {
-    item: '/order/item',
-    source: '/order/source',
-    agreement: '/order/agreement',
-    shipping: '/order/shipping',
-  },
+  quoteAgreement: '/quote/agreement',
+  submitResult: '/quote/submit-result',
+  pickupDetail: '/quote/pickup',
   ship: {
     info: '/ship/info',
     addresses: '/ship/addresses',

@@ -18,6 +18,10 @@ export function Layout({ children, showTab }: { children: ReactNode; showTab: bo
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0 })
+    // 页面内层滚动区（DetailPage / ListPage）不会随路由卸载重置时，这里统一回到顶部
+    scrollRef.current
+      ?.querySelectorAll<HTMLElement>('[data-page-scroll]')
+      .forEach((el) => el.scrollTo({ top: 0 }))
   }, [pathname])
 
   return (

@@ -16,6 +16,7 @@ export function BottomSheet({
   open,
   onClose,
   title,
+  subtitle,
   children,
   footer,
   className,
@@ -26,6 +27,8 @@ export function BottomSheet({
   open: boolean
   onClose: () => void
   title: string
+  /** 标题下方的小字注脚，比如"数据根据实时行情动态更新" */
+  subtitle?: ReactNode
   children: ReactNode
   footer?: ReactNode
   className?: string
@@ -113,7 +116,7 @@ export function BottomSheet({
         )}
       >
         <div
-          className="flex h-12 shrink-0 touch-none items-center justify-between border-b border-border-subtle px-4"
+          className="flex shrink-0 touch-none items-center justify-between border-b border-border-subtle px-4 py-3"
           onTouchStart={(event) => {
             dragStart.current = event.touches[0]?.clientY ?? null
           }}
@@ -128,8 +131,11 @@ export function BottomSheet({
             dragStart.current = null
           }}
         >
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="truncate text-card-title text-foreground">{title}</div>
+            {subtitle ? (
+              <div className="mt-0.5 text-caption text-subtle-foreground">{subtitle}</div>
+            ) : null}
           </div>
           <button
             type="button"

@@ -20,6 +20,8 @@ export const images = {
   productZodiacDetail: 'images/product-zodiac-detail.jpg',
   productBean: 'images/product-bean.jpg',
   heroEndorse: 'images/hero-endorse.jpg',
+  heroBrand: 'images/hero-brand.jpg',
+  heroLive: 'images/hero-live.jpg',
   payWechat: 'images/pay-wechat.png',
   payAlipay: 'images/pay-alipay.png',
   payUnionpay: 'images/pay-unionpay.png',
