@@ -25,7 +25,7 @@ function NotFoundPage() {
 }
 
 export default function App() {
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
 
   useEffect(() => {
     const route = matchRoute(pathname)
@@ -42,7 +42,15 @@ export default function App() {
           <Route path="/" element={<Navigate to={paths.login} replace />} />
           {APP_ROUTES.map((route) => {
             const Component = route.component
-            return <Route key={route.path} path={route.path} element={<Component />} />
+            // 查询串变化（弹层状态 / demo 参数）视为一次新视图，重新挂载页面，
+            // 否则同路径下切换 ?sheet=&state= 不会更新页面内部的弹层状态
+            return (
+              <Route
+                key={route.path}
+                path={route.path}
+                element={<Component key={search} />}
+              />
+            )
           })}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

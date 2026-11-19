@@ -15,6 +15,11 @@ import {
 } from '@/mocks/addressBook'
 import { readCheckout, type CheckoutEntry, type CheckoutItem } from '@/mocks/checkout'
 import { clearCheckout, writeCheckout, writeCheckoutResult } from '@/mocks/checkout'
+import {
+  clearCheckoutDraft,
+  readCheckoutDraft,
+  writeCheckoutDraft,
+} from '@/mocks/checkout'
 import { DEMO_CART, readCart, writeCart } from '@/mocks/cart'
 import { findProduct, variantsOf, type GoldProduct, type GoldVariant } from '@/mocks/goldShop'
 import { useDemoScene } from '@/lib/useDemoScene'
@@ -42,7 +47,7 @@ function PayIcon({ method }: { method: PayMethod }) {
     <MediaVisual
       src={src}
       alt={alt}
-      className="h-[22px] w-[22px] shrink-0 rounded-md bg-transparent"
+      className="h-[22px] w-[22px] shrink-0 rounded-sm bg-transparent"
     />
   )
 }
@@ -155,10 +160,18 @@ export function BuyCheckoutPage() {
     demo ? (DEFAULT_ADDRESSES[0] ?? null) : readSelectedAddress(),
   )
   const [addressSheet, setAddressSheet] = useState(false)
-  const [note, setNote] = useState('')
-  const [payMethod, setPayMethod] = useState<PayMethod>('wechat')
-  const [agree, setAgree] = useState(false)
+  /** 表单草稿：去添加/编辑收货地址后返回，备注、支付方式与协议勾选不丢 */
+  const [draft] = useState(() => (demo ? null : readCheckoutDraft()))
+  const [note, setNote] = useState(draft?.note ?? '')
+  const [payMethod, setPayMethod] = useState<PayMethod>(() =>
+    PAY_OPTIONS.some((option) => option.id === draft?.payMethod)
+      ? (draft?.payMethod as PayMethod)
+      : 'wechat',
+  )
+  const [agree, setAgree] = useState(draft?.agree ?? false)
   const [toast, setToast] = useState<string | null>(null)
+  /** 提交中：按钮转圈并禁用，避免重复创建订单 */
+  const [submitting, setSubmitting] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
   const [noticeSheet, setNoticeSheet] = useState(false)
   const [noticeSeconds, setNoticeSeconds] = useState(0)
@@ -193,6 +206,12 @@ export function BuyCheckoutPage() {
   }, [reloadKey])
 
   const items = demo ? demoItems : storedItems
+
+  // 表单草稿：离开本页去添加/编辑地址后返回，重挂载时恢复备注、支付方式与协议勾选
+  useEffect(() => {
+    if (demo) return
+    writeCheckoutDraft({ note, payMethod, agree })
+  }, [demo, note, payMethod, agree])
 
   useEffect(() => {
     return () => {
@@ -241,30 +260,38 @@ export function BuyCheckoutPage() {
       return
     }
 
-    const order = createSalesOrder({
-      address,
-      note,
-      payMethod,
-      lines: items.map(({ product, variant, quantity }) => ({
-        productId: product.id,
-        variantId: variant.id,
-        spec: variant.label,
-        quantity,
-        price: variant.price,
-      })),
-    })
-    writeSalesOrders([order, ...readSalesOrders()])
+    // 提交中：按钮转圈并禁用，避免重复创建订单
+    setSubmitting(true)
 
-    // 订单已承接商品明细，清掉购物车与结算数据，避免重复下单
-    const raw = readCheckout()
-    if (raw) {
-      const variantIds = new Set(raw.map((r) => r.variantId))
-      writeCart(readCart().filter((item) => !variantIds.has(item.variantId)))
-    }
-    clearCheckout()
+    window.setTimeout(() => {
+      const order = createSalesOrder({
+        address,
+        note,
+        payMethod,
+        lines: items.map(({ product, variant, quantity }) => ({
+          productId: product.id,
+          variantId: variant.id,
+          spec: variant.label,
+          quantity,
+          price: variant.price,
+        })),
+      })
+      writeSalesOrders([order, ...readSalesOrders()])
 
-    setPayOrderId(order.id)
-    setPayOpen(true)
+      // 订单已承接商品明细，清掉购物车与结算数据，避免重复下单
+      const raw = readCheckout()
+      if (raw) {
+        const variantIds = new Set(raw.map((r) => r.variantId))
+        writeCart(readCart().filter((item) => !variantIds.has(item.variantId)))
+      }
+      clearCheckout()
+      // 订单已提交：清空表单草稿，避免下次结算带出上一次的备注与勾选
+      clearCheckoutDraft()
+
+      setSubmitting(false)
+      setPayOrderId(order.id)
+      setPayOpen(true)
+    }, 500)
   }
 
   /** 支付成功：订单转为待发货，写入结果快照后进入支付成功页 */
@@ -301,9 +328,9 @@ export function BuyCheckoutPage() {
       <PageHeader title="确认订单" />
 
       {/* 滚动容器：flex + min-h-0 让子项不会撑爆，overflow-y-auto 成为唯一滚动源
-          底部 pb-28 给 absolute 定位的 BottomActionBar 预留空间，避免内容被遮挡 */}
+          底部 pb-32 给 absolute 定位的 BottomActionBar（含协议行）预留空间，避免内容被遮挡 */}
       <div className="flex min-h-0 flex-1 flex-col">
-        <div ref={innerScrollRef} className="hide-scrollbar min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-24">
+        <div ref={innerScrollRef} className="hide-scrollbar min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-32">
           {/* 收货地址 */}
           <Card padding="none" className="overflow-hidden">
             <button
@@ -423,40 +450,43 @@ export function BuyCheckoutPage() {
             </div>
           </Card>
 
-          {/* 购买须知 —— 方形复选框 + 点击打开抽屉 */}
-          <AgreementCheck
-            className="mt-4"
-            align="center"
-            checked={agree}
-            onChange={() => {
-              setNoticeSheet(true)
-            }}
-            shape="square"
-          >
-            我已阅读并同意
-            <TextLink
-              tone="primary"
-              className="mx-0.5 text-body"
-              onClick={() => {
-                setNoticeSheet(true)
-              }}
-            >
-              《金银制品购买须知》
-            </TextLink>
-          </AgreementCheck>
-
-          {/* 吸底操作栏的占位已由外层 scroll 容器的 pb-24 承担 */}
+          {/* 购买须知改为随吸底栏常驻，与回收预约页保持一致 */}
         </div>
       </div>
 
       {/* 吸底操作栏：absolute 贴 PageShell 底部，永远可见，不跟随任何滚动 */}
       <BottomActionBar className="absolute bottom-0 left-0 right-0">
+        <AgreementCheck
+          align="center"
+          checked={agree}
+          onChange={() => {
+            setNoticeSheet(true)
+          }}
+        >
+          <span className="text-caption text-muted-foreground">
+            我已阅读并同意
+            <TextLink
+              onClick={() => {
+                setNoticeSheet(true)
+              }}
+              inline
+              className="text-caption text-link"
+            >
+              《金银制品购买须知》
+            </TextLink>
+          </span>
+        </AgreementCheck>
+
+        {/* 协议与金额区之间的分割线，通栏铺满吸底栏 */}
+        <div className="-mx-4 mt-1 border-t border-border-subtle" />
+
         <SummaryActionBar
-          caption={`共 ${count} 件商品`}
+          className="pt-3"
           label="合计"
           amount={total + shipping}
           onAction={submit}
           actionLabel="提交订单"
+          actionLoading={submitting}
         />
       </BottomActionBar>
 

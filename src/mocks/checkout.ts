@@ -40,3 +40,27 @@ export function readCheckoutResult(): CheckoutResult | null {
   if (!result) return null
   return Date.now() - result.createdAt < RESULT_TTL ? result : null
 }
+
+/**
+ * 确认订单表单草稿：去添加 / 编辑收货地址后返回，备注、支付方式与协议勾选不丢。
+ * 收货地址本身已由 addressBook 的 selected-address 单独持久化。
+ */
+export interface CheckoutDraft {
+  note: string
+  payMethod: string
+  agree: boolean
+}
+
+export function writeCheckoutDraft(draft: CheckoutDraft) {
+  writeSession(STORAGE_KEYS.CHECKOUT_DRAFT, draft)
+}
+
+export function readCheckoutDraft(): CheckoutDraft | null {
+  const draft = readSession<CheckoutDraft>(STORAGE_KEYS.CHECKOUT_DRAFT)
+  if (!draft || typeof draft.note !== 'string') return null
+  return draft
+}
+
+export function clearCheckoutDraft() {
+  removeSession(STORAGE_KEYS.CHECKOUT_DRAFT)
+}

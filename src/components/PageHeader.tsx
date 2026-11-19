@@ -45,7 +45,7 @@ export function PageHeader({
         ) : (
           <div className="flex-1" />
         )}
-        <div className="flex w-11 shrink-0 items-center justify-end">{right}</div>
+        <div className="flex min-w-11 shrink-0 items-center justify-end">{right}</div>
       </div>
     </header>
   )

@@ -248,6 +248,51 @@ export function formatClock(date = new Date()) {
   return `今天 ${hours}:${minutes}`
 }
 
+/**
+ * 回收预约表单草稿：用户去阅读协议 / 选地址 / 绑收款账户后返回，页面需原样恢复。
+ * 只存可序列化的 id 与基础字段，地址与账户在页面挂载时按 id 回查。
+ */
+export interface QuoteDraft {
+  category: string
+  purity: string
+  weight: string
+  addressId: string | null
+  /** 与 PickupTimeSlot 结构一致，避免 mock 层依赖组件类型 */
+  pickupTime: { dayIndex: number; slot: string } | null
+  payAccountId: string | null
+  /** 协议已阅读并勾选：随草稿恢复，避免选地址/绑账户往返丢失 */
+  agreed?: boolean
+}
+
+export function writeQuoteDraft(draft: QuoteDraft) {
+  writeSession(STORAGE_KEYS.QUOTE_DRAFT, draft)
+}
+
+export function readQuoteDraft(): QuoteDraft | null {
+  const draft = readSession<QuoteDraft>(STORAGE_KEYS.QUOTE_DRAFT)
+  if (!draft || typeof draft.category !== 'string' || typeof draft.weight !== 'string') return null
+  return draft
+}
+
+/** 照片是 base64 大对象，单独一个 key：超配额时只丢照片，不影响其它字段 */
+export function writeQuoteDraftPhotos(photos: string[]) {
+  if (photos.length === 0) {
+    removeSession(STORAGE_KEYS.QUOTE_DRAFT_PHOTOS)
+    return
+  }
+  writeSession(STORAGE_KEYS.QUOTE_DRAFT_PHOTOS, photos)
+}
+
+export function readQuoteDraftPhotos(): string[] {
+  const photos = readSession<string[]>(STORAGE_KEYS.QUOTE_DRAFT_PHOTOS)
+  return Array.isArray(photos) ? photos.filter((item) => typeof item === 'string') : []
+}
+
+export function clearQuoteDraft() {
+  removeSession(STORAGE_KEYS.QUOTE_DRAFT)
+  removeSession(STORAGE_KEYS.QUOTE_DRAFT_PHOTOS)
+}
+
 /** 演示直达：?demo=quote 用固定输入即时计算，不写入本地存储 */
 export const DEMO_QUOTE_INPUT: QuoteInput = {
   category: 'bar',

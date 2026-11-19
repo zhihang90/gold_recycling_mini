@@ -2,7 +2,15 @@ import { Button, Card, DetailPage, ListItem, Toast } from '@/components'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ShieldCheck, ShieldX } from 'lucide-react'
-import { clearMember, isMemberVerified, maskPhone, readMember, revokeRealNameAuth } from '@/mocks/member'
+import {
+  clearMember,
+  isMemberVerified,
+  maskIdCard,
+  maskName,
+  maskPhone,
+  readMember,
+  revokeRealNameAuth,
+} from '@/mocks/member'
 import { paths } from '@/routes/paths'
 
 /** 个人信息页：头像昵称、账号安全（手机/实名/注销）、退出登录。 */
@@ -57,6 +65,12 @@ export function ProfileInfoPage() {
             divider
             onClick={() => setToast('暂不支持换绑手机号')}
           />
+          {verified && member?.realNameAuth ? (
+            <>
+              <ListItem title="真实姓名" right={maskName(member.realNameAuth.name)} divider />
+              <ListItem title="身份证号" right={maskIdCard(member.realNameAuth.idNo)} divider />
+            </>
+          ) : null}
           <ListItem
             title="实名认证"
             icon={verified ? ShieldCheck : ShieldX}

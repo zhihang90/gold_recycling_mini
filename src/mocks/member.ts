@@ -66,3 +66,9 @@ export function maskIdCard(idNo: string) {
   if (idNo.length < 10) return idNo
   return `${idNo.slice(0, 4)}********${idNo.slice(-4)}`
 }
+
+/** 姓名展示用：保留首字，其余用 * 替代（陈智航 → 陈**） */
+export function maskName(name: string) {
+  if (name.length <= 1) return name
+  return `${name.slice(0, 1)}${'*'.repeat(name.length - 1)}`
+}

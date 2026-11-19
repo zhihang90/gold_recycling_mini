@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 
 import { DEMO_CART, readCart, writeCart, type CartItem } from '@/mocks/cart'
 import { writeCheckout } from '@/mocks/checkout'
-import { GOLD_PRODUCTS, SALE_RATE, findVariant } from '@/mocks/goldShop'
+import { GOLD_PRODUCTS, findVariant } from '@/mocks/goldShop'
 import { cn } from '@/lib/utils'
 import { useDemoScene } from '@/lib/useDemoScene'
 import { paths } from '@/routes/paths'
@@ -102,14 +102,6 @@ export function CartPage() {
       }
       contentClassName="flex flex-1 flex-col space-y-0 pb-0 pt-3"
     >
-      <div className="mb-3 flex items-center justify-between gap-3 rounded-md bg-gold-50 px-3 py-2.5">
-        <div className="min-w-0">
-          <p className="text-caption-strong text-gold-800">实时销售金价（元/克）</p>
-          <p className="mt-0.5 text-caption text-gold-600">更新于 {SALE_RATE.updatedAt}</p>
-        </div>
-        <PriceText value={SALE_RATE.price} size="title" tone="gold" />
-      </div>
-
       {empty ? (
         <div className="flex flex-1 flex-col items-center justify-center pb-16">
           <ShoppingCart size={72} strokeWidth={1.2} className="text-gold-200" />

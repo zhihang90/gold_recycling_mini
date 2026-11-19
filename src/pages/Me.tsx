@@ -45,12 +45,11 @@ const RECYCLE_SHORTCUTS: { key: RecycleStatus | 'all'; label: string; icon: type
 const BADGED_SALES: SalesStatus[] = ['pending-payment', 'pending-receipt']
 const BADGED_RECYCLE: RecycleStatus[] = ['pending-confirm', 'pending-payment']
 
-type InfoSheet = 'faq' | 'service' | 'account' | null
+type InfoSheet = 'faq' | 'service' | null
 
 const SHEET_TITLES: Record<Exclude<InfoSheet, null>, string> = {
   faq: '常见问题',
   service: '客服与投诉',
-  account: '收款账户',
 }
 
 /** 个人中心：未登录引导登录，已登录展示订单状态、常用服务与账户入口。 */
@@ -149,7 +148,7 @@ export function MePage() {
               key: 'account',
               label: '收款账户',
               icon: CreditCard,
-              onClick: member ? () => setInfoSheet('account') : goLogin,
+              onClick: member ? () => navigate(paths.meAccounts) : goLogin,
             },
             {
               key: 'service',
@@ -203,12 +202,6 @@ export function MePage() {
         {infoSheet === 'service' ? (
           <p className="text-body text-muted-foreground">
             可在回收单详情中联系客服，咨询报价、结算或退回问题。
-          </p>
-        ) : null}
-
-        {infoSheet === 'account' ? (
-          <p className="text-body text-muted-foreground">
-            收款账户在完成实名认证后绑定，回收款将打款至该账户；具体到账时间以订单进度为准。
           </p>
         ) : null}
       </BottomSheet>

@@ -2,19 +2,26 @@ import {
   AgreementCheck,
   AddressPickerSheet,
   Badge,
+  BankAccountPickerSheet,
   BottomSheet,
+  Button,
   Card,
   DetailPage,
+  EmptyState,
   InlineNotice,
   ListItem,
   MediaVisual,
+  PhotoUploader,
+  PickupTimeSheet,
   PriceText,
   RuleSheet,
   SummaryActionBar,
   TextLink,
   Toast,
+  formatPickupTime,
+  type PickupTimeSlot,
 } from '@/components'
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowRightLeft,
@@ -22,12 +29,15 @@ import {
   CheckCircle2,
   ChevronRight,
   Clock,
+  ClipboardList,
   HelpCircle,
+  Image as ImageIcon,
   MapPin,
   Package,
   ShieldCheck,
   Sparkles,
   Truck,
+  Wallet,
   CircleDollarSign,
   Camera,
 } from 'lucide-react'
@@ -39,14 +49,21 @@ import {
   QUOTE_CATEGORIES,
   RATE_SERIES,
   calculateQuote,
+  clearQuoteDraft,
+  readQuoteDraft,
+  readQuoteDraftPhotos,
   saveQuoteSnapshot,
+  writeQuoteDraft,
+  writeQuoteDraftPhotos,
 } from '@/mocks/quote'
 import type { QuoteBreakdown } from '@/mocks/quote'
 import { SHIPPING_RULES } from '@/mocks/shipping'
 import { clearAgreementConfirmation, readAgreementConfirmation } from '@/mocks/agreement'
 import { paths } from '@/routes/paths'
+import { useSheetScene } from '@/lib/useDemoScene'
 import { images } from '@/assets/images'
 import { maskPhone, readAddresses, selectAddress, type ShippingAddress } from '@/mocks/addressBook'
+import { readBankAccounts, tailNo, type BankAccount } from '@/mocks/bankAccounts'
 
 /** 金价走势折线：纯 SVG，3 周期切 Tab */
 function RateChart({
@@ -73,9 +90,7 @@ function RateChart({
     const y = h - ((p.price - yMin) / (yMax - yMin)) * h
     return { x, y }
   })
-  const linePath = coords
-    .map((c, i) => (i === 0 ? `M ${c.x} ${c.y}` : `L ${c.x} ${c.y}`))
-    .join(' ')
+  const linePath = coords.map((c, i) => (i === 0 ? `M ${c.x} ${c.y}` : `L ${c.x} ${c.y}`)).join(' ')
   const areaPath = `${linePath} L ${coords[coords.length - 1].x} ${h} L ${coords[0].x} ${h} Z`
   const last = coords[coords.length - 1]
 
@@ -146,9 +161,7 @@ function BreakdownLine({
           />
         </div>
       </div>
-      {formula ? (
-        <p className="mt-1 text-caption text-subtle-foreground">{formula}</p>
-      ) : null}
+      {formula ? <p className="mt-1 text-caption text-subtle-foreground">{formula}</p> : null}
     </div>
   )
 }
@@ -163,8 +176,6 @@ function QuoteDetailSheet({
   onClose: () => void
   breakdown: QuoteBreakdown | null
 }) {
-  if (!breakdown) return null
-
   return (
     <BottomSheet
       open={open}
@@ -172,16 +183,18 @@ function QuoteDetailSheet({
       title="预估回收价明细"
       subtitle="数据根据实时行情动态更新"
       footer={
-        <div className="flex items-center justify-between">
-          <span className="text-label text-muted-foreground">预估回收价</span>
-          <PriceText
-            value={breakdown.payable}
-            tone="price"
-            size="display"
-            decimals={2}
-            className="tabular"
-          />
-        </div>
+        breakdown ? (
+          <div className="flex items-center justify-between">
+            <span className="text-label text-muted-foreground">预估回收价</span>
+            <PriceText
+              value={breakdown.payable}
+              tone="price"
+              size="display"
+              decimals={2}
+              className="tabular"
+            />
+          </div>
+        ) : undefined
       }
     >
       <div className="space-y-3">
@@ -189,77 +202,183 @@ function QuoteDetailSheet({
           预估回收金额是基于您下单时的金价、预估克重、运费、保险费、加价券等综合计算的参考价格，不代表最终成交金额。
         </InlineNotice>
 
-        {/* 总价值 + 服务费 合并 Card */}
-        <Card padding="none" className="overflow-hidden">
-          <div className="px-4 divide-y divide-border-subtle">
-            <BreakdownLine
-              label="预估金条总价值"
-              amount={breakdown.estimatedValue}
-              formula={`金条克重 × 实时金价 = ${breakdown.totalGram.toFixed(2)} × ${breakdown.price.toFixed(2)}`}
-              tone="price"
-            />
-            <BreakdownLine
-              label="预估服务费"
-              amount={-breakdown.serviceFee}
-              formula={`预估总价值 × 服务费率 ${(breakdown.serviceFeeRate * 100).toFixed(0)}% = ${breakdown.estimatedValue.toFixed(2)} × ${(breakdown.serviceFeeRate * 100).toFixed(0)}%`}
-            />
-          </div>
-        </Card>
+        {breakdown ? (
+          <>
+            {/* 总价值 + 服务费 合并 Card */}
+            <Card padding="none" className="overflow-hidden">
+              <div className="px-4 divide-y divide-border-subtle">
+                <BreakdownLine
+                  label="预估金条总价值"
+                  amount={breakdown.estimatedValue}
+                  formula={`金条克重 × 实时金价 = ${breakdown.totalGram.toFixed(2)} × ${breakdown.price.toFixed(2)}`}
+                  tone="price"
+                />
+                <BreakdownLine
+                  label="预估服务费"
+                  amount={-breakdown.serviceFee}
+                  formula={`预估总价值 × 服务费率 ${(breakdown.serviceFeeRate * 100).toFixed(0)}% = ${breakdown.estimatedValue.toFixed(2)} × ${(breakdown.serviceFeeRate * 100).toFixed(0)}%`}
+                />
+              </div>
+            </Card>
 
-        {/* 运费 + 保险费 Card */}
-        <Card padding="none" className="overflow-hidden">
-          {breakdown.over20Free ? (
-            <div className="px-4 divide-y divide-border-subtle">
-              <div className="flex items-start justify-between gap-3 py-3">
-                <div className="flex min-w-0 items-center gap-2">
-                  <Truck size={16} className="shrink-0 text-subtle-foreground" />
-                  <span className="truncate text-body text-foreground">运费（满{OVER_FREE_GRAM}克减免）</span>
-                  <Badge tone="success">已减免</Badge>
-                </div>
-                <div className="shrink-0 text-right tabular">
-                  <PriceText value={0} decimals={2} />
-                </div>
-              </div>
-              <div className="flex items-start justify-between gap-3 py-3">
-                <div className="flex min-w-0 items-center gap-2">
-                  <ShieldCheck size={16} className="shrink-0 text-subtle-foreground" />
-                  <span className="truncate text-body text-foreground">保险费（满{OVER_FREE_GRAM}克减免）</span>
-                  <Badge tone="success">已减免</Badge>
-                </div>
-                <div className="shrink-0 text-right tabular">
-                  <PriceText value={0} decimals={2} />
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="px-4 divide-y divide-border-subtle">
-              <div className="flex items-start justify-between gap-3 py-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <Truck size={16} className="shrink-0 text-subtle-foreground" />
-                    <p className="text-body text-foreground">运费（不满{OVER_FREE_GRAM}克）</p>
+            {/* 运费 + 保险费 Card */}
+            <Card padding="none" className="overflow-hidden">
+              {breakdown.over20Free ? (
+                <div className="px-4 divide-y divide-border-subtle">
+                  <div className="flex items-start justify-between gap-3 py-3">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <Truck size={16} className="shrink-0 text-subtle-foreground" />
+                      <span className="truncate text-body text-foreground">
+                        运费（满{OVER_FREE_GRAM}克减免）
+                      </span>
+                      <Badge tone="success">已减免</Badge>
+                    </div>
+                    <div className="shrink-0 text-right tabular">
+                      <PriceText value={0} decimals={2} />
+                    </div>
                   </div>
-                  <p className="mt-1 text-caption text-subtle-foreground pl-7">广东省内 18 元 / 省外 23 元</p>
-                </div>
-                <div className="shrink-0 text-right tabular">
-                  <PriceText value={-breakdown.shippingFee} decimals={2} />
-                </div>
-              </div>
-              <div className="flex items-start justify-between gap-3 py-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck size={16} className="shrink-0 text-subtle-foreground" />
-                    <p className="text-body text-foreground">保险费（不满{OVER_FREE_GRAM}克）</p>
+                  <div className="flex items-start justify-between gap-3 py-3">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <ShieldCheck size={16} className="shrink-0 text-subtle-foreground" />
+                      <span className="truncate text-body text-foreground">
+                        保险费（满{OVER_FREE_GRAM}克减免）
+                      </span>
+                      <Badge tone="success">已减免</Badge>
+                    </div>
+                    <div className="shrink-0 text-right tabular">
+                      <PriceText value={0} decimals={2} />
+                    </div>
                   </div>
-                  <p className="mt-1 text-caption text-subtle-foreground pl-7">预估总价值 × 0.1%</p>
                 </div>
-                <div className="shrink-0 text-right tabular">
-                  <PriceText value={-breakdown.insuranceFee} decimals={2} />
+              ) : (
+                <div className="px-4 divide-y divide-border-subtle">
+                  <div className="flex items-start justify-between gap-3 py-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Truck size={16} className="shrink-0 text-subtle-foreground" />
+                        <p className="text-body text-foreground">运费（不满{OVER_FREE_GRAM}克）</p>
+                      </div>
+                      <p className="mt-1 text-caption text-subtle-foreground pl-7">
+                        广东省内 18 元 / 省外 23 元
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right tabular">
+                      <PriceText value={-breakdown.shippingFee} decimals={2} />
+                    </div>
+                  </div>
+                  <div className="flex items-start justify-between gap-3 py-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck size={16} className="shrink-0 text-subtle-foreground" />
+                        <p className="text-body text-foreground">
+                          保险费（不满{OVER_FREE_GRAM}克）
+                        </p>
+                      </div>
+                      <p className="mt-1 text-caption text-subtle-foreground pl-7">
+                        预估总价值 × 0.1%
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right tabular">
+                      <PriceText value={-breakdown.insuranceFee} decimals={2} />
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
+            </Card>
+          </>
+        ) : (
+          <EmptyState
+            icon={ClipboardList}
+            title="请填写克重"
+            description="输入克重后即可查看预估回收价明细"
+          />
+        )}
+      </div>
+    </BottomSheet>
+  )
+}
+
+/** 上传实物照片及凭证：至少两张，确认后回填到物品信息行 */
+function PhotoProofSheet({
+  open,
+  onClose,
+  photos,
+  onConfirm,
+}: {
+  open: boolean
+  onClose: () => void
+  photos: string[]
+  onConfirm: (photos: string[]) => void
+}) {
+  const [draft, setDraft] = useState<string[]>(photos)
+  const [error, setError] = useState<string | null>(null)
+
+  // 每次打开以已提交的照片为起点，未确认的改动不保留
+  useEffect(() => {
+    if (open) {
+      setDraft(photos)
+      setError(null)
+    }
+  }, [open, photos])
+
+  const examples = [
+    images.sampleBar,
+    images.sampleBracelet,
+    images.sampleRing,
+    images.invoiceSample,
+  ]
+
+  const handleConfirm = () => {
+    if (draft.length < 2) {
+      setError('请至少上传两张照片')
+      return
+    }
+    onConfirm(draft)
+  }
+
+  return (
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      title="上传实物照片及凭证"
+      footer={
+        <Button size="lg" block onClick={handleConfirm}>
+          确认提交
+        </Button>
+      }
+    >
+      <div className="space-y-4">
+        <p className="text-body text-foreground">
+          1、请上传清晰完整的黄金实物照片及凭证(发票、凭证)
+          <span className="text-caption text-gold-700">（至少上传两张）</span>
+        </p>
+
+        <PhotoUploader
+          value={draft}
+          onChange={(next) => {
+            setDraft(next)
+            if (next.length >= 2) setError(null)
+          }}
+          max={6}
+          addLabel="上传照片"
+          addIcon={Camera}
+          hint="至少上传 2 张"
+        />
+        {error ? <p className="text-caption text-destructive">{error}</p> : null}
+
+        <div className="flex items-center gap-3">
+          <span className="h-px flex-1 bg-border-subtle" />
+          <span className="text-caption text-muted-foreground">查看示例</span>
+          <span className="h-px flex-1 bg-border-subtle" />
+        </div>
+
+        <div className="grid grid-cols-4 gap-2">
+          {examples.map((src) => (
+            <div key={src} className="overflow-hidden rounded-sm ring-1 ring-border-subtle">
+              <MediaVisual src={src} alt="示例照片" />
             </div>
-          )}
-        </Card>
+          ))}
+        </div>
       </div>
     </BottomSheet>
   )
@@ -270,26 +389,88 @@ export function QuotePage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
-  const initialCategory = searchParams.get('category') === 'jewelry' ? 'jewelry' : 'bar'
-  const initialWeight = searchParams.get('weight') ?? '10.00'
+  /** 带参进入（首页透传品类/克重）视为一次新的估价，不读草稿 */
+  const [draft] = useState(() => {
+    const hasEntryParams = Boolean(searchParams.get('category') || searchParams.get('weight'))
+    return hasEntryParams ? null : readQuoteDraft()
+  })
+  const draftCategory = QUOTE_CATEGORIES.some((item) => item.value === draft?.category)
+    ? (draft?.category as string)
+    : null
+  const initialCategory =
+    draftCategory ?? (searchParams.get('category') === 'jewelry' ? 'jewelry' : 'bar')
+  /** 弹层状态直达：?sheet=&state= 用于演示与状态枚举，不影响正常交互 */
+  const sheetScene = useSheetScene()
 
   const [category, setCategory] = useState(initialCategory)
-  const [purity, setPurity] = useState(
-    QUOTE_CATEGORIES.find((c) => c.value === initialCategory)?.purities[0] ?? '999.9',
-  )
-  const [weight, setWeight] = useState(initialWeight)
-  const [showDetailSheet, setShowDetailSheet] = useState(false)
-  const [showFreightSheet, setShowFreightSheet] = useState(false)
+  const [purity, setPurity] = useState(() => {
+    const option = QUOTE_CATEGORIES.find((c) => c.value === initialCategory)
+    const fallback = option?.purities[0] ?? '999.9'
+    return draft?.purity && option?.purities.includes(draft.purity) ? draft.purity : fallback
+  })
+  const [weight, setWeight] = useState(draft?.weight ?? searchParams.get('weight') ?? '')
+  /** 重量输入框聚焦态：未聚焦且无内容时使用折叠样式 */
+  const [weightFocused, setWeightFocused] = useState(false)
+  const [showDetailSheet, setShowDetailSheet] = useState(sheetScene.is('detail'))
+  const [showFreightSheet, setShowFreightSheet] = useState(sheetScene.is('freight'))
   /** 提交前的缺失项提示 */
   const [toast, setToast] = useState<string | null>(null)
-  /** 寄件地址默认不选中，由用户点击地址栏从地址簿选择 */
-  const [address, setAddress] = useState<ShippingAddress | null>(null)
-  const [addressSheet, setAddressSheet] = useState(false)
+  /** 提交中：按钮转圈并禁用，防止重复预约 */
+  const [submitting, setSubmitting] = useState(false)
+  /** 寄件地址默认不选中，由用户点击地址栏从地址簿选择；有草稿时按 id 回查 */
+  const [address, setAddress] = useState<ShippingAddress | null>(() =>
+    draft?.addressId
+      ? (readAddresses().find((item) => item.id === draft.addressId) ?? null)
+      : null,
+  )
+  const [addressSheet, setAddressSheet] = useState(sheetScene.is('address'))
+  /** 上门取件时间默认不选中，点击时间行后从弹层选择 */
+  const [pickupTime, setPickupTime] = useState<PickupTimeSlot | null>(
+    draft?.pickupTime ?? null,
+  )
+  const [pickupSheet, setPickupSheet] = useState(sheetScene.is('pickup'))
+  /** 实物照片与凭证：默认空，弹层确认后回填 */
+  const [photos, setPhotos] = useState<string[]>(() => (draft ? readQuoteDraftPhotos() : []))
+  const [photoSheet, setPhotoSheet] = useState(sheetScene.is('photo'))
+  /** 收款方式：默认不选中，弹层确认后回填；有草稿时按 id 回查 */
+  const [payAccount, setPayAccount] = useState<BankAccount | null>(() =>
+    draft?.payAccountId
+      ? (readBankAccounts().find((item) => item.id === draft.payAccountId) ?? null)
+      : null,
+  )
+  const [paySheet, setPaySheet] = useState(sheetScene.is('bank'))
   const [chartPeriod, setChartPeriod] = useState<string>(RATE_SERIES[0]?.key ?? 'today')
   const [swapMode, setSwapMode] = useState<'weight' | 'price'>('weight')
 
-  /** 是否已勾选两份协议：由协议阅读页确认后回填 */
-  const [agreed, setAgreed] = useState(() => Boolean(readAgreementConfirmation()))
+  /**
+   * 是否已勾选两份协议：只在协议阅读页确认后回填。
+   * 确认凭据是「一次性」的——页面挂载后立即消费，保证每次新预约都不会被默认勾选。
+   */
+  const [agreed, setAgreed] = useState(
+    () => Boolean(readAgreementConfirmation()) || draft?.agreed === true,
+  )
+
+  useEffect(() => {
+    clearAgreementConfirmation()
+  }, [])
+
+  // 表单草稿：去阅读协议 / 选地址 / 绑收款账户后返回，页面重挂载时原样恢复
+  useEffect(() => {
+    writeQuoteDraft({
+      category,
+      purity,
+      weight,
+      addressId: address?.id ?? null,
+      pickupTime,
+      payAccountId: payAccount?.id ?? null,
+      agreed,
+    })
+  }, [category, purity, weight, address?.id, pickupTime, payAccount?.id, agreed])
+
+  // 照片单独一个 key：base64 体积大，写失败也不影响上面的字段
+  useEffect(() => {
+    writeQuoteDraftPhotos(photos)
+  }, [photos])
 
   const quote = calculateQuote({
     category,
@@ -298,9 +479,11 @@ export function QuotePage() {
     quantity: 1,
   })
   const weightError = validateWeight(weight)
+  const categoryLabel = QUOTE_CATEGORIES.find((c) => c.value === category)?.label ?? '金条'
+  /** 有输入或处于聚焦时展开为双列估价样式，否则用折叠样式 */
+  const weightExpanded = weightFocused || weight.trim() !== ''
 
-  const chartSeries =
-    RATE_SERIES.find((s) => s.key === chartPeriod) ?? RATE_SERIES[0]
+  const chartSeries = RATE_SERIES.find((s) => s.key === chartPeriod) ?? RATE_SERIES[0]
 
   /** 当用户输入的纯度在切换品类后不再合法时，重置为该品类第一个可选值 */
   const onCategoryChange = (v: string) => {
@@ -337,12 +520,27 @@ export function QuotePage() {
       setToast('请选择寄件地址')
       return
     }
+    if (!pickupTime) {
+      setToast('请选择上门取件时间')
+      return
+    }
+    if (photos.length < 2) {
+      setToast('请至少上传两张实物照片')
+      return
+    }
+    if (!payAccount) {
+      setToast('请选择收款方式')
+      return
+    }
     if (!agreed) {
       setToast('请先阅读并勾选两份协议')
       return
     }
     saveQuoteSnapshot({ category, weight, purity, quantity: 1 }, quote)
-    navigate(paths.submitResult, { replace: true })
+    // 预约已提交：清空草稿，下次从首页进入是干净的空白表单
+    clearQuoteDraft()
+    setSubmitting(true)
+    window.setTimeout(() => navigate(paths.submitResult, { replace: true }), 700)
   }
 
   /** 协议勾选：未勾选时点击进入阅读确认页，已勾选时点击直接取消 */
@@ -363,11 +561,7 @@ export function QuotePage() {
         footer={
           <>
             {/* 协议勾选：随吸底栏常驻 */}
-            <AgreementCheck
-              checked={agreed}
-              onChange={onAgreementChange}
-              align="center"
-            >
+            <AgreementCheck checked={agreed} onChange={onAgreementChange} align="center">
               <span className="text-caption text-muted-foreground">
                 我已阅读并同意
                 <TextLink
@@ -396,6 +590,7 @@ export function QuotePage() {
               explainLabel="查看预估回收价明细"
               actionLabel="立即预约"
               onAction={onCalculate}
+              actionLoading={submitting}
               actionSize="lg"
             />
           </>
@@ -413,7 +608,11 @@ export function QuotePage() {
               aria-hidden="true"
               className="pointer-events-none relative h-24 w-24 shrink-0 overflow-hidden rounded-md ring-1 ring-gold-200"
             >
-              <MediaVisual src={images.heroBrand} alt="" className="absolute inset-0 h-full w-full object-cover [mask-image:linear-gradient(to_left,black_60%,transparent)]" />
+              <MediaVisual
+                src={images.heroBrand}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover [mask-image:linear-gradient(to_left,black_60%,transparent)]"
+              />
             </div>
           </div>
           {/* 装饰性金色光斑 */}
@@ -447,59 +646,82 @@ export function QuotePage() {
                 )
               })}
             </div>
-            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-              {/* 左侧：重量（输入） */}
-              <div className="min-w-0 px-4 py-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-caption text-subtle-foreground">
-                    重量（克）
+            {/* 重量输入：未聚焦且无内容为单列折叠样式，聚焦或有值时展开为双列估价样式 */}
+            <div className="px-4 pb-3 pt-3">
+              {weightExpanded ? (
+                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                  <span className="text-caption text-subtle-foreground">重量（克）</span>
+                  <span className="w-9" aria-hidden="true" />
+                  <span className="flex items-center gap-1 text-caption text-subtle-foreground">
+                    预估金额（元）
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => setShowDetailSheet(true)}
+                      aria-label="查看预估回收价明细"
+                      className="flex items-center"
+                    >
+                      <HelpCircle size={14} className="text-subtle-foreground" aria-hidden="true" />
+                    </button>
                   </span>
                 </div>
-                <div className="mt-1">
-                  <input
-                    value={weight}
-                    inputMode="decimal"
-                    onChange={(e) => setWeight(e.target.value)}
-                    className="w-full bg-transparent font-inherit text-title text-foreground tabular outline-none placeholder:text-muted-foreground"
-                    placeholder="0.00"
-                  />
-                </div>
+              ) : (
+                <p className="text-center text-caption text-subtle-foreground">
+                  {categoryLabel}克重（克）
+                </p>
+              )}
+
+              <div
+                className={
+                  weightExpanded
+                    ? 'mt-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-md bg-surface-2/60 px-3 py-2'
+                    : 'mt-2'
+                }
+              >
+                <input
+                  value={weight}
+                  inputMode="decimal"
+                  aria-label={weightExpanded ? '重量（克）' : `${categoryLabel}克重（克）`}
+                  onFocus={() => setWeightFocused(true)}
+                  onBlur={() => setWeightFocused(false)}
+                  onChange={(e) => setWeight(e.target.value)}
+                  className={
+                    weightExpanded
+                      ? 'min-w-0 w-full bg-transparent font-inherit text-section text-foreground tabular outline-none placeholder:text-muted-foreground'
+                      : 'w-full rounded-md bg-surface-2/60 px-4 py-3 text-center font-inherit text-section text-foreground tabular outline-none placeholder:text-muted-foreground'
+                  }
+                  placeholder="请输入克重"
+                />
+
+                {weightExpanded ? (
+                  <>
+                    {/* 中间交换按钮 */}
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={toggleSwap}
+                      aria-label="在重量与金额之间切换计算方向"
+                      className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground ring-1 ring-border-subtle active:bg-muted"
+                    >
+                      <ArrowRightLeft size={15} strokeWidth={1.8} />
+                    </button>
+
+                    {/* 右侧：预估金额；未填克重时显示问号，点击查看明细空态 */}
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => setShowDetailSheet(true)}
+                      aria-label={quote ? '查看预估回收价明细' : '查看预估明细（请先填写克重）'}
+                      className="min-w-0 text-right text-section tabular"
+                    >
+                      <span className="text-price">{quote ? quote.payable.toFixed(2) : '?'}</span>
+                    </button>
+                  </>
+                ) : null}
               </div>
-
-              {/* 中间交换按钮 */}
-              <button
-                type="button"
-                onClick={toggleSwap}
-                aria-label="在重量与金额之间切换计算方向"
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-2 text-muted-foreground ring-1 ring-border-subtle active:bg-surface-3"
-              >
-                <ArrowRightLeft size={16} strokeWidth={1.8} />
-              </button>
-
-              {/* 右侧：预估金额（展示，可点看明细） */}
-              <button
-                type="button"
-                disabled={!quote}
-                onClick={() => setShowDetailSheet(true)}
-                className="min-w-0 px-4 py-3 text-left"
-              >
-                <span className="flex items-center gap-1 text-caption text-subtle-foreground">
-                  预估金额（元）
-                  <HelpCircle size={14} className="text-subtle-foreground" aria-hidden="true" />
-                </span>
-                <div className="mt-1 flex items-end gap-1">
-                  {quote ? (
-                    <span className="text-title tabular text-price">
-                      {quote.payable.toFixed(2)}
-                    </span>
-                  ) : (
-                    <span className="text-title text-muted-foreground tabular">—</span>
-                  )}
-                </div>
-              </button>
             </div>
 
-            {/* 预估明细 3 行：实时金价 / 服务费 / 运保费 */}
+            {/* 预估明细：实时金价常驻，展开态再显示服务费与运保费 */}
             <div className="border-t border-border-subtle divide-y divide-border-subtle">
               <div className="flex items-center justify-between px-4 py-3">
                 <div className="flex items-center gap-2">
@@ -508,59 +730,67 @@ export function QuotePage() {
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-body-strong tabular text-price">
-                    {quote?.price.toFixed(2) ?? '—'}
+                    {(quote?.price ?? GOLD_RATE.price).toFixed(2)}
                   </span>
                   <span className="text-caption text-subtle-foreground">元/克</span>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <Sparkles size={16} className="text-subtle-foreground" />
-                  <span className="text-body text-muted-foreground">服务费</span>
-                  <span className="text-caption text-subtle-foreground">
-                    {`按金价 ${((QUOTE_CATEGORIES.find((c) => c.value === category)?.serviceFeeRate ?? 0) * 100).toFixed(0)}%`}
-                  </span>
-                </div>
-                {quote ? (
-                  <div className="flex items-baseline gap-1.5 text-right tabular">
-                    <span className="text-body-strong text-price">
-                      {quote.serviceFeePerGram.toFixed(2)}
-                    </span>
-                    <span className="text-caption text-subtle-foreground">元/克</span>
+              {weightExpanded ? (
+                <>
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <Sparkles size={16} className="text-subtle-foreground" />
+                      <span className="text-body text-muted-foreground">服务费</span>
+                      <span className="text-caption text-subtle-foreground">
+                        {`按金价 ${((QUOTE_CATEGORIES.find((c) => c.value === category)?.serviceFeeRate ?? 0) * 100).toFixed(0)}%`}
+                      </span>
+                    </div>
+                    {quote ? (
+                      <div className="flex items-baseline gap-1.5 text-right tabular">
+                        <span className="text-body-strong text-price">
+                          {quote.serviceFeePerGram.toFixed(2)}
+                        </span>
+                        <span className="text-caption text-subtle-foreground">元/克</span>
+                      </div>
+                    ) : (
+                      <span className="text-body text-muted-foreground tabular">—</span>
+                    )}
                   </div>
-                ) : (
-                  <span className="text-body text-muted-foreground tabular">—</span>
-                )}
-              </div>
 
-              <div className="flex items-center justify-between px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <Truck size={16} className="text-subtle-foreground" />
-                  <span className="text-body text-muted-foreground">运保费</span>
-                  {quote?.over20Free ? <Badge tone="success">满{OVER_FREE_GRAM}克减免</Badge> : null}
-                </div>
-                {quote ? (
-                  <span className="text-body tabular text-foreground">
-                    ¥{(quote.shippingFee + quote.insuranceFee).toFixed(2)}
-                  </span>
-                ) : (
-                  <span className="text-body text-muted-foreground tabular">—</span>
-                )}
-              </div>
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <Truck size={16} className="text-subtle-foreground" />
+                      <span className="text-body text-muted-foreground">运保费</span>
+                      {quote?.over20Free ? (
+                        <Badge tone="success">满{OVER_FREE_GRAM}克减免</Badge>
+                      ) : null}
+                    </div>
+                    {quote ? (
+                      <span className="text-body tabular text-foreground">
+                        ¥{(quote.shippingFee + quote.insuranceFee).toFixed(2)}
+                      </span>
+                    ) : (
+                      <span className="text-body text-muted-foreground tabular">—</span>
+                    )}
+                  </div>
+                </>
+              ) : null}
             </div>
 
-            {/* 保险提示 */}
-            <div className="border-t border-border-subtle bg-gold-50/60 px-4 py-3 text-caption text-gold-800">
-              已为您自动投保太平洋保险，顺丰上门取件期间请勿使用“保价、投保”等功能。回收满
-              {OVER_FREE_GRAM}克减免运保费。
-              <TextLink
-                className="ml-1 text-caption-strong"
-                onClick={() => setShowFreightSheet(true)}
-              >
-                查看详情
-              </TextLink>
-            </div>
+            {/* 保险提示：仅展开态展示，保持折叠态简洁 */}
+            {weightExpanded ? (
+              <div className="border-t border-border-subtle bg-gold-50/60 px-4 py-3 text-caption text-gold-800">
+                已为您自动投保太平洋保险，顺丰上门取件期间请勿使用“保价、投保”等功能。回收满
+                {OVER_FREE_GRAM}克减免运保费。
+                <TextLink
+                  className="ml-1 text-caption-strong"
+                  onClick={() => setShowFreightSheet(true)}
+                >
+                  查看详情
+                </TextLink>
+              </div>
+            ) : null}
           </Card>
 
           {/* 走势图 */}
@@ -626,9 +856,7 @@ export function QuotePage() {
             <div className="border-t border-border-subtle">
               <ListItem
                 icon={MapPin}
-                title={
-                  address ? `${address.name} ${maskPhone(address.phone)}` : '请选择寄件地址'
-                }
+                title={address ? `${address.name} ${maskPhone(address.phone)}` : '请选择寄件地址'}
                 description={
                   address
                     ? `${address.region} ${address.place}${address.doorNo}`
@@ -646,57 +874,56 @@ export function QuotePage() {
                     <span className="font-semibold">SF</span> 顺丰邮寄
                   </span>
                 }
-                showArrow
                 divider
               />
               <ListItem
                 icon={Package}
-                title="送至 南京国检中心"
-                description="广东省深圳市罗湖区金展珠宝广场 A 座 19 楼南检大厅 1 号窗口"
-                showArrow
+                title="送至 安盛华集团检测中心"
+                description="广东省深圳市盐田区市保税区沙头角太平洋工业区3栋6楼"
                 divider
               />
               <ListItem
                 icon={Clock}
-                title="后天 (周五) 19:00 – 20:00"
+                title={pickupTime ? formatPickupTime(pickupTime) : '请选择上门取件时间'}
                 showArrow
                 divider
+                onClick={() => setPickupSheet(true)}
               />
 
-              {/* 物品信息 */}
-              <div className="border-b border-border-subtle">
-                <ListItem icon={Camera} title="物品信息" showArrow />
-                <div className="flex gap-2 px-4 pb-3">
-                  {[images.productBar1g, images.productBar5g].map((src, i) => (
-                    <div
-                      key={i}
-                      className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-surface-2 ring-1 ring-border-subtle"
-                    >
-                      <MediaVisual
-                        src={src}
-                        alt={`物品图 ${i + 1}`}
-                        className="absolute inset-0 h-full w-full object-cover"
-                      />
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    aria-label="上传物品照片"
-                    className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md border border-dashed border-border-subtle text-muted-foreground transition active:bg-surface-2"
-                  >
-                    <Camera size={18} strokeWidth={1.6} />
-                  </button>
-                  <div className="flex min-w-0 flex-1 flex-col items-end justify-center text-right text-caption">
-                    <span className="text-muted-foreground">
-                      {QUOTE_CATEGORIES.find((c) => c.value === category)?.label ?? '金条'} ·{' '}
-                      {quote?.purityLabel ?? '—'} · {quote?.weight ?? 0} 克
+              {/* 物品信息：未上传时提示上传，已上传后行内展示缩略图 */}
+              <ListItem
+                icon={ImageIcon}
+                title={
+                  photos.length > 0 ? (
+                    <span className="flex items-center gap-2">
+                      {photos.slice(0, 3).map((src, index) => (
+                        <span
+                          key={`${src.slice(-12)}-${index}`}
+                          className="block h-10 w-10 overflow-hidden rounded-sm ring-1 ring-border-subtle"
+                        >
+                          <MediaVisual src={src} alt={`物品照片 ${index + 1}`} />
+                        </span>
+                      ))}
                     </span>
-                    <span className="text-subtle-foreground">1 件</span>
-                  </div>
-                </div>
-              </div>
+                  ) : (
+                    '请上传黄金实物照片和凭证'
+                  )
+                }
+                showArrow
+                divider
+                onClick={() => setPhotoSheet(true)}
+              />
 
-              <ListItem icon={Banknote} title="深发 / 平安银行 **** 9455" showArrow />
+              <ListItem
+                icon={Wallet}
+                title={
+                  payAccount
+                    ? `${payAccount.bank} **** ${tailNo(payAccount.cardNo)}`
+                    : '请选择收款方式'
+                }
+                showArrow
+                onClick={() => setPaySheet(true)}
+              />
             </div>
           </Card>
 
@@ -712,11 +939,6 @@ export function QuotePage() {
           </Card>
 
           {/* 协议勾选已随吸底栏常驻，页面内不再重复 */}
-
-          {/* 纯度输入校验提示（仅在有错误时显示） */}
-          {weightError ? (
-            <InlineNotice tone="danger">预估重量需要在 0–1000 克之间</InlineNotice>
-          ) : null}
         </div>
       </DetailPage>
 
@@ -735,11 +957,53 @@ export function QuotePage() {
         sections={SHIPPING_RULES}
       />
 
+      {/* 上门取件时间：日期 + 时段 */}
+      <PickupTimeSheet
+        open={pickupSheet}
+        onClose={() => setPickupSheet(false)}
+        value={pickupTime}
+        onSelect={(next) => {
+          setPickupTime(next)
+          setPickupSheet(false)
+        }}
+      />
+
+      {/* 实物照片与凭证 */}
+      <PhotoProofSheet
+        open={photoSheet}
+        onClose={() => setPhotoSheet(false)}
+        photos={photos}
+        onConfirm={(next) => {
+          setPhotos(next)
+          setPhotoSheet(false)
+        }}
+      />
+
+      {/* 收款方式：复用收款账户列表 */}
+      <BankAccountPickerSheet
+        open={paySheet}
+        onClose={() => setPaySheet(false)}
+        accounts={
+          sheetScene.is('bank') && sheetScene.state === 'empty' ? [] : readBankAccounts()
+        }
+        selectedId={payAccount?.id ?? null}
+        onConfirm={(account) => {
+          setPayAccount(account)
+          setPaySheet(false)
+        }}
+        onBind={() => {
+          setPaySheet(false)
+          navigate(paths.meAccountForm)
+        }}
+      />
+
       {/* 寄件地址选择：复用买金提交订单的地址抽屉 */}
       <AddressPickerSheet
         open={addressSheet}
         onClose={() => setAddressSheet(false)}
-        addresses={readAddresses()}
+        addresses={
+          sheetScene.is('address') && sheetScene.state === 'empty' ? [] : readAddresses()
+        }
         selectedId={address?.id ?? null}
         title="选择寄件地址"
         onSelect={(item) => {
@@ -754,4 +1018,3 @@ export function QuotePage() {
     </>
   )
 }
-

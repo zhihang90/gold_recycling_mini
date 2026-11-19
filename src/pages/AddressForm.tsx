@@ -77,6 +77,8 @@ export function AddressFormPage() {
   const [isDefault, setIsDefault] = useState(() =>
     editing ? readSelectedAddressId() === editing.id : readAddresses().length === 0,
   )
+  /** 保存中：按钮转圈并禁用，避免重复写入 */
+  const [saving, setSaving] = useState(false)
 
   const phoneValid = isPhoneNumber(phone)
   const canSave = name.trim() !== '' && phoneValid && region !== '' && place.trim() !== ''
@@ -157,14 +159,16 @@ export function AddressFormPage() {
 
     if (isDefault) setDefaultAddress(next.id)
 
-    navigate(paths.ship.addresses)
+    // 保存中：按钮转圈并禁用，避免重复写入
+    setSaving(true)
+    window.setTimeout(() => navigate(paths.ship.addresses), 500)
   }
 
   return (
     <DetailPage
       title={editing ? '编辑地址' : '新增地址'}
       footer={
-        <Button size="lg" block disabled={!canSave} onClick={handleSave}>
+        <Button size="lg" block loading={saving} disabled={!canSave} onClick={handleSave}>
           确定
         </Button>
       }

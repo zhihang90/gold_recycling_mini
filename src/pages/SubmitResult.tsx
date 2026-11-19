@@ -5,7 +5,7 @@ import { paths } from '@/routes/paths'
 
 /**
  * 邮寄回收订单提交成功过渡页。
- * 只保留结果反馈与下一步入口，不再承载订单明细；详情统一由待取件详情页展示。
+ * 只保留结果反馈与下一步入口，订单明细统一在「审核中」状态详情页查看（平台先审核）。
  */
 export function SubmitResultPage() {
   const navigate = useNavigate()
@@ -21,7 +21,7 @@ export function SubmitResultPage() {
           description="我们将在 1 个工作日内完成审核，请留意站内消息"
           primaryAction={
             <div className="flex w-full flex-col gap-3">
-              <Button block onClick={() => navigate(paths.pickupDetail)}>
+              <Button block onClick={() => navigate(paths.orderRecycle.review)}>
                 查看订单
               </Button>
               <Button variant="secondary" block onClick={backHome}>

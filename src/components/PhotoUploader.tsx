@@ -1,6 +1,6 @@
 import { MediaVisual } from '@/components'
 import { useRef } from 'react'
-import { Plus, X } from 'lucide-react'
+import { Plus, X, type LucideIcon } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
@@ -23,6 +23,8 @@ export function PhotoUploader({
   max = 6,
   hint,
   readOnly = false,
+  addLabel = '添加',
+  addIcon: AddIcon = Plus,
   className,
 }: {
   value: string[]
@@ -30,6 +32,10 @@ export function PhotoUploader({
   max?: number
   hint?: string
   readOnly?: boolean
+  /** 添加位文案，默认为“添加” */
+  addLabel?: string
+  /** 添加位图标，默认为加号 */
+  addIcon?: LucideIcon
   className?: string
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -71,8 +77,8 @@ export function PhotoUploader({
         {readOnly || remaining === 0 ? null : (
           <li>
             <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-sm border border-dashed border-border bg-card text-subtle-foreground transition focus-within:border-primary">
-              <Plus size={20} />
-              <span className="text-caption">添加</span>
+              <AddIcon size={20} />
+              <span className="text-caption">{addLabel}</span>
               <input
                 ref={inputRef}
                 type="file"

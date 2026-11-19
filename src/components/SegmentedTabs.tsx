@@ -53,7 +53,7 @@ export function SegmentedTabs({
             className={cn(
               'flex min-h-8 shrink-0 items-center transition',
               variant === 'underline'
-                ? 'relative min-h-11 flex-1 justify-center px-2 text-body'
+                ? 'relative min-h-11 whitespace-nowrap px-4 text-body'
                 : size === 'sm'
                   ? 'rounded-full px-3 text-label'
                   : 'rounded-full px-4 text-body-strong',

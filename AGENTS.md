@@ -60,3 +60,4 @@
 - 产物抽查：`dist/assets/*.css` 中 `@layer` 为 0 次；`dist/index.html` 含 `build-stamp` 与 `?v=`。
 - 375 宽无横向溢出，≥900px 显示设备框。
 - 每次代码更新后直接部署发布到线上站点（站点 `37kaueba3k2prexzd8k`），以线上地址作为评审入口；本地开发服务只作过程预览，不作为交付物。
+- 花生壳公网发布（`oray-hsk-publish`）：资源固定为 `1794994157918333951`，地址固定为 `https://lxli9w.kicp.fun`，**不得更换域名、不得新建资源**。更新流程：`npm run build` → `(cd dist && zip -qr /tmp/dist.zip .)` → `hsk-cli file-hosting update --resource-id 1794994157918333951 /tmp/dist.zip --entry-file index.html --yes`（`update` 只接受 .zip/.html/.md/.pdf；**不要用 `--reuse`，它会新建资源并换域名**），发布后用 `curl https://lxli9w.kicp.fun/` 核对入口 JS 哈希与本地 `dist` 一致。发布状态记录在 `.trae/hsk-publish/state.json`；凭据只保存在 `~/.hsk/api_key.json` / `~/.hsk/auth.json`，禁止写入仓库或提交到 Git。

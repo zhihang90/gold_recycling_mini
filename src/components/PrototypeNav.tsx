@@ -9,9 +9,11 @@ import { cn } from '@/lib/utils'
  * ≥ 900px 才出现，窄窗口自动隐藏，避免和内容抢空间。
  */
 export function PrototypeNav() {
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  /** 弹层状态条目靠查询串区分，这里按「路径 + 查询串」精确匹配当前项 */
+  const current = `${pathname}${search}`
 
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-[340px] flex-col border-r border-border bg-card/95 px-4 py-4 backdrop-blur min-[900px]:flex">
@@ -30,7 +32,7 @@ export function PrototypeNav() {
       <div className="hide-scrollbar min-h-0 flex-1 overflow-y-auto pr-1">
         {PROTOTYPE_MENU.map((group) => {
           const groupActive = group.sections.some((section) =>
-            section.items.some((item) => item.path.split('?')[0] === pathname),
+            section.items.some((item) => item.path === current),
           )
 
           return (
@@ -70,7 +72,7 @@ export function PrototypeNav() {
                       ) : null}
                       <div className="grid grid-cols-4 gap-1.5 px-2 pb-2">
                         {section.items.map((item) => {
-                          const active = item.path.split('?')[0] === pathname
+                          const active = item.path === current
                           return (
                             <button
                               key={item.path}

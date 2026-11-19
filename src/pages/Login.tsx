@@ -24,6 +24,8 @@ export function LoginPage() {
   const [hintTick, setHintTick] = useState(0)
   const [protocol, setProtocol] = useState<ProtocolSheet>(null)
   const [countdown, setCountdown] = useState(0)
+  /** 登录中：按钮转圈并禁用，避免重复提交 */
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (countdown <= 0) return
@@ -58,8 +60,10 @@ export function LoginPage() {
     }
     if (!valid) return
 
+    // 登录中：按钮转圈并禁用，避免重复提交
+    setSubmitting(true)
     saveMember(phone)
-    navigate(paths.buy, { replace: true })
+    window.setTimeout(() => navigate(paths.buy, { replace: true }), 600)
   }
 
   return (
@@ -154,7 +158,7 @@ export function LoginPage() {
         </div>
 
         <div className="mt-6 space-y-3">
-          <Button type="submit" size="lg" block>
+          <Button type="submit" size="lg" block loading={submitting}>
             登录
           </Button>
           <Button size="lg" variant="secondary" block onClick={() => navigate(paths.home)}>
