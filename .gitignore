@@ -11,3 +11,7 @@ logs
 # 视觉回归：基线入库，实际截图与差异图不入库
 tests/visual/actual
 tests/visual/diff
+
+# 本地发布工具状态（花生壳链接、verify_code 等），不入库
+.hsk/
+.trae/

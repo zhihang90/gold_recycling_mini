@@ -48,7 +48,6 @@ const STATUS_REASON: Partial<Record<RecycleStatus, string>> = {
 
 /** 状态专属详情卡：审核中不展示校验细节，其余状态各自成独立区块 */
 type RecycleDetailCard =
-  | 'receipt'
   | 'testing'
   | 'inspection'
   | 'payment'
@@ -78,7 +77,7 @@ interface StatusView {
 const STATUS_VIEWS: Record<RecycleStatus, StatusView> = {
   review: { actions: ['contact'] },
   'pending-ship': { actions: ['cancel', 'changePickup'] },
-  'pending-receipt': { card: 'receipt', actions: ['contact'] },
+  'pending-receipt': { actions: ['contact'] },
   testing: { card: 'testing', actions: ['contact'] },
   'pending-confirm': { card: 'inspection', actions: ['reject', 'confirm'] },
   'pending-payment': { card: 'payment', actions: ['contact'] },
@@ -127,30 +126,6 @@ function closeCategoryOf(reason?: string): {
     return { label: '风控终止', tone: 'danger' }
   if (reason.includes('取消')) return { label: '用户取消', tone: 'neutral' }
   return { label: '订单已关闭', tone: 'neutral' }
-}
-
-/** 待签收：在途提示与签收前客服拦截入口 */
-function ReceiptCard({ order, onToast }: DetailCardProps) {
-  const latest = order.logistics?.entries[0]
-  return (
-    <Card padding="md" className="space-y-3">
-      <p className="text-body-strong text-foreground">在途提示</p>
-      <InlineNotice tone="info" title="快件正在寄往检测中心">
-        {latest?.text ?? '运输中'}，检测中心签收后将自动进入检测，无需操作。
-      </InlineNotice>
-      <KeyValueRow label="承运方" value={order.logistics?.carrier ?? '顺丰速运'} />
-      <KeyValueRow
-        label="运单号"
-        value={<span className="tabular">{order.logistics?.trackingNo ?? '—'}</span>}
-      />
-      <p className="text-caption text-muted-foreground">
-        如暂不便继续交易，可联系客服尝试在签收前拦截退回；检测中心签收后不支持拦截。
-      </p>
-      <Button variant="secondary" block onClick={() => onToast('已为您接入客服，将协助拦截快件')}>
-        联系客服拦截
-      </Button>
-    </Card>
-  )
 }
 
 /** 检测中：检测直播三态（即将开始 / 直播中 / 视频回看）＋检测信息 */
@@ -483,7 +458,6 @@ function ClosedCard({ order, onToast }: DetailCardProps) {
 
 /** 状态配置里的标识 → 详情卡组件 */
 const DETAIL_CARDS: Record<RecycleDetailCard, ComponentType<DetailCardProps>> = {
-  receipt: ReceiptCard,
   testing: TestingCard,
   inspection: InspectionCard,
   payment: PaymentCard,

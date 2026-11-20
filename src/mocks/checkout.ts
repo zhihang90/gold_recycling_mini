@@ -64,3 +64,34 @@ export function readCheckoutDraft(): CheckoutDraft | null {
 export function clearCheckoutDraft() {
   removeSession(STORAGE_KEYS.CHECKOUT_DRAFT)
 }
+
+/**
+ * 确认订单现场快照：跳转实名认证前写入，认证完成返回时恢复。
+ * 与草稿分开——草稿只覆盖表单，快照还带商品数量与收货地址，
+ * 供 ?demo=checkout 这类只存在内存里的页面也能原样回来。
+ */
+export interface CheckoutResume {
+  items: CheckoutEntry[]
+  addressId: string | null
+  note: string
+  payMethod: string
+  agree: boolean
+  createdAt: number
+}
+
+/** 快照有效期：超过 30 分钟视为过期，避免回到结算页带出旧数据 */
+const RESUME_TTL = 30 * 60 * 1000
+
+export function writeCheckoutResume(resume: Omit<CheckoutResume, 'createdAt'>) {
+  writeSession(STORAGE_KEYS.CHECKOUT_RESUME, { ...resume, createdAt: Date.now() })
+}
+
+export function readCheckoutResume(): CheckoutResume | null {
+  const resume = readSession<CheckoutResume>(STORAGE_KEYS.CHECKOUT_RESUME)
+  if (!resume || !Array.isArray(resume.items)) return null
+  return Date.now() - resume.createdAt < RESUME_TTL ? resume : null
+}
+
+export function clearCheckoutResume() {
+  removeSession(STORAGE_KEYS.CHECKOUT_RESUME)
+}

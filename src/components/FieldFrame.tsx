@@ -9,6 +9,7 @@ export function FieldFrame({
   required = false,
   hint,
   error,
+  hideLabel = false,
   className,
   children,
 }: {
@@ -19,6 +20,8 @@ export function FieldFrame({
   required?: boolean
   hint?: string
   error?: string
+  /** 隐藏可见标签，仅保留控件自身的 aria-label（占位符已说明字段） */
+  hideLabel?: boolean
   className?: string
   children: ReactNode
 }) {
@@ -26,7 +29,7 @@ export function FieldFrame({
 
   return (
     <div className={cn('space-y-2', className)}>
-      {htmlFor ? (
+      {hideLabel ? null : htmlFor ? (
         <label htmlFor={htmlFor} className={labelClass}>
           {label}
           {required ? <span className="ml-1 text-primary">*</span> : null}

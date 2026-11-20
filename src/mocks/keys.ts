@@ -24,6 +24,10 @@ export const STORAGE_KEYS = {
   QUOTE_DRAFT_PHOTOS: 'gold-recycling.quote-draft-photos',
   /** 确认订单表单草稿 */
   CHECKOUT_DRAFT: 'gold-recycling.checkout-draft',
+  /** 确认订单现场快照（跳转实名认证前写入，返回时恢复） */
+  CHECKOUT_RESUME: 'gold-recycling.checkout-resume',
+  /** 待完成人脸识别的实名信息（表单提交后暂存） */
+  PENDING_AUTH: 'gold-recycling.pending-auth',
   /** 协议阅读确认结果（含黄金来源） */
   AGREEMENT_CONFIRMATION: 'gold-recycling.agreement-confirmation',
   /** 买金订单（演示 mock） */

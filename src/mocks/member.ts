@@ -15,6 +15,26 @@ export interface RealNameAuth {
   verifiedAt: number
 }
 
+/** 人脸识别步骤的暂存信息：表单校验通过后写入，识别成功再落库 */
+export interface PendingRealNameAuth {
+  name: string
+  idNo: string
+  phone: string
+}
+
+export function savePendingRealNameAuth(auth: PendingRealNameAuth) {
+  writeSession(STORAGE_KEYS.PENDING_AUTH, auth)
+}
+
+export function readPendingRealNameAuth(): PendingRealNameAuth | null {
+  const auth = readSession<PendingRealNameAuth>(STORAGE_KEYS.PENDING_AUTH)
+  return auth && auth.name && auth.idNo ? auth : null
+}
+
+export function clearPendingRealNameAuth() {
+  removeSession(STORAGE_KEYS.PENDING_AUTH)
+}
+
 /** 登录态只保存在当前浏览器会话，刷新保留、关闭标签页后失效 */
 export function readMember(): Member | null {
   const member = readSession<Member>(STORAGE_KEYS.MEMBER)

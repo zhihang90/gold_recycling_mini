@@ -25,4 +25,6 @@ export const images = {
   payWechat: 'images/pay-wechat.png',
   payAlipay: 'images/pay-alipay.png',
   payUnionpay: 'images/pay-unionpay.png',
+  idCardFront: 'images/id-card-front.svg',
+  idCardBack: 'images/id-card-back.svg',
 } as const

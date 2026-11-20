@@ -13,9 +13,22 @@ function readAsDataUrl(file: File) {
   })
 }
 
+const COLUMNS = {
+  1: 'grid-cols-1',
+  2: 'grid-cols-2',
+  3: 'grid-cols-3',
+  4: 'grid-cols-4',
+} as const
+
+const TILE_ASPECT = {
+  square: 'aspect-square',
+  wide: 'aspect-4/3',
+} as const
+
 /**
  * 照片上传位：本地选择、预览、删除，不接真实上传接口。
- * 缩略图固定 1:1，添加位与缩略图同尺寸；删除按钮视觉 24、点击区 44。
+ * 缩略图默认 1:1、四列；证件类可设 columns=1 + aspect="wide" 拉成 4:3 单张。
+ * 删除按钮视觉 24、点击区 44。
  */
 export function PhotoUploader({
   value,
@@ -25,6 +38,9 @@ export function PhotoUploader({
   readOnly = false,
   addLabel = '添加',
   addIcon: AddIcon = Plus,
+  columns = 4,
+  aspect = 'square',
+  showCount = true,
   className,
 }: {
   value: string[]
@@ -36,6 +52,12 @@ export function PhotoUploader({
   addLabel?: string
   /** 添加位图标，默认为加号 */
   addIcon?: LucideIcon
+  /** 每行列数，证件单张上传用 1 */
+  columns?: keyof typeof COLUMNS
+  /** 缩略图比例，证件类用 wide（4:3） */
+  aspect?: keyof typeof TILE_ASPECT
+  /** 是否显示 x/y 计数 */
+  showCount?: boolean
   className?: string
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -52,13 +74,13 @@ export function PhotoUploader({
 
   return (
     <div className={cn('space-y-2', className)}>
-      <ul className="grid grid-cols-4 gap-2">
+      <ul className={cn('grid gap-2', COLUMNS[columns])}>
         {value.map((url, index) => (
           <li
             key={`${url.slice(-16)}-${index}`}
             className="relative overflow-hidden rounded-sm ring-1 ring-border"
           >
-            <MediaVisual src={url} alt={`已选照片 ${index + 1}`} />
+            <MediaVisual src={url} alt={`已选照片 ${index + 1}`} ratio={aspect === 'wide' ? 'tall' : 'square'} />
             {readOnly ? null : (
               <button
                 type="button"
@@ -76,7 +98,12 @@ export function PhotoUploader({
 
         {readOnly || remaining === 0 ? null : (
           <li>
-            <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-sm border border-dashed border-border bg-card text-subtle-foreground transition focus-within:border-primary">
+            <label
+              className={cn(
+                'flex cursor-pointer flex-col items-center justify-center gap-1 rounded-sm border border-dashed border-border bg-card text-subtle-foreground transition focus-within:border-primary',
+                TILE_ASPECT[aspect],
+              )}
+            >
               <AddIcon size={20} />
               <span className="text-caption">{addLabel}</span>
               <input
@@ -92,7 +119,7 @@ export function PhotoUploader({
         )}
       </ul>
 
-      <p className="text-caption text-subtle-foreground tabular">
+      <p className={cn('text-caption text-subtle-foreground tabular', !showCount && 'hidden')}>
         {value.length}/{max}
         {hint ? ` · ${hint}` : ''}
       </p>

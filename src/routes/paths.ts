@@ -37,6 +37,8 @@ export const paths = {
   me: '/me',
   meProfile: '/me/profile',
   meAuth: '/me/auth',
+  /** 实名认证第二步：人脸识别 */
+  meAuthFace: '/me/auth/face',
   /** 收款账户：列表与添加银行卡各占一条路由 */
   meAccounts: '/me/accounts',
   meAccountForm: '/me/accounts/new',

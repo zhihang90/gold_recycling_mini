@@ -395,6 +395,16 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
     visual: false,
   },
   {
+    id: 'me.authFace',
+    path: paths.meAuthFace,
+    label: '人脸识别',
+    group: '业务页面',
+    section: '账户',
+    order: 42.1,
+    page: 'RealNameAuthFace',
+    visual: false,
+  },
+  {
     id: 'me.accounts',
     path: paths.meAccounts,
     label: '收款账户',

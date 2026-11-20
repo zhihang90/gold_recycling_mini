@@ -53,6 +53,8 @@ type FieldProps = {
   bare?: boolean
   /** 输入框右侧的附加操作，如「获取验证码」 */
   trailing?: ReactNode
+  /** 隐藏字段上方的可见标签，占位符已说明字段内容（aria-label 仍保留） */
+  hideLabel?: boolean
   className?: string
 }
 
@@ -74,6 +76,7 @@ export function FormField({
   inline = false,
   bare = false,
   trailing,
+  hideLabel = false,
   className,
   type = 'text',
   inputMode,
@@ -111,6 +114,7 @@ export function FormField({
     name,
     disabled,
     readOnly,
+    'aria-label': hideLabel ? label : undefined,
     'aria-invalid': error ? true : undefined,
     'aria-describedby': describedBy,
     onChange: (event: { target: { value: string } }) => onChange?.(event.target.value),
@@ -211,6 +215,7 @@ export function FormField({
       required={required}
       hint={hint}
       error={error}
+      hideLabel={hideLabel}
       className={className}
     >
       {multiline ? (

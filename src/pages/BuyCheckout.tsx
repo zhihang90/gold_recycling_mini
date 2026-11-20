@@ -1,6 +1,6 @@
-import { AddressPickerSheet, AgreementCheck, BottomActionBar, BottomSheet, Button, Card, FormField, MediaVisual, PageHeader, PageShell, PaymentPasswordSheet, PriceText, Stepper, SummaryActionBar, TextLink, Toast } from '@/components'
+import { AddressPickerSheet, AgreementCheck, BottomActionBar, BottomSheet, Button, Card, ConfirmDialog, FormField, MediaVisual, PageHeader, PageShell, PaymentPasswordSheet, PriceText, Stepper, SummaryActionBar, TextLink, Toast } from '@/components'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { ChevronRight, ShieldCheck } from 'lucide-react'
+import { BellRing, ChevronRight, ShieldCheck } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 import { images } from '@/assets/images'
@@ -17,9 +17,13 @@ import { readCheckout, type CheckoutEntry, type CheckoutItem } from '@/mocks/che
 import { clearCheckout, writeCheckout, writeCheckoutResult } from '@/mocks/checkout'
 import {
   clearCheckoutDraft,
+  clearCheckoutResume,
   readCheckoutDraft,
+  readCheckoutResume,
   writeCheckoutDraft,
+  writeCheckoutResume,
 } from '@/mocks/checkout'
+import { isMemberVerified, readMember } from '@/mocks/member'
 import { DEMO_CART, readCart, writeCart } from '@/mocks/cart'
 import { findProduct, variantsOf, type GoldProduct, type GoldVariant } from '@/mocks/goldShop'
 import { useDemoScene } from '@/lib/useDemoScene'
@@ -153,23 +157,32 @@ export function BuyCheckoutPage() {
   const navigate = useNavigate()
   /** 演示直达：?demo=checkout 用购物车样例渲染，不依赖上一步数据 */
   const demo = useDemoScene() === 'checkout'
+  /** 现场快照：去实名认证前写入，返回时恢复商品数量、地址与表单项 */
+  const [resume] = useState(() => (demo ? readCheckoutResume() : null))
   const [demoItems, setDemoItems] = useState<CheckoutItem[]>(() =>
-    demo ? toCheckoutItems(DEMO_CART) : [],
+    demo ? toCheckoutItems(resume?.items.length ? resume.items : DEMO_CART) : [],
   )
-  const [address, setAddress] = useState<ShippingAddress | null>(() =>
-    demo ? (DEFAULT_ADDRESSES[0] ?? null) : readSelectedAddress(),
-  )
+  const [address, setAddress] = useState<ShippingAddress | null>(() => {
+    if (!demo) return readSelectedAddress()
+    const resumed = resume?.addressId
+      ? readAddresses().find((item) => item.id === resume.addressId)
+      : undefined
+    return resumed ?? DEFAULT_ADDRESSES[0] ?? null
+  })
   const [addressSheet, setAddressSheet] = useState(false)
   /** 表单草稿：去添加/编辑收货地址后返回，备注、支付方式与协议勾选不丢 */
   const [draft] = useState(() => (demo ? null : readCheckoutDraft()))
-  const [note, setNote] = useState(draft?.note ?? '')
-  const [payMethod, setPayMethod] = useState<PayMethod>(() =>
-    PAY_OPTIONS.some((option) => option.id === draft?.payMethod)
-      ? (draft?.payMethod as PayMethod)
-      : 'wechat',
-  )
-  const [agree, setAgree] = useState(draft?.agree ?? false)
+  const [note, setNote] = useState(resume?.note ?? draft?.note ?? '')
+  const [payMethod, setPayMethod] = useState<PayMethod>(() => {
+    const candidate = resume?.payMethod ?? draft?.payMethod
+    return PAY_OPTIONS.some((option) => option.id === candidate)
+      ? (candidate as PayMethod)
+      : 'wechat'
+  })
+  const [agree, setAgree] = useState(resume?.agree ?? draft?.agree ?? false)
   const [toast, setToast] = useState<string | null>(null)
+  /** 提交前拦截：未实名时弹窗引导先去认证 */
+  const [authDialog, setAuthDialog] = useState(false)
   /** 提交中：按钮转圈并禁用，避免重复创建订单 */
   const [submitting, setSubmitting] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
@@ -214,9 +227,8 @@ export function BuyCheckoutPage() {
   }, [demo, note, payMethod, agree])
 
   useEffect(() => {
-    return () => {
-      // 页面卸载时清理 checkout 存储，避免下次误读到旧数据
-    }
+    // 现场快照只在从实名认证返回的这一次挂载使用，读完即清，避免下次进入带入旧数据
+    clearCheckoutResume()
   }, [])
 
   const total = items.reduce((sum, item) => sum + item.variant.price * item.quantity, 0)
@@ -249,8 +261,34 @@ export function BuyCheckoutPage() {
 
   const openAddressSheet = () => setAddressSheet(true)
 
+  /** 去实名认证：先存现场快照，认证完成返回后原样恢复 */
+  const goAuth = () => {
+    if (demo) {
+      writeCheckoutResume({
+        items: items.map(({ product, variant, quantity }) => ({
+          productId: product.id,
+          variantId: variant.id,
+          quantity,
+        })),
+        addressId: address?.id ?? null,
+        note,
+        payMethod,
+        agree,
+      })
+    }
+    setAuthDialog(false)
+    // replace 掉弹层压入的历史记录，认证成功后按 redirect 回到本页
+    const target = demo ? `${paths.checkout}?demo=checkout` : paths.checkout
+    navigate(`${paths.meAuth}?redirect=${encodeURIComponent(target)}`, { replace: true })
+  }
+
   /** 提交即创建待付款订单，再拉起支付密码面板 */
   const submit = () => {
+    // 必须先实名认证：未实名时弹窗引导，认证完成返回后才能继续提交
+    if (!isMemberVerified(readMember())) {
+      setAuthDialog(true)
+      return
+    }
     if (!address) {
       setToast('请先选择收货地址')
       return
@@ -554,6 +592,21 @@ export function BuyCheckoutPage() {
         channel={PAY_OPTIONS.find((option) => option.id === payMethod)?.label}
         onClose={cancelPayment}
         onPaid={completePayment}
+      />
+
+      {/* 未实名拦截：先认证再下单 */}
+      <ConfirmDialog
+        open={authDialog}
+        icon={
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-soft">
+            <BellRing size={26} className="text-primary" aria-hidden="true" />
+          </span>
+        }
+        title="请先完成实名认证"
+        cancelText="取消认证"
+        confirmText="去认证"
+        onConfirm={goAuth}
+        onClose={() => setAuthDialog(false)}
       />
 
       <Toast open={Boolean(toast)} message={toast ?? ''} onClose={() => setToast(null)} />
