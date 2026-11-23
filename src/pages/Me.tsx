@@ -4,12 +4,14 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BadgeCheck,
+  Bell,
   CircleCheck,
   CircleChevronRight,
   CircleHelp,
   CreditCard,
   Headphones,
   MapPin,
+  MessageSquare,
   Package,
   ScanLine,
   Truck,
@@ -21,6 +23,7 @@ import {
 import { isMemberVerified, maskPhone, readMember } from '@/mocks/member'
 import { DEMO_RECYCLE_ORDERS, type RecycleStatus } from '@/mocks/recycleOrders'
 import { readSalesOrders, type SalesStatus } from '@/mocks/salesOrders'
+import { messageUnreadCount, useMessageReadState } from '@/mocks/messages'
 import { ordersFilterPath, paths } from '@/routes/paths'
 
 /** 买金订单：销售订单的四个高频状态，不含自提；最后一格进入全部订单。 */
@@ -57,6 +60,8 @@ export function MePage() {
   const navigate = useNavigate()
   const [member] = useState(() => readMember())
   const [infoSheet, setInfoSheet] = useState<InfoSheet>(null)
+  const state = useMessageReadState()
+  const unread = messageUnreadCount(state)
   const salesOrders = member ? readSalesOrders() : []
   const recycleOrders = member ? DEMO_RECYCLE_ORDERS : []
   const goLogin = () => navigate(paths.login)
@@ -66,14 +71,14 @@ export function MePage() {
       {member ? (
         <Card
           padding="md"
-          className="bg-gradient-to-br from-gold-800 to-gold-900 text-gold-50 shadow-none ring-0 transition active:brightness-95"
+          className="-mx-4 rounded-none bg-gradient-to-br from-gold-800 to-gold-900 text-gold-50 shadow-none ring-0 transition active:brightness-95"
         >
-          <button
-            type="button"
-            onClick={() => navigate(paths.meProfile)}
-            className="block w-full text-left"
-          >
-            <div className="flex items-center gap-3">
+          <div className="flex items-start justify-between">
+            <button
+              type="button"
+              onClick={() => navigate(paths.meProfile)}
+              className="flex w-[calc(100%-36px)] items-center gap-3 text-left"
+            >
               <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gold-50 text-gold-800">
                 <UserRound size={30} aria-hidden="true" />
               </span>
@@ -81,17 +86,39 @@ export function MePage() {
                 <p className="text-section text-gold-50">黄金用户</p>
                 <p className="mt-1 text-body text-gold-50/80 tabular">{maskPhone(member.phone)}</p>
               </div>
-              {isMemberVerified(member) ? (
-                <span className="shrink-0 rounded-full bg-gold-50 px-2.5 py-1 text-caption-strong text-gold-800">
-                  已实名
+            </button>
+
+            {/* 用户卡右上角：消息中心铃铛（主入口，未读角标） */}
+            <button
+              type="button"
+              onClick={() => navigate(paths.messages)}
+              aria-label="消息中心"
+              className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold-50/15 text-gold-50 transition active:bg-gold-50/25"
+            >
+              <MessageSquare size={18} aria-hidden="true" />
+              {unread > 0 ? (
+                <span
+                  aria-hidden="true"
+                  className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-medium leading-none text-destructive-foreground ring-1 ring-gold-900"
+                >
+                  {unread > 99 ? '99+' : unread}
                 </span>
-              ) : (
-                <span className="shrink-0 rounded-full bg-destructive px-2.5 py-1 text-caption-strong text-destructive-foreground">
-                  未实名
-                </span>
-              )}
-            </div>
-          </button>
+              ) : null}
+            </button>
+          </div>
+
+          {/* 实名 pill 独立一行，右对齐 */}
+          <div className="mt-3 flex justify-end">
+            {isMemberVerified(member) ? (
+              <span className="rounded-full bg-gold-50 px-2.5 py-1 text-caption-strong text-gold-800">
+                已实名
+              </span>
+            ) : (
+              <span className="rounded-full bg-destructive px-2.5 py-1 text-caption-strong text-destructive-foreground">
+                未实名
+              </span>
+            )}
+          </div>
         </Card>
       ) : (
         <ProfileCard
@@ -101,6 +128,24 @@ export function MePage() {
           onClick={goLogin}
         />
       )}
+
+      {/* 金价涨跌提醒入口（点击进入 market/alert-settings?tab=list） */}
+      <Card padding="md" className="overflow-hidden">
+        <button
+          type="button"
+          onClick={() => navigate(`${paths.marketAlertSettings}?tab=list`)}
+          className="flex w-full items-center gap-3 text-left active:bg-surface-2"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-price/10 text-price">
+            <Bell size={20} aria-hidden="true" />
+          </span>
+          <div className="min-w-0 flex-1 space-y-0.5">
+            <p className="text-body text-foreground">金价涨跌提醒</p>
+            <p className="text-caption text-subtle-foreground">设置目标价，到价自动通知</p>
+          </div>
+          <CircleChevronRight size={16} className="shrink-0 text-icon-muted" />
+        </button>
+      </Card>
 
       <Card padding="md" className="space-y-3">
         <h2 className="text-card-title text-foreground">我的订单</h2>

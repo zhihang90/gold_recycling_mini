@@ -3,6 +3,7 @@ import {
   BottomSheet,
   Button,
   Card,
+  CountdownBar,
   DetailPage,
   EmptyState,
   KeyValueRow,
@@ -17,12 +18,14 @@ import {
 } from '@/components'
 import { useEffect, useState } from 'react'
 import { ClipboardList } from 'lucide-react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import { maskPhone } from '@/mocks/addressBook'
 import { addToCart } from '@/mocks/cart'
+import { writeCheckoutResult } from '@/mocks/checkout'
 import { findProduct } from '@/mocks/goldShop'
 import {
+  SALES_FILTERS,
   SALES_PAY_LABEL,
   SALES_STATUS_LABEL,
   SALES_STATUS_TONE,
@@ -80,6 +83,12 @@ const STATUS_VIEWS: Record<SalesStatus, StatusView> = {
   completed: { logistics: false, amountLabel: '实付款', actions: ['rebuy'] },
   cancelled: { logistics: false, amountLabel: '实付款', actions: ['rebuy'] },
   'after-sale': { logistics: false, amountLabel: '实付款', actions: ['contact'] },
+}
+
+/** 订单状态 → 订单列表对应的分类筛选；列表没有该筛选（如已取消）时回到全部 */
+function ordersListPath(status: SalesStatus) {
+  const filter = SALES_FILTERS.some((item) => item.value === status) ? status : 'all'
+  return `${paths.orders}?type=sales&status=${filter}`
 }
 
 /** 商品信息卡：与状态无关，所有订单详情共用 */
@@ -152,9 +161,14 @@ function OrderLogisticsCard({
 /** 买金订单详情：收货、商品、金额与支付信息均来自确认订单页 */
 export function BuyOrderDetailPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { orderId } = useParams()
   const [order, setOrder] = useState<SalesOrder | undefined>(() =>
     orderId ? findSalesOrder(orderId) : undefined,
+  )
+  /** 从确认订单页取消支付跳到详情时，返回键应落到订单列表，而不是结算流程 */
+  const fromCheckout = Boolean(
+    (location.state as { fromCheckout?: boolean } | null)?.fromCheckout,
   )
 
   // 订单详情之间切换时同步重新读取，避免沿用上一笔订单的状态
@@ -175,7 +189,18 @@ export function BuyOrderDetailPage() {
     )
   }
 
-  return <BuyOrderDetailView order={order} onOrderChange={setOrder} persist />
+  return (
+    <BuyOrderDetailView
+      order={order}
+      onOrderChange={setOrder}
+      persist
+      onBack={
+        fromCheckout
+          ? () => navigate(ordersListPath(order.status), { replace: true })
+          : undefined
+      }
+    />
+  )
 }
 
 /**
@@ -187,10 +212,13 @@ export function BuyOrderDetailView({
   order,
   onOrderChange,
   persist = false,
+  onBack,
 }: {
   order: SalesOrder
   onOrderChange: (order: SalesOrder) => void
   persist?: boolean
+  /** 自定义返回行为：默认按浏览器历史回退 */
+  onBack?: () => void
 }) {
   const navigate = useNavigate()
   const [cancelOpen, setCancelOpen] = useState(false)
@@ -226,7 +254,16 @@ export function BuyOrderDetailView({
 
   const pay = () => {
     applyStatus('pending-shipment', { paidAt: salesTimeNow() })
-    setToast('支付成功，等待发货')
+    writeCheckoutResult({ amount: total, count, createdAt: Date.now() })
+    navigate(paths.checkoutSuccess, { replace: true })
+  }
+
+  /** 待付款超时：金价波动大，超过 1 分钟自动取消 */
+  const expirePay = () => {
+    if (order.status !== 'pending-payment') return
+    applyStatus('cancelled')
+    setPayOpen(false)
+    setToast('支付超时，订单已取消')
   }
 
   /** 操作标识 → 按钮文案、样式与行为；状态配置只引用标识 */
@@ -235,7 +272,7 @@ export function BuyOrderDetailView({
     { label: string; variant?: 'secondary'; onClick: () => void }
   > = {
     cancel: { label: '取消订单', variant: 'secondary', onClick: () => setCancelOpen(true) },
-    pay: { label: '立即付款', onClick: () => setPayOpen(true) },
+    pay: { label: '立即支付', onClick: () => setPayOpen(true) },
     contact: { label: '联系客服', variant: 'secondary', onClick: contact },
     confirmReceipt: {
       label: '确认收货',
@@ -261,12 +298,28 @@ export function BuyOrderDetailView({
   )
 
   return (
-    <DetailPage title="订单详情" footer={footer}>
+    <DetailPage title="订单详情" footer={footer} onBack={onBack}>
       <OrderStatusHeader
         status={SALES_STATUS_LABEL[order.status]}
         note={`共 ${count} 件商品 · 合计 ¥${total.toLocaleString()}`}
         tone={SALES_STATUS_TONE[order.status]}
       />
+
+      {order.status === 'pending-payment' && order.payDeadline ? (
+        <CountdownBar
+          deadline={order.payDeadline}
+          tone="danger"
+          format="seconds"
+          onEnd={expirePay}
+          text={(remaining) => (
+            <>
+              {'请在'}
+              <span className="tabular">{remaining}</span>
+              {'内完成支付，超时自动取消订单'}
+            </>
+          )}
+        />
+      ) : null}
 
       {order.address ? (
         <AddressCard
@@ -332,7 +385,7 @@ export function BuyOrderDetailView({
         }
       >
         <p className="text-body text-muted-foreground">
-          待付款订单取消后立即关闭，不会扣款；需要时可在订单详情中再次购买。
+          待付款订单取消后立即关闭，不会扣款；需要时可再次购买。
         </p>
       </BottomSheet>
 

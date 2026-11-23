@@ -21,6 +21,7 @@ export function SegmentedTabs({
   wrap = false,
   sticky = false,
   variant = 'pill',
+  fill = false,
 }: {
   items: TabItem[]
   value: string
@@ -30,12 +31,15 @@ export function SegmentedTabs({
   wrap?: boolean
   sticky?: boolean
   variant?: 'pill' | 'underline'
+  /** 等宽铺满：一级页面内的主 Tab 用，两个 Tab 各占一半 */
+  fill?: boolean
 }) {
   const track = (
     <div
       role={variant === 'underline' ? 'tablist' : undefined}
       className={cn(
         'flex',
+        fill && 'w-full',
         variant === 'pill' ? 'gap-2' : 'border-b border-border-subtle',
         wrap ? 'flex-wrap' : 'hide-scrollbar overflow-x-auto',
         !wrap && variant === 'pill' && 'edge-fade pb-1',
@@ -52,6 +56,7 @@ export function SegmentedTabs({
             aria-selected={variant === 'underline' ? active : undefined}
             className={cn(
               'flex min-h-8 shrink-0 items-center transition',
+              fill && 'flex-1 justify-center',
               variant === 'underline'
                 ? 'relative min-h-11 whitespace-nowrap px-4 text-body'
                 : size === 'sm'

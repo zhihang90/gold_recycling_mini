@@ -1,8 +1,10 @@
 import { fileURLToPath, URL } from 'node:url'
+import { readFileSync } from 'node:fs'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { SCREENSHOT_ROUTES } from './src/routes/manifest'
+import { resolve } from 'node:path'
 
 /**
  * 构建戳：每次构建生成一次，写入 index.html 的 meta 与入口资源 query。
@@ -13,6 +15,10 @@ const BUILD_STAMP = new Date()
   .replace(/[-:TZ.]/g, '')
   .slice(0, 14)
 
+const APP_VERSION = JSON.parse(
+  readFileSync(resolve(__dirname, 'package.json'), 'utf8'),
+).version
+
 function cacheBustHtml(): Plugin {
   return {
     name: 'cache-bust-html',
@@ -22,6 +28,7 @@ function cacheBustHtml(): Plugin {
       handler(html) {
         return html
           .replaceAll('__BUILD_STAMP__', BUILD_STAMP)
+          .replaceAll('__APP_VERSION__', APP_VERSION)
           .replace(
             /((?:src|href)=")(\.\/assets\/[^"]+)(")/g,
             (_match, prefix: string, url: string, suffix: string) =>

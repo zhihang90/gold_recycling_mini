@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-function formatRemaining(ms: number) {
+function formatRemaining(ms: number, format: 'clock' | 'seconds') {
+  if (format === 'seconds') return `${Math.ceil(Math.max(0, ms) / 1000)}秒`
+
   const total = Math.max(0, Math.floor(ms / 1000))
   const days = Math.floor(total / 86400)
   const hours = Math.floor((total % 86400) / 3600)
@@ -21,12 +23,18 @@ function formatRemaining(ms: number) {
 export function CountdownBar({
   deadline,
   prefix = '剩余',
+  text,
+  format = 'clock',
   tone = 'warning',
   onEnd,
   className,
 }: {
   deadline: number
   prefix?: string
+  /** 自定义文案：入参为格式化后的剩余时间，可把时间嵌进整句提示中 */
+  text?: (remaining: string) => ReactNode
+  /** 时间格式：clock 为 HH:MM:SS，seconds 为「59秒」 */
+  format?: 'clock' | 'seconds'
   tone?: 'warning' | 'danger'
   onEnd?: () => void
   className?: string
@@ -65,7 +73,13 @@ export function CountdownBar({
     >
       <Clock size={16} className="shrink-0" />
       <span className="text-body-strong">
-        {prefix} <span className="tabular">{formatRemaining(remaining)}</span>
+        {text ? (
+          text(formatRemaining(remaining, format))
+        ) : (
+          <>
+            {prefix} <span className="tabular">{formatRemaining(remaining, format)}</span>
+          </>
+        )}
       </span>
     </div>
   )

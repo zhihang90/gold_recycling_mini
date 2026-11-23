@@ -1,9 +1,10 @@
-import { Badge, BottomSheet, Button, Card, EmptyState, IconButton, MediaVisual, PriceText, SegmentedTabs, TabPage, Toast } from '@/components'
+import { Badge, BottomSheet, Button, Card, CountdownBar, EmptyState, IconButton, ListPage, MediaVisual, PaymentPasswordSheet, PriceText, SegmentedTabs, Toast } from '@/components'
 import { useEffect, useState } from 'react'
 import { Bell, ClipboardList, Store } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { addToCart } from '@/mocks/cart'
+import { writeCheckoutResult } from '@/mocks/checkout'
 import { findProduct } from '@/mocks/goldShop'
 import {
   RECYCLE_TABS,
@@ -117,6 +118,7 @@ export function OrdersPage() {
   const [recycleFilter, setRecycleFilter] = useState<RecycleTab>('all')
   const [salesOrders, setSalesOrders] = useState(readSalesOrders)
   const [cancelId, setCancelId] = useState<string | null>(null)
+  const [payId, setPayId] = useState<string | null>(null)
   const [timeline, setTimeline] = useState<TimelineSheet | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   // 消息未读数：顶栏铃铛角标，与消息中心共享已读状态
@@ -183,8 +185,36 @@ export function OrdersPage() {
     navigate(paths.cart)
   }
 
+  const payOrder = salesOrders.find((order) => order.id === payId)
+
+  /** 支付成功：更新订单状态并进入统一的支付成功页 */
+  const finishPay = (order: SalesOrder) => {
+    moveOrder(order.id, 'pending-shipment')
+    writeCheckoutResult({
+      amount: salesTotal(order),
+      count: salesCount(order),
+      createdAt: Date.now(),
+    })
+    setPayId(null)
+    navigate(paths.checkoutSuccess)
+  }
+
+  /** 待付款超时：金价波动大，超过 1 分钟自动取消 */
+  const expirePay = (id: string) => {
+    const target = salesOrders.find((order) => order.id === id)
+    if (!target || target.status !== 'pending-payment') return
+    moveOrder(id, 'cancelled')
+    setPayId((current) => (current === id ? null : current))
+    setToast('支付超时，订单已取消')
+  }
+
   return (
-    <TabPage contentClassName="space-y-3">
+    <ListPage
+      title="订单"
+      showBack
+      onBack={() => navigate(paths.me)}
+      contentClassName="space-y-3"
+    >
       <div className="-mx-4 flex items-center justify-between gap-3 px-4 pb-1">
         <div role="tablist" aria-label="订单类型" className="relative flex flex-1 items-end self-stretch">
           {[
@@ -273,7 +303,6 @@ export function OrdersPage() {
           <EmptyState
             icon={ClipboardList}
             title="暂无相关订单"
-            description="买金下单后可在这里查看支付与物流进度。"
             action={
               <Button size="sm" variant="secondary" onClick={() => navigate(paths.buy)}>
                 去看看商品
@@ -351,6 +380,22 @@ export function OrdersPage() {
                 </div>
               </div>
 
+              {order.status === 'pending-payment' && order.payDeadline ? (
+                <CountdownBar
+                  deadline={order.payDeadline}
+                  tone="danger"
+                  format="seconds"
+                  onEnd={() => expirePay(order.id)}
+                  text={(remaining) => (
+                    <>
+                      {'请在'}
+                      <span className="tabular">{remaining}</span>
+                      {'内完成支付，超时自动取消订单'}
+                    </>
+                  )}
+                />
+              ) : null}
+
               <div
                 className="flex flex-wrap justify-end gap-2"
                 onClick={(event) => event.stopPropagation()}
@@ -366,12 +411,9 @@ export function OrdersPage() {
                     </Button>
                     <Button
                       size="sm"
-                      onClick={() => {
-                        moveOrder(order.id, 'pending-shipment')
-                        setToast('支付成功，等待发货')
-                      }}
+                      onClick={() => setPayId(order.id)}
                     >
-                      立即付款
+                      立即支付
                     </Button>
                   </>
                 ) : null}
@@ -444,7 +486,6 @@ export function OrdersPage() {
                 {order.status === 'cancelled' ? (
                   <Button
                     size="sm"
-                    variant="secondary"
                     onClick={() => rebuy(order)}
                   >
                     再次购买
@@ -610,7 +651,16 @@ export function OrdersPage() {
         </ol>
       </BottomSheet>
 
+      <PaymentPasswordSheet
+        open={Boolean(payOrder)}
+        amount={payOrder ? salesTotal(payOrder) : 0}
+        onClose={() => setPayId(null)}
+        onPaid={() => {
+          if (payOrder) finishPay(payOrder)
+        }}
+      />
+
       <Toast open={Boolean(toast)} message={toast ?? ''} onClose={() => setToast(null)} />
-    </TabPage>
+    </ListPage>
   )
 }

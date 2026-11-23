@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>行情与资讯 · 需求文档 v1.0</title>
+<style>
+  :root {
+    --ink: #1b1b1f;
+    --ink-2: #4a4a52;
+    --ink-3: #7a7a85;
+    --line: #e8e6e1;
+    --bg: #f7f6f3;
+    --card: #ffffff;
+    --gold: #a97b2f;
+    --gold-soft: #f6efe2;
+    --red: #d92b2b;
+    --green: #1f8a4c;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+      "Microsoft YaHei", "Segoe UI", sans-serif;
+    font-size: 14px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--gold); text-decoration: none; }
+  .layout { display: flex; max-width: 1180px; margin: 0 auto; gap: 28px; padding: 32px 24px 80px; }
+  /* ---------- sidebar ---------- */
+  aside {
+    width: 208px; flex: none; position: sticky; top: 24px; align-self: flex-start;
+    max-height: calc(100vh - 48px); overflow: auto;
+  }
+  .brand { font-size: 15px; font-weight: 700; letter-spacing: .02em; }
+  .brand span { display: block; font-size: 12px; font-weight: 400; color: var(--ink-3); margin-top: 2px; }
+  .toc { margin-top: 18px; border-left: 2px solid var(--line); }
+  .toc a {
+    display: block; padding: 5px 0 5px 12px; color: var(--ink-2); font-size: 13px;
+    border-left: 2px solid transparent; margin-left: -2px;
+  }
+  .toc a:hover { color: var(--gold); border-left-color: var(--gold); }
+  /* ---------- main ---------- */
+  main { flex: 1; min-width: 0; }
+  header.doc { margin-bottom: 26px; }
+  header.doc h1 { font-size: 26px; line-height: 1.35; margin: 0 0 10px; letter-spacing: -.01em; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill {
+    background: var(--card); border: 1px solid var(--line); border-radius: 999px;
+    padding: 3px 10px; font-size: 12px; color: var(--ink-2);
+  }
+  .pill b { color: var(--ink); font-weight: 600; }
+  section {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 22px 24px; margin-bottom: 18px;
+  }
+  h2 {
+    font-size: 18px; margin: 0 0 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line);
+    letter-spacing: -.01em;
+  }
+  h3 { font-size: 15px; margin: 22px 0 8px; }
+  h4 { font-size: 13px; margin: 16px 0 6px; color: var(--ink-2); letter-spacing: .04em; }
+  p { margin: 8px 0; }
+  ul, ol { margin: 8px 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  small { color: var(--ink-3); }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13px; }
+  th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #faf9f6; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+  code {
+    background: #f3f1ec; border-radius: 4px; padding: 1px 5px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px;
+  }
+  .tag { display: inline-block; font-size: 11px; border-radius: 4px; padding: 1px 6px; font-weight: 600; }
+  .p0 { background: #fdecec; color: var(--red); }
+  .p1 { background: var(--gold-soft); color: var(--gold); }
+  .tbd { background: #eef2fb; color: #3a5db3; }
+  .callout {
+    border-left: 3px solid var(--gold); background: #fbf8f2; padding: 10px 14px; border-radius: 0 8px 8px 0;
+    margin: 12px 0; color: var(--ink-2);
+  }
+  .callout.warn { border-left-color: var(--red); background: #fdf5f5; }
+  /* requirement card */
+  .fr { border-top: 1px solid var(--line); padding-top: 18px; margin-top: 20px; }
+  .fr:first-of-type { border-top: 0; padding-top: 4px; margin-top: 4px; }
+  .fr-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .fr-id {
+    font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--gold);
+    font-weight: 700; letter-spacing: .03em;
+  }
+  .fr-head h3 { margin: 0; font-size: 15px; }
+  .kv { display: grid; grid-template-columns: 76px 1fr; gap: 4px 12px; margin: 8px 0; }
+  .kv dt { color: var(--ink-3); font-size: 12px; }
+  .kv dd { margin: 0; }
+  /* wireframe */
+  .wire-wrap { display: flex; gap: 18px; flex-wrap: wrap; margin: 14px 0; }
+  .phone {
+    width: 260px; border: 1px solid var(--line); border-radius: 18px; background: #fcfcfa;
+    padding: 8px; box-shadow: 0 6px 18px rgba(30,25,15,.05);
+  }
+  .phone .bar {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 10px; color: var(--ink-3); padding: 4px 6px 8px;
+  }
+  .phone .tabs { display: flex; border-bottom: 1px solid var(--line); }
+  .phone .tabs div {
+    flex: 1; text-align: center; font-size: 12px; padding: 7px 0; color: var(--ink-3);
+  }
+  .phone .tabs .on { color: var(--ink); font-weight: 600; border-bottom: 2px solid var(--gold); }
+  .blk { border-radius: 8px; background: #f1efe9; margin: 7px 6px; }
+  .blk.h28 { height: 28px; } .blk.h16 { height: 16px; } .blk.h60 { height: 60px; }
+  .blk.h90 { height: 90px; } .blk.h120 { height: 120px; } .blk.h40 { height: 40px; }
+  .blk.gold { background: linear-gradient(180deg,#fbf3e2,#f4e7cc); }
+  .blk.dark { background: #eae7df; }
+  .row { display: flex; gap: 6px; margin: 7px 6px; }
+  .row > .blk { margin: 0; flex: 1; }
+  .caption { font-size: 11px; color: var(--ink-3); text-align: center; margin-top: 6px; }
+  .mock-text { font-size: 10px; color: var(--ink-2); padding: 6px 9px; }
+  .mock-text b { color: var(--ink); }
+  .red { color: var(--red); } .green { color: var(--green); }
+  .num { font-family: ui-monospace, Menlo, monospace; }
+  /* flow */
+  .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0; }
+  .flow .node {
+    border: 1px solid var(--line); background: #faf9f6; border-radius: 8px; padding: 6px 10px; font-size: 12px;
+  }
+  .flow .arrow { color: var(--ink-3); }
+  .foot { text-align: center; color: var(--ink-3); font-size: 12px; margin-top: 10px; }
+  @media (max-width: 900px) {
+    .layout { display: block; padding: 20px 14px 60px; }
+    aside { position: static; width: auto; max-height: none; margin-bottom: 18px; }
+    .toc { display: none; }
+    section { padding: 18px 16px; }
+  }
+  @media print {
+    aside { display: none; } .layout { display: block; padding: 0; }
+    section { break-inside: avoid; border-color: #ddd; }
+    body { background: #fff; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside>
+    <div class="brand">行情与资讯<span>需求文档 v1.0</span></div>
+    <nav class="toc">
+      <a href="#bg">1 背景与目标</a>
+      <a href="#scope">2 范围与优先级</a>
+      <a href="#model">3 产品模型</a>
+      <a href="#ia">4 信息架构与路由</a>
+      <a href="#fr">5 功能需求</a>
+      <a href="#rules">6 共享规则</a>
+      <a href="#states">7 状态与异常</a>
+      <a href="#open">8 待确认问题</a>
+      <a href="#sample">附录 样例资讯</a>
+    </nav>
+  </aside>
+
+  <main>
+    <header class="doc">
+      <h1>行情与资讯 需求文档</h1>
+      <div class="meta">
+        <span class="pill">版本 <b>v1.0</b></span>
+        <span class="pill">日期 <b>2026-11-23</b></span>
+        <span class="pill">来源 <b>《投资金APP架构设计文档 v1.1》行情服务模块</b></span>
+        <span class="pill">载体 <b>用户端 H5 原型</b></span>
+      </div>
+    </header>
+
+    <!-- ============ 1 ============ -->
+    <section id="bg">
+      <h2>1 背景与目标</h2>
+      <p>
+        架构文档把行情列为 P1 核心能力：用户不仅要“看到实时金价”，还要在同一页面完成
+        <b>判断 → 换算 → 下单</b>，并在价格波动时收到提醒。当前原型的行情页只有价格概览与近 7 日柱状示意，
+        缺少标的切换、图表分析、关联产品、快捷交易、自选提醒与资讯承接，无法支撑“看价到下单不超过两步”的要求。
+      </p>
+      <p>
+        本版本把行情页升级为「行情 + 资讯」两个一级 Tab：行情 Tab 承载看价与决策，资讯 Tab 承载快讯与解读，
+        资讯条目可进入独立全屏详情页。自选与到价提醒先做本地演示态，验证交互与信息结构，不接真实推送。
+      </p>
+      <div class="callout">
+        <b>可观察结果：</b>用户进入行情页可在 1 次切换内看到目标标的的实时价、涨跌与关键数据；可从行情页直接用预设克重测算金额并进入下单；
+        可在资讯 Tab 浏览快讯并打开详情阅读全文；可为标的加自选、设置到价提醒并在页面内收到提醒反馈。
+      </div>
+    </section>
+
+    <!-- ============ 2 ============ -->
+    <section id="scope">
+      <h2>2 范围与优先级</h2>
+      <table>
+        <tr><th>优先级</th><th>范围</th><th>说明</th></tr>
+        <tr>
+          <td><span class="tag p0">P0</span></td>
+          <td>双 Tab 容器、行情概览、图表骨架、关联产品、报价与快捷交易、自选、到价提醒（本地）、合规风险、资讯流、资讯详情、稳定性状态</td>
+          <td>首版必须形成完整闭环：看价 → 换算/下单 → 看资讯 → 设提醒</td>
+        </tr>
+        <tr>
+          <td><span class="tag p1">P1</span></td>
+          <td>元/盎司与人民币/美元计价切换、历史事件标注、每日/每周金价小结、资讯下拉刷新与分页加载</td>
+          <td>在 P0 稳定后补齐，不阻塞首版评审</td>
+        </tr>
+        <tr>
+          <td><span class="tag tbd">不做</span></td>
+          <td>真实 WebSocket 推送、系统级推送通知、资讯标签筛选、资讯独立列表页、评论/点赞/分享落地页</td>
+          <td>与“本地演示态”和“资讯无独立列表页、不做标签”的决策一致</td>
+        </tr>
+      </table>
+      <p><small>说明：架构文档中的 P2（定投、会员权益等）不在本文档范围内。</small></p>
+    </section>
+
+    <!-- ============ 3 ============ -->
+    <section id="model">
+      <h2>3 产品模型</h2>
+      <h3>3.1 核心对象</h3>
+      <table>
+        <tr><th>对象</th><th>定义</th><th>关键字段</th></tr>
+        <tr>
+          <td>行情标的（Quote）</td>
+          <td>可被展示与交易的报价对象</td>
+          <td>标的编码、名称、分组（平台/上金所/国际）、计价单位、现价、涨跌额、涨跌幅、今开/最高/最低/昨收、成交量、成交额、数据来源、报价时间、交易状态</td>
+        </tr>
+        <tr>
+          <td>关联产品（Related）</td>
+          <td>影响金价判断的周边品种与汇率</td>
+          <td>名称、编码、价格、涨跌幅、单位</td>
+        </tr>
+        <tr>
+          <td>资讯（News）</td>
+          <td>快讯与解读内容</td>
+          <td>标题、发布时间、来源、正文段落、缩略图、是否含外链</td>
+        </tr>
+        <tr>
+          <td>自选（Watch）</td>
+          <td>用户置顶关注的标的</td>
+          <td>标的编码、加入时间、排序</td>
+        </tr>
+        <tr>
+          <td>到价提醒（Alert）</td>
+          <td>用户对某标的设置的目标价提醒</td>
+          <td>标的编码、方向（高于/低于）、目标价、创建时间、状态（待触发/已触发/已失效）</td>
+        </tr>
+      </table>
+
+      <h3>3.2 标的清单（首版）</h3>
+      <table>
+        <tr><th>分组</th><th>标的</th><th>单位</th><th>默认精度</th></tr>
+        <tr><td rowspan="2">平台</td><td>平台金条买入价</td><td>元/克</td><td>2 位小数</td></tr>
+        <tr><td>平台金条回购价</td><td>元/克</td><td>2 位小数</td></tr>
+        <tr><td rowspan="2">上金所</td><td>Au99.99</td><td>元/克</td><td>2 位小数</td></tr>
+        <tr><td>Au100g</td><td>元/克</td><td>2 位小数</td></tr>
+        <tr><td rowspan="2">国际</td><td>伦敦金 XAU/USD</td><td>美元/盎司</td><td>2 位小数</td></tr>
+        <tr><td>美元指数</td><td>点</td><td>2 位小数</td></tr>
+      </table>
+
+      <h3>3.3 行情状态</h3>
+      <table>
+        <tr><th>状态</th><th>含义</th><th>用户可见表现</th></tr>
+        <tr><td>交易中</td><td>报价可正常刷新，可下单</td><td>价格正常着色，快捷交易按钮可用</td></tr>
+        <tr><td>休市</td><td>当前不可交易</td><td>报价置灰 + “休市中”标识 + 不可交易原因；快捷交易按钮置灰</td></tr>
+        <tr><td>数据延迟</td><td>超过刷新周期未更新</td><td>显示最后一次报价时间与“数据延迟”角标</td></tr>
+        <tr><td>断线</td><td>模拟连接中断</td><td>顶部提示条“网络连接已断开，正在重连”，价格停止闪烁更新</td></tr>
+      </table>
+    </section>
+
+    <!-- ============ 4 ============ -->
+    <section id="ia">
+      <h2>4 信息架构与路由</h2>
+      <p>行情为底部一级 Tab（第三位），页内采用两个一级 Tab 切换行情与资讯。资讯详情为独立全屏页面，直接访问也可用。</p>
+      <table>
+        <tr><th>页面</th><th>路由</th><th>层级</th><th>返回目标</th></tr>
+        <tr><td>行情 / 资讯（双 Tab 容器）</td><td><code>/market</code>（<code>?tab=quote</code> 默认 / <code>?tab=news</code>）</td><td>一级 Tab</td><td>—</td></tr>
+        <tr><td>资讯详情</td><td><code>/market/news/:newsId</code></td><td>二级全屏</td><td>返回 <code>/market?tab=news</code></td></tr>
+      </table>
+      <div class="callout">
+        URL 直接带 <code>?tab=news</code> 时，必须直接落在资讯 Tab，不出现先渲染行情再切换的闪动（首帧即按查询串初始化）。
+        资讯详情刷新/直达时按 <code>newsId</code> 读取内容，找不到时展示空态并提供“返回资讯”按钮。
+      </div>
+      <h4>页面层级</h4>
+      <div class="flow">
+        <span class="node">底部 Tab：行情</span><span class="arrow">→</span>
+        <span class="node">页内 Tab：行情 / 资讯</span><span class="arrow">→</span>
+        <span class="node">资讯条目</span><span class="arrow">→</span>
+        <span class="node">资讯详情（独立路由）</span><span class="arrow">→</span>
+        <span class="node">返回资讯 Tab</span>
+      </div>
+    </section>
+
+    <!-- ============ 5 ============ -->
+    <section id="fr">
+      <h2>5 功能需求</h2>
+
+      <!-- FR-01 -->
+      <div class="fr">
+        <div class="fr-head"><span class="fr-id">FR-01</span><h3>行情 / 资讯 双 Tab 容器</h3><span class="tag p0">P0</span></div>
+        <dl class="kv">
+          <dt>目的</dt><dd>让“看价”和“看资讯”在同一入口内完成，减少跳转层级。</dd>
+          <dt>布局</dt><dd>页面顶部为等宽两个 Tab：行情、资讯，带下划线指示条；Tab 下方为各自内容区；底部保留全局 Tab 栏。</dd>
+          <dt>触发</dt><dd>进入 <code>/market</code> 或点击页内 Tab。</dd>
+        </dl>
+        <h4>处理规则</h4>
+        <ul>
+          <li>默认选中“行情”；点击 Tab 时以 <code>replace</code> 写入 <code>?tab=</code>，不污染历史栈。</li>
+          <li>切换 Tab 只替换内容区，不整页刷新；行情价格状态在切走再切回后保持（本地数据不重置）。</li>
+          <li>页内 Tab 吸顶，滚动长列表时仍可切换。</li>
+          <li>资讯 Tab 打开详情后返回，需回到资讯 Tab 且保持列表滚动位置。</li>
+        </ul>
+        <h4>状态与异常</h4>
+        <table>
+          <tr><th>场景</th><th>表现</th></tr>
+          <tr><td>非法 tab 参数</td><td>回落为行情 Tab</td></tr>
+          <tr><td>从详情返回</td><td>按返回目标进入资讯 Tab，列表滚动位置还原</td></tr>
+        </table>
+      </div>
+
+      <!-- FR-02 -->
+      <div class="fr">
+        <div class="fr-head"><span class="fr-id">FR-02</span><h3>行情概览区</h3><span class="tag p0">P0</span></div>
+        <dl class="kv">
+          <dt>目的</dt><dd>一屏内回答“现在多少钱、涨了还是跌了、数据是否可信”。</dd>
+          <dt>布局</dt><dd>标的横向切换 → 大号实时价 + 涨跌额/涨跌幅 → 关键数据网格（今开/最高/最低/昨收/成交量/成交额）→ 报价时间与数据来源。</dd>
+          <dt>触发</dt><dd>进入行情 Tab、切换标的、定时刷新。</dd>
+        </dl>
+        <div class="wire-wrap">
+          <div class="phone">
+            <div class="bar"><span>9:41</span><span>行情</span><span>···</span></div>
+            <div class="tabs"><div class="on">行情</div><div>资讯</div></div>
+            <div class="row">
+              <div class="blk h28 gold mock-text"><b>平台买入</b></div>
+              <div class="blk h28 mock-text">平台回购</div>
+              <div class="blk h28 mock-text">Au99.99</div>
+            </div>
+            <div class="blk h90 gold">
+              <div class="mock-text" style="padding-top:12px">
+                平台金条买入价<br />
+                <span class="num red" style="font-size:24px;font-weight:700">668.20</span>
+                <span class="red" style="font-size:11px"> +3.80 +0.57%</span><br />
+                <span style="font-size:9px;color:#8a8a92">元/克 · 上海黄金交易所 · 10:32:08</span>
+              </div>
+            </div>
+            <div class="row">
+              <div class="blk h40 mock-text">今开<br /><b class="num">665.10</b></div>
+              <div class="blk h40 mock-text">最高<br /><b class="num red">669.60</b></div>
+              <div class="blk h40 mock-text">最低<br /><b class="num green">664.20</b></div>
+            </div>
+            <div class="row">
+              <div class="blk h40 mock-text">昨收<br /><b class="num">664.40</b></div>
+              <div class="blk h40 mock-text">成交量<br /><b class="num">2.31万</b></div>
+              <div class="blk h40 mock-text">成交额<br /><b class="num">15.4亿</b></div>
+            </div>
+            <div class="caption">行情概览 · 红涨绿跌</div>
+          </div>
+        </div>
+        <h4>处理规则</h4>
+        <ul>
+          <li>标的切换为横向可滚动胶囊组，选中态用金色描边高亮；切换后大号价格、关键数据、图表、报价入口同步切换。</li>
+          <li>涨跌额 = 现价 − 昨收；涨跌幅 = 涨跌额 ÷ 昨收 × 100%，保留 2 位小数；涨红、跌绿、平盘用中性色。</li>
+          <li>每次刷新时数字做 300ms 内的高亮闪动，避免高频动画。</li>
+          <li>报价时间与数据来源必须与价格同时可见；时间精确到秒。</li>
+          <li>单位切换（元/克 ↔ 元/盎司）为 P1，顶部以“元/克”文字按钮提示可切换。</li>
+        </ul>
+        <h4>状态与异常</h4>
+        <table>
+          <tr><th>场景</th><th>表现</th></tr>
+          <tr><td>数据延迟</td><td>价格正常展示，时间后追加“数据延迟”标识</td></tr>
+          <tr><td>休市</td><td>价格置灰，概览区顶部出现“休市中”说明条，快捷交易不可用</td></tr>
+          <tr><td>首次加载失败</td><td>骨架屏 → 失败占位（“行情加载失败，点击重试”），重试成功恢复</td></tr>
+        </table>
+      </div>
+
+      <!-- FR-03 -->
+      <div class="fr">
+        <div class="fr-head"><span class="fr-id">FR-03</span><h3>图表分析区</h3><span class="tag p0">P0</span><span class="tag p1">十字光标 / 指标为 P0 骨架</span></div>
+        <dl class="kv">
+          <dt>目的</dt><dd>让用户判断短期走势，而不只是看一个价格点。</dd>
+          <dt>布局</dt><dd>分时 / K 线切换 + 周期选择（1分、5分、15分、1小时、日、周、月）+ 指标开关（MA5/10/20、成交量、MACD）。</dd>
+        </dl>
+        <h4>处理规则</h4>
+        <ul>
+          <li>默认：分时图，周期“日”；分时图不显示 MA，K 线默认显示 MA5/MA10。</li>
+          <li>切换标的、周期时重新加载该组合的走势；加载中在图表区内展示骨架，不整页刷新。</li>
+          <li>拖动十字光标显示该时点价格、涨跌与时间；松手 2 秒后自动隐藏。</li>
+          <li>图表区域高度固定，避免切换周期造成页面跳动；横屏不另做布局。</li>
+          <li>历史大事件、节假日休市标注：以竖线 + 文字标签呈现，首版只保留“休市”标注（历史事件为 P1）。</li>
+        </ul>
+        <h4>状态与异常</h4>
+        <table>
+          <tr><th>场景</th><th>表现</th></tr>
+          <tr><td>该周期无数据</td><td>图表区空态“暂无该周期数据”，其余区块正常</td></tr>
+          <tr><td>休市</td><td>图表可看历史，最新点后追加“休市”标签</td></tr>
+        </table>
+      </div>
+
+      <!-- FR-04 -->
+      <div class="fr">
+        <div class="fr-head"><span class="fr-id">FR-04</span><h3>关联产品价格区</h3><span class="tag p0">P0</span></div>
+        <dl class="kv">
+          <dt>目的</dt><dd>提供判断金价的参照物：国际金价、美元指数、原油、白银、铂金与汇率。</dd>
+          <dt>布局</dt><dd>两列网格卡片，每张卡：名称 + 价格 + 涨跌幅；按“国际 → 贵金属 → 汇率”排序。</dd>
+        </dl>
+        <table>
+          <tr><th>产品</th><th>展示字段</th><th>单位/精度</th></tr>
+          <tr><td>伦敦金 / 伦敦银</td><td>价格、涨跌幅</td><td>美元/盎司，2 位</td></tr>
+          <tr><td>美元指数</td><td>点位、涨跌幅</td><td>点，2 位</td></tr>
+          <tr><td>原油</td><td>价格、涨跌幅</td><td>美元/桶，2 位</td></tr>
+          <tr><td>白银 / 铂金</td><td>价格、涨跌幅</td><td>元/克，2 位</td></tr>
+          <tr><td>汇率</td><td>人民币/美元、人民币/港币、人民币/欧元、人民币/英镑</td><td>4 位小数</td></tr>
+        </table>
+        <p><small>点击关联产品仅做轻提示“该品种暂不支持交易”，不跳转页面。</small></p>
+      </div>
+
+      <!-- FR-05 -->
+      <div class="fr">
+        <div class="fr-head"><span class="fr-id">FR-05</span><h3>报价与快捷交易入口区</h3><span class="tag p0">P0</span></div>
+        <dl class="kv">
+          <dt>目的</dt><dd>把“看到价格”直接连接到“算出金额并下单”，满足看价到下单不超过两步。</dd>
+          <dt>布局</dt><dd>买入价 / 回购价并排 → 价差与手续费说明 → 规格选择（5g/10g/20g/50g/100g）→ 实时金额 → 主按钮「立即买入」+ 次按钮「预约购金」「申请回购」→ 锁价说明。</dd>
+        </dl>
+        <h4>计算规则</h4>
+        <table>
+          <tr><th>项</th><th>规则</th></tr>
+          <tr><td>买入金额</td><td>规格克重 × 平台买入价 + 手续费；手续费费率 <span class="tag tbd">TBD</span></td></tr>
+          <tr><td>回购金额</td><td>规格克重 × 平台回购价 − 折价/损耗；折价规则 <span class="tag tbd">TBD</span>（回购为 P1 文案入口，不进入真实流程）</td></tr>
+          <tr><td>价差展示</td><td>买入价与回购价差额，明码标注“买卖价差 ¥x.xx/克”</td></tr>
+          <tr><td>金额精度</td><td>保留 2 位小数，四舍五入；展示千分位</td></tr>
+        </table>
+        <h4>交互规则</h4>
+        <ul>
+          <li>切换规格时金额即时重算，带 150ms 数字过渡；默认选中 10g。</li>
+          <li>「立即买入」带当前标的与规格进入确认订单页；「预约购金」进入预约购金流程入口；「申请回购」在回购未上线前置灰并提示“即将开放”。</li>
+          <li>锁价说明固定展示：“下单后成交价以订单确认时的系统报价为准，锁价时效 60 秒，超时自动取消并重新报价”。</li>
+          <li>休市、数据延迟超过阈值时，「立即买入」置灰并说明原因。</li>
+        </ul>
+        <h4>状态与异常</h4>
+        <table>
+          <tr><th>场景</th><th>表现</th></tr>
+          <tr><td>报价跳变</td><td>确认订单页校验价格区间（2~5 元可配置），超出时提示重新确认价格</td></tr>
+          <tr><td>锁价超时</td><td>沿用现有订单倒计时与自动取消逻辑</td></tr>
+          <tr><td>休市</td><td>按钮置灰 + “当前休市，开市后可交易”</td></tr>
+        </table>
+      </div>
+
+      <!-- FR-06 -->
+      <div class="fr">
+        <div class="fr-head"><span class="fr-id">FR-06</span><h3>自选（本地演示态）</h3><span class="tag p0">P0</span></div>
+        <dl class="kv">
+          <dt>目的</dt><dd>让用户把常看的标的固定在顶部，减少每次切换成本。</dd>
+          <dt>入口</dt><dd>概览区标的胶囊右侧星标；自选区“管理”。</dd>
+        </dl>
+        <h4>处理规则</h4>
+        <ul>
+          <li>点星标切换收藏；收藏后标的进入“自选”分组并排在最前，取消后移回原分组。</li>
+          <li>自选数据保存在浏览器本地（<code>gold_market_watchlist</code>），刷新、重开页面保持；清空需在“管理”中逐个移除或全部清空。</li>
+          <li>自选数量上限 8 个，达到上限再收藏时提示“自选最多 8 个，请先移除”。</li>
+          <li>无自选时自选区不展示，仅保留星标入口，避免空区块占位。</li>
+        </ul>
+      </div>
+
+      <!-- FR-07 -->
+      <div class="fr">
+        <div class="fr-head"><span class="fr-id">FR-07</span><h3>到价提醒（本地演示态）</h3><span class="tag p0">P0</span></div>
+        <dl class="kv">
+          <dt>目的</dt><dd>用户不必盯盘，价格到达心理价位时得到反馈。</dd>
+          <dt>入口</dt><dd>概览区“设提醒”文字按钮；自选标的长按/更多菜单（二选一，原型用前者）。</dd>
+          <dt>形式</dt><dd>底部弹层：当前标的 + 当前价 + 方向（高于/低于）+ 目标价输入 + 确认。</dd>
+        </dl>
+        <div class="wire-wrap">
+          <div class="phone">
+            <div class="bar"><span>9:41</span><span>行情</span><span>···</span></div>
+            <div class="blk h28 gold" style="margin:10px 6px"></div>
+            <div class="blk h60 dark"></div>
+            <div class="blk h90 gold" style="margin-top:60px"></div>
+            <div class="mock-text" style="border-top:1px solid #e8e6e1;padding-top:10px">
+              <b>设置到价提醒</b>　<span style="color:#8a8a92">平台金条买入价</span><br />
+              <span style="font-size:10px;color:#8a8a92">当前 ¥668.20/克</span><br />
+              方向：<span style="border:1px solid #d8c9a8;border-radius:4px;padding:2px 8px">高于</span>
+              <span style="border:1px solid #e8e6e1;border-radius:4px;padding:2px 8px">低于</span><br />
+              目标价：<span style="border:1px solid #e8e6e1;border-radius:4px;padding:2px 20px">672.00</span> 元/克<br />
+              <span style="display:block;background:#a97b2f;color:#fff;text-align:center;border-radius:6px;padding:6px;margin-top:8px">保存提醒</span>
+            </div>
+            <div class="caption">到价提醒弹层（本地演示）</div>
+          </div>
+        </div>
+        <h4>处理规则</h4>
+        <ul>
+          <li>目标价必填，正数，最多 2 位小数；与当前价比较后自动建议方向（高于现价默认“高于”，低于默认“低于”）。</li>
+          <li>同一标的最多同时存在 3 条待触发提醒；重复目标价给出提示。</li>
+          <li>保存后进入“我的提醒”列表（行情页底部入口），展示标的、方向、目标价、状态与创建时间。</li>
+          <li>演示态触发：页面内用定时器模拟报价波动，命中目标价后展示页面内提醒条 + 提醒状态改为“已触发”，不调用系统推送。</li>
+          <li>提醒可删除；已触发提醒保留 7 天展示（演示态按本地时间计算）。</li>
+        </ul>
+        <h4>状态与异常</h4>
+        <table>
+          <tr><th>场景</th><th>表现</th></tr>
+          <tr><td>输入非法</td><td>输入框下方错误提示，保存按钮不可用</td></tr>
+          <tr><td>达到数量上限</td><td>提示“最多设置 3 条提醒”，需先删除</td></tr>
+          <tr><td>无提醒</td><td>“我的提醒”为空态，引导去设置</td></tr>
+        </table>
+      </div>
+
+      <!-- FR-08 -->
+      <div class="fr">
+        <div class="fr-head"><span class="fr-id">FR-08</span><h3>合规与风险提示</h3><span class="tag p0">P0</span></div>
+        <h4>处理规则</h4>
+        <ul>
+          <li>本机首次进入行情 Tab，弹出风险提示弹窗：说明黄金价格波动、盈亏自担、资讯不构成投资建议；用户勾选“我已阅读并理解”后才能点击“继续查看”。</li>
+          <li>弹窗不可点遮罩关闭；未确认前行情数据区置灰，不展示可交易按钮。</li>
+          <li>确认后记录本地标记（<code>gold_market_risk_ack</code>），后续进入不再弹出。</li>
+          <li>行情页底部常驻风险声明：“黄金价格波动，盈亏由用户自行承担”。</li>
+          <li>休市、暂停交易时报价置灰并说明原因，禁止进入下单。</li>
+        </ul>
+      </div>
+
+      <!-- FR-09 -->
+      <div class="fr">
+        <div class="fr-head"><span class="fr-id">FR-09</span><h3>资讯 Tab（信息流）</h3><span class="tag p0">P0</span></div>
+        <dl class="kv">
+          <dt>目的</dt><dd>在行情页内承接快讯与解读，解释“为什么涨/跌”。</dd>
+          <dt>布局</dt><dd>无标签、无筛选；按发布时间倒序的卡片流：缩略图（可选）+ 标题（最多 2 行）+ 发布时间；列表顶部为“资讯与解读”说明与免责提示。</dd>
+          <dt>触发</dt><dd>点击页内“资讯”Tab。</dd>
+        </dl>
+        <div class="wire-wrap">
+          <div class="phone">
+            <div class="bar"><span>9:41</span><span>行情</span><span>···</span></div>
+            <div class="tabs"><div>行情</div><div class="on">资讯</div></div>
+            <div class="row" style="margin-top:10px">
+              <div class="blk h60" style="flex:none;width:72px"></div>
+              <div class="mock-text" style="padding:0">
+                <b>深交所组合式推出新一批降费措施 助力激发市场主体活力</b><br />
+                <span style="font-size:9px;color:#8a8a92">2026-11-22 18:34</span>
+              </div>
+            </div>
+            <div class="row">
+              <div class="blk h60" style="flex:none;width:72px"></div>
+              <div class="mock-text" style="padding:0">
+                <b>上交所组合式推出新一批降费措施 助力激发市场主体活力</b><br />
+                <span style="font-size:9px;color:#8a8a92">2026-11-22 18:40</span>
+              </div>
+            </div>
+            <div class="row">
+              <div class="blk h60" style="flex:none;width:72px"></div>
+              <div class="mock-text" style="padding:0">
+                <b>特朗普：如果无法达成协议，倾向于新年后打击伊朗</b><br />
+                <span style="font-size:9px;color:#8a8a92">2026-11-23 01:59</span>
+              </div>
+            </div>
+            <div class="caption">资讯 Tab · 无标签，倒序信息流</div>
+          </div>
+        </div>
+        <h4>处理规则</h4>
+        <ul>
+          <li>列表按发布时间倒序，首屏 20 条，滚动到底加载更多（P1）；无标签、无分类筛选。</li>
+          <li>标题最多 2 行，超出省略；无缩略图的条目只用文字卡，不留白框。</li>
+          <li>点击条目进入独立详情路由；列表内不展开全文。</li>
+          <li>列表底部固定免责声明：“资讯仅作信息参考，不构成投资建议，不承诺收益”。</li>
+          <li>空态：“暂无资讯，稍后再来看看”。</li>
+        </ul>
+      </div>
+
+      <!-- FR-10 -->
+      <div class="fr">
+        <div class="fr-head"><span class="fr-id">FR-10</span><h3>资讯详情页（独立路由）</h3><span class="tag p0">P0</span></div>
+        <dl class="kv">
+          <dt>入口</dt><dd>资讯 Tab 点击任一条目。</dd>
+          <dt>路由</dt><dd><code>/market/news/:newsId</code>，独立全屏二级页。</dd>
+          <dt>布局</dt><dd>标题栏“资讯详情”+ 返回 → 标题 → 发布时间 + 来源 → 正文段落（图文可选）→ 免责声明 → 相关链接（如有，P2 才跳转）。</dd>
+        </dl>
+        <div class="wire-wrap">
+          <div class="phone">
+            <div class="bar"><span>←</span><span>资讯详情</span><span>···</span></div>
+            <div class="mock-text" style="padding:8px 10px">
+              <b style="font-size:12px;line-height:1.5">特朗普：如果无法达成协议，倾向于新年后打击伊朗</b><br />
+              <span style="font-size:9px;color:#8a8a92">2026-11-23 01:59 · 来源：金十数据</span>
+              <hr style="border:0;border-top:1px solid #e8e6e1;margin:8px 0" />
+              <span style="font-size:10px;color:#4a4a52;line-height:1.8">
+                金十数据11月23日讯，据福克斯新闻，美国总统特朗普称，如果无法达成协议，他倾向于在新年之后恢复对伊朗的战争……
+              </span>
+              <div class="blk h40" style="margin:10px 0"></div>
+              <span style="font-size:9px;color:#8a8a92">资讯仅作信息参考，不构成投资建议，不承诺收益。</span>
+            </div>
+            <div class="caption">资讯详情 · 二级页无底部 Tab</div>
+          </div>
+        </div>
+        <h4>处理规则</h4>
+        <ul>
+          <li>返回固定回到 <code>/market?tab=news</code>，并保留列表滚动位置；不使用浏览器历史回退导致回到其他页面。</li>
+          <li>正文段落原样展示，不截断；长文按段落间距排版，支持长按复制。</li>
+          <li>发布时间显示到分钟；来源必须展示。</li>
+          <li>原文外链默认不展示；如后续开放，点击前二次确认“将离开当前应用”。</li>
+          <li>详情页底部不展示“相关推荐”，避免引入不必要的推荐逻辑。</li>
+        </ul>
+        <h4>状态与异常</h4>
+        <table>
+          <tr><th>场景</th><th>表现</th></tr>
+          <tr><td>newsId 不存在</td><td>空态“资讯不存在或已下线”，按钮“返回资讯”</td></tr>
+          <tr><td>直接访问/刷新</td><td>按 id 读取样例数据正常渲染，返回按钮仍回资讯 Tab</td></tr>
+          <tr><td>正文缺失</td><td>仅展示标题与来源 + “内容加载失败”占位</td></tr>
+        </table>
+      </div>
+
+      <!-- FR-11 -->
+      <div class="fr">
+        <div class="fr-head"><span class="fr-id">FR-11</span><h3>交互稳定性与异常兜底</h3><span class="tag p0">P0</span></div>
+        <ul>
+          <li>行情数据每 5 秒模拟刷新一次；页面隐藏（切后台）时暂停刷新，回到前台立即刷新一次并更新报价时间。</li>
+          <li>模拟断线：连续 30 秒无刷新视为断线，顶部出现重连提示条；恢复后提示“已恢复实时行情”，价格继续刷新。</li>
+          <li>所有价格区块在刷新失败时保留上一次数据，并标记“数据延迟”，不清空成 0。</li>
+          <li>异常报价（价格 ≤ 0、涨跌幅绝对值超过 20%）不展示为可交易价格，显示“报价异常，请稍后重试”。</li>
+          <li>资讯与行情各自加载互不阻塞：资讯加载失败不影响行情展示，反之亦然。</li>
+        </ul>
+      </div>
+
+      <!-- FR-12 -->
+      <div class="fr">
+        <div class="fr-head"><span class="fr-id">FR-12</span><h3>持仓浮动盈亏联动</h3><span class="tag p1">P1</span></div>
+        <p>已持仓用户在行情概览下方看到“我的持仓浮动盈亏”卡片，按当前标的现价与平均成本价计算，与资产页口径一致；无持仓不展示。数据来源与资产模块统一，本版本仅做展示位预留。</p>
+      </div>
+    </section>
+
+    <!-- ============ 6 ============ -->
+    <section id="rules">
+      <h2>6 共享规则</h2>
+      <h3>6.1 红涨绿跌</h3>
+      <p>涨为红色、跌为绿色、平盘为中性灰；行情、关联产品、资讯内嵌行情数字统一遵循，不允许局部反色。</p>
+      <h3>6.2 价格精度与单位</h3>
+      <table>
+        <tr><th>类型</th><th>精度</th><th>单位</th></tr>
+        <tr><td>平台/上金所金价</td><td>2 位小数</td><td>元/克</td></tr>
+        <tr><td>伦敦金/银</td><td>2 位小数</td><td>美元/盎司</td></tr>
+        <tr><td>汇率</td><td>4 位小数</td><td>人民币/外币</td></tr>
+        <tr><td>金额合计</td><td>2 位小数，千分位</td><td>元</td></tr>
+        <tr><td>涨跌幅</td><td>2 位小数 + %</td><td>—</td></tr>
+      </table>
+      <h3>6.3 单位换算（P1）</h3>
+      <p>元/克 ↔ 元/盎司：1 盎司 = 31.1035 克；默认按克展示，切换后保留换算结果 2 位小数，并标注“按 31.1035g/oz 换算”。</p>
+      <h3>6.4 本地演示数据</h3>
+      <table>
+        <tr><th>存储键</th><th>内容</th><th>生命周期</th></tr>
+        <tr><td><code>gold_market_watchlist</code></td><td>自选标的编码数组</td><td>长期保留，可清空</td></tr>
+        <tr><td><code>gold_market_alerts</code></td><td>到价提醒列表</td><td>长期保留，可删除</td></tr>
+        <tr><td><code>gold_market_risk_ack</code></td><td>风险提示已确认标记</td><td>长期保留</td></tr>
+      </table>
+      <h3>6.5 合规文案</h3>
+      <ul>
+        <li>风险弹窗：黄金价格受国际形势影响波动较大，投资有风险，盈亏由用户自行承担。</li>
+        <li>页面常驻：黄金价格波动，盈亏由用户自行承担。</li>
+        <li>资讯声明：资讯仅作信息参考，不构成投资建议，不承诺收益。</li>
+        <li>交易入口：下单后成交价以订单确认时的系统报价为准，锁价时效 60 秒。</li>
+      </ul>
+    </section>
+
+    <!-- ============ 7 ============ -->
+    <section id="states">
+      <h2>7 状态与异常</h2>
+      <table>
+        <tr><th>模块</th><th>加载中</th><th>空</th><th>失败</th><th>特殊</th></tr>
+        <tr><td>行情概览</td><td>骨架屏</td><td>—</td><td>重试占位</td><td>休市置灰 / 数据延迟 / 断线提示条</td></tr>
+        <tr><td>图表</td><td>图表区骨架</td><td>暂无该周期数据</td><td>点击重试</td><td>休市尾部标注</td></tr>
+        <tr><td>自选</td><td>—</td><td>不展示区块</td><td>—</td><td>达到 8 个上限提示</td></tr>
+        <tr><td>到价提醒</td><td>—</td><td>空态引导设置</td><td>—</td><td>待触发 / 已触发 / 已失效</td></tr>
+        <tr><td>资讯流</td><td>列表骨架</td><td>暂无资讯</td><td>加载失败 + 重试</td><td>加载更多失败保留已加载内容</td></tr>
+        <tr><td>资讯详情</td><td>正文骨架</td><td>资讯不存在</td><td>内容加载失败</td><td>直接访问可渲染</td></tr>
+      </table>
+    </section>
+
+    <!-- ============ 8 ============ -->
+    <section id="open">
+      <h2>8 待确认问题</h2>
+      <table>
+        <tr><th>#</th><th>问题</th><th>影响</th><th>当前处理</th></tr>
+        <tr><td>1</td><td>平台金条买卖价差、手续费率与回购折价的具体数值</td><td>快捷交易金额计算与文案</td><td><span class="tag tbd">TBD</span> 原型用占位费率并在说明中标注“以实际规则为准”</td></tr>
+        <tr><td>2</td><td>行情模拟刷新频率与断线阈值是否按本文 5 秒 / 30 秒执行</td><td>演示节奏与状态可见性</td><td>暂定 5 秒刷新、30 秒断线</td></tr>
+        <tr><td>3</td><td>资讯详情是否保留原文外链</td><td>合规与跳转体验</td><td>默认隐藏，P2 再评估</td></tr>
+        <tr><td>4</td><td>首屏默认标的</td><td>首次进入的信息重心</td><td>建议“平台金条买入价”，与买金主链路一致</td></tr>
+        <tr><td>5</td><td>到价提醒触发后的展示范围（仅行情页 / 全局提示）</td><td>提醒可达性</td><td>本版本仅行情页内提示</td></tr>
+      </table>
+    </section>
+
+    <!-- ============ appendix ============ -->
+    <section id="sample">
+      <h2>附录 样例资讯（原型素材）</h2>
+      <p>以下 3 条内容来自用户提供的参考页面，作为资讯流与详情页的首批演示数据，文案与时间保持原样。</p>
+      <table>
+        <tr><th>ID</th><th>标题</th><th>发布时间</th><th>来源</th></tr>
+        <tr><td><code>n-20261122183451130800</code></td><td>深交所组合式推出新一批降费措施 助力激发市场主体活力</td><td>2026-11-22 18:34</td><td>金十数据</td></tr>
+        <tr><td><code>n-20261122184042992800</code></td><td>上交所组合式推出新一批降费措施 助力激发市场主体活力</td><td>2026-11-22 18:40</td><td>金十数据</td></tr>
+        <tr><td><code>n-20261123015954763800</code></td><td>特朗普：如果无法达成协议，倾向于新年后打击伊朗</td><td>2026-11-23 01:59</td><td>金十数据</td></tr>
+      </table>
+      <h4>正文摘要</h4>
+      <p><b>1）深交所降费：</b>金十数据11月22日讯，11月22日，深交所发布《关于进一步减免相关费用的通知》，推出新一批降费措施，包括免收交易单元使用费、网络投票服务费、减免交易通信服务费、下调数据中心收费标准等，并将今年初已发布的免收上市费、债券经手费等措施有效期再延长两年。本次新推出的降费措施预计向市场让利13.9亿元，预计本年度深市整体降费金额超过22亿元。</p>
+      <p><b>2）上交所降费：</b>金十数据11月22日讯，11月22日，上交所发布《关于进一步减免相关费用的通知》，推出新一批降费措施，包括免收交易单元使用费，减免数据中心相关服务费用等，并将今年初已发布的免收上市费、债券经手费等措施有效期再延长两年。本次新推出的降费措施预计向市场让利13.68亿元，预计本年度沪市整体降费金额超过24亿元。</p>
+      <p><b>3）特朗普表态：</b>金十数据11月23日讯，据福克斯新闻，美国总统特朗普称，如果无法达成协议，他倾向于在新年之后恢复对伊朗的战争。他说：“美国与伊朗仍在进行间接谈判，但尚未取得实质性成果。”特朗普形容伊朗人是“专业的踢踏舞者”，并补充道：“他们一直在说个不停。他们除了空谈什么也没做，说的全都是废话。”他还表示，任何试图突破封锁的伊朗船只，都将落得与伊朗其他海军力量一样的下场——沉入海底。</p>
+      <div class="callout">
+        原型实现时，这三条内容直接作为资讯 mock 数据；正文按自然段拆分，详情页不加标签、不显示原文链接，底部统一展示合规声明。
+      </div>
+    </section>
+
+    <div class="foot">行情与资讯 需求文档 v1.0 · 2026-11-23</div>
+  </main>
+</div>
+</body>
+</html>

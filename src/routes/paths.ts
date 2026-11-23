@@ -3,6 +3,13 @@
  */
 export const paths = {
   home: '/home',
+  market: '/market',
+  /** 资讯列表：行情页底部"更多"入口进入，独立全屏 */
+  marketNewsList: '/market/news',
+  /** 资讯详情：列表页条目点击进入，返回固定回列表 */
+  marketNewsDetail: '/market/news/:newsId',
+  /** 设置提醒：行情页 AlertsCard 与 OverviewCard 入口进入，独立全屏 */
+  marketAlertSettings: '/market/alert-settings',
   buy: '/buy',
   buyDetail: '/buy/:productId',
   cart: '/cart',
@@ -43,6 +50,9 @@ export const paths = {
   meAccounts: '/me/accounts',
   meAccountForm: '/me/accounts/new',
   login: '/login',
+  /** 登录页协议：独立路由整页展示，便于长文阅读 */
+  loginAgreementService: '/login/agreement/service',
+  loginAgreementPrivacy: '/login/agreement/privacy',
   quote: '/quote',
   quoteAgreement: '/quote/agreement',
   submitResult: '/quote/submit-result',
@@ -61,6 +71,16 @@ export const paths = {
     trade: '/style-guide/trade',
     states: '/style-guide/states',
   },
+}
+
+/** 行情资讯列表：底部卡片"更多"入口。 */
+export function marketNewsListPath() {
+  return paths.marketNewsList
+}
+
+/** 行情资讯详情：列表页条目唯一入口。 */
+export function marketNewsDetailPath(newsId: string) {
+  return `/market/news/${newsId}`
 }
 
 /** 商品详情：购物车、商品卡共用同一条跳转规则。 */

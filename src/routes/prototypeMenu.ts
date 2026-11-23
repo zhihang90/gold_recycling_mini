@@ -27,7 +27,7 @@ export interface PrototypeMenuGroup {
 
 /** 弹层状态分组：逐条枚举可直达的弹层状态 */
 const SHEET_GROUP: PrototypeMenuGroup = {
-  title: '弹层状态',
+  title: '多状态弹层/页面',
   sections: SHEET_STATES.reduce<PrototypeMenuSection[]>((sections, item) => {
     const section = sections.find((entry) => entry.title === item.section)
     const entry = { label: item.label, path: item.menuPath }
@@ -41,36 +41,33 @@ const SHEET_GROUP: PrototypeMenuGroup = {
 }
 
 /**
- * 同一路由在左栏拆成多条入口：按路由 path 覆盖默认条目。
- * 目前只用于订单列表——购买订单 / 回收订单是同一页的两个 Tab，用查询串区分。
+ * 特殊入口映射：一条 manifest route 展开成多个侧栏入口。
+ * 目前空着——购买订单 / 回收订单已分别挂到各自业务组，不再从公共模块统一展开。
  */
-const MENU_ITEMS_BY_PATH: Record<string, PrototypeMenuItem[]> = {
-  [paths.orders]: [
-    { label: '购买订单', path: `${paths.orders}?type=sales` },
-    { label: '回收订单', path: `${paths.orders}?type=recycle` },
-  ],
-}
+const MENU_ITEMS_BY_PATH: Record<string, PrototypeMenuItem[]> = {}
 
-export const PROTOTYPE_MENU: PrototypeMenuGroup[] = [
-  ...ROUTE_GROUPS.map((title) => {
-    const sections: PrototypeMenuSection[] = []
+export const PROTOTYPE_MENU: PrototypeMenuGroup[] = ROUTE_GROUPS.map((title) => {
+  if (title === SHEET_GROUP.title) {
+    // 弹层状态不走 manifest，直接用硬编码的 SHEET_GROUP 独立成组
+    return SHEET_GROUP
+  }
 
-    APP_ROUTES.filter((route) => route.group === title && !route.hidden)
-      .sort((a, b) => (a.order ?? 100) - (b.order ?? 100))
-      .forEach((route) => {
-        const section = sections.find((item) => item.title === route.section)
-        const entries = MENU_ITEMS_BY_PATH[route.path] ?? [
-          { label: route.label, path: route.menuPath ?? route.path },
-        ]
+  const sections: PrototypeMenuSection[] = []
 
-        if (section) {
-          section.items.push(...entries)
-        } else {
-          sections.push({ title: route.section, items: [...entries] })
-        }
-      })
+  APP_ROUTES.filter((route) => route.group === title && !route.hidden)
+    .sort((a, b) => (a.order ?? 100) - (b.order ?? 100))
+    .forEach((route) => {
+      const section = sections.find((item) => item.title === route.section)
+      const entries = MENU_ITEMS_BY_PATH[route.path] ?? [
+        { label: route.label, path: route.menuPath ?? route.path },
+      ]
 
-    return { title, sections }
-  }).filter((group) => group.sections.length > 0),
-  SHEET_GROUP,
-]
+      if (section) {
+        section.items.push(...entries)
+      } else {
+        sections.push({ title: route.section, items: [...entries] })
+      }
+    })
+
+  return { title, sections }
+}).filter((group) => group.sections.length > 0)

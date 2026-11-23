@@ -32,7 +32,11 @@ export interface SalesOrder {
   payMethod?: SalesPayMethod
   paidAt?: string
   express?: { company: string; no: string }
+  /** 待付款支付截止时间（毫秒时间戳）：金价波动大，下单后需在 1 分钟内完成支付 */
+  payDeadline?: number
 }
+/** 待付款支付窗口：1 分钟 */
+export const PAY_WINDOW_MS = 60_000
 export const SALES_STATUS_LABEL: Record<SalesStatus, string> = {
   'pending-payment': '待付款',
   'pending-shipment': '待发货',
@@ -77,6 +81,7 @@ export const DEMO_SALES_ORDERS: SalesOrder[] = [
     address: DEMO_ADDRESS,
     note: '工作日送达即可',
     payMethod: 'wechat',
+    payDeadline: Date.now() + PAY_WINDOW_MS,
   },
   {
     id: 'SO20261112002',
@@ -133,19 +138,29 @@ export const DEMO_SALES_ORDERS: SalesOrder[] = [
     payMethod: 'wechat',
   },
 ]
-/** 兼容早期写入的会话订单：补齐收货地址与待收货运单，避免详情页缺块 */
+/** 兼容早期写入的会话订单：补齐收货地址、待收货运单与待付款支付截止时间 */
 function normalizeOrder(order: SalesOrder): SalesOrder {
-  if (order.address && (order.express || order.status !== 'pending-receipt')) return order
+  const needsAddress = !order.address
+  const needsExpress = !order.express && order.status === 'pending-receipt'
+  const needsDeadline = order.status === 'pending-payment' && !order.payDeadline
+  if (!needsAddress && !needsExpress && !needsDeadline) return order
   return {
     ...order,
     address: order.address ?? DEMO_ADDRESS,
     express: order.express ?? (order.status === 'pending-receipt' ? DEMO_EXPRESS : undefined),
+    payDeadline: needsDeadline ? Date.now() + PAY_WINDOW_MS : order.payDeadline,
   }
 }
 
 export function readSalesOrders(): SalesOrder[] {
   const stored = readSession<SalesOrder[]>(STORAGE_KEYS.SALES_ORDERS)
-  return stored ? stored.map(normalizeOrder) : DEMO_SALES_ORDERS
+  if (!stored) return DEMO_SALES_ORDERS
+  const normalized = stored.map(normalizeOrder)
+  // 补齐的支付截止时间需要落盘，否则每次读取都会重置 1 分钟支付窗口
+  if (normalized.some((order, index) => order !== stored[index])) {
+    writeSession(STORAGE_KEYS.SALES_ORDERS, normalized)
+  }
+  return normalized
 }
 export function writeSalesOrders(orders: SalesOrder[]) {
   writeSession(STORAGE_KEYS.SALES_ORDERS, orders)
@@ -200,5 +215,6 @@ export function createSalesOrder(input: NewSalesOrderInput): SalesOrder {
     note: input.note || undefined,
     payMethod: input.payMethod,
     lines: input.lines,
+    payDeadline: Date.now() + PAY_WINDOW_MS,
   }
 }

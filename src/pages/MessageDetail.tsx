@@ -20,6 +20,7 @@ const CATEGORY_META: Record<MessageCategory, { icon: LucideIcon; tone: string }>
   fund: { icon: Wallet, tone: 'text-gold-700' },
   service: { icon: Headset, tone: 'text-primary' },
   system: { icon: Bell, tone: 'text-muted-foreground' },
+  alert: { icon: Bell, tone: 'text-price' },
 }
 
 /** 消息详情：进详情即标记已读，主按钮直达业务页，次要入口查看关联订单 / 联系客服 */

@@ -19,7 +19,7 @@ const MANIFEST = join(ROOT, 'src', 'routes', 'manifest.ts')
 /** 不参与路由注册的页面文件（内部组件 / style-guide 共享模块） */
 const PAGE_EXEMPT = new Set(['style-guide/shared'])
 
-const ALLOWED_TAB_ICONS = new Set(['home', 'bag', 'cart', 'orders', 'user'])
+const ALLOWED_TAB_ICONS = new Set(['home', 'chart', 'bag', 'cart', 'user'])
 
 /** 递归列出 pages/ 下全部 .tsx 相对路径（正斜杠、不带扩展名） */
 function walkPages(dir, base = '') {

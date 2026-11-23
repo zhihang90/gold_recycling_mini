@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { ClipboardList, Home, ShoppingBag, ShoppingCart, User } from 'lucide-react'
+import { ClipboardList, Home, LineChart, ShoppingBag, ShoppingCart, User } from 'lucide-react'
 import {
   ROUTE_GROUPS,
   ROUTE_MANIFEST,
@@ -42,9 +42,9 @@ export interface AppRoute {
 
 const TAB_ICONS: Record<TabIconName, LucideIcon> = {
   home: Home,
+  chart: LineChart,
   bag: ShoppingBag,
   cart: ShoppingCart,
-  orders: ClipboardList,
   user: User,
 }
 

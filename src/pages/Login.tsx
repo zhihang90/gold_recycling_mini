@@ -1,4 +1,4 @@
-import { DetailPage, AgreementCheck, Button, BottomSheet, FormField, BrandMark, TextLink, Toast } from '@/components'
+import { DetailPage, AgreementCheck, Button, FormField, BrandMark, TextLink, Toast } from '@/components'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Scale } from 'lucide-react'
@@ -6,8 +6,6 @@ import { Scale } from 'lucide-react'
 import { isPhoneNumber, isSmsCode } from '@/lib/validation'
 import { saveMember } from '@/mocks/member'
 import { paths } from '@/routes/paths'
-
-type ProtocolSheet = 'service' | 'privacy' | null
 
 /**
  * 登录：手机号 + 验证码单列表单，不使用微信授权。
@@ -22,7 +20,6 @@ export function LoginPage() {
   const [agreed, setAgreed] = useState(false)
   const [hintVisible, setHintVisible] = useState(false)
   const [hintTick, setHintTick] = useState(0)
-  const [protocol, setProtocol] = useState<ProtocolSheet>(null)
   const [countdown, setCountdown] = useState(0)
   /** 登录中：按钮转圈并禁用，避免重复提交 */
   const [submitting, setSubmitting] = useState(false)
@@ -139,10 +136,10 @@ export function LoginPage() {
           >
             <span className="text-muted-foreground">
               我已阅读并同意
-              <TextLink inline tone="link" onClick={() => setProtocol('service')}>
+              <TextLink inline tone="link" onClick={() => navigate(paths.loginAgreementService)}>
                 用户协议、
               </TextLink>
-              <TextLink inline tone="link" onClick={() => setProtocol('privacy')}>
+              <TextLink inline tone="link" onClick={() => navigate(paths.loginAgreementPrivacy)}>
                 隐私政策
               </TextLink>{' '}
               未注册绑定的手机号验证成功后自动注册
@@ -166,29 +163,6 @@ export function LoginPage() {
           </Button>
         </div>
       </form>
-
-      <BottomSheet
-        open={protocol !== null}
-        onClose={() => setProtocol(null)}
-        title={protocol === 'privacy' ? '隐私政策' : '用户协议'}
-        footer={
-          <Button block onClick={() => setProtocol(null)}>
-            知道了
-          </Button>
-        }
-      >
-        {protocol === 'privacy' ? (
-          <div className="space-y-3 text-body text-muted-foreground">
-            <p>手机号将用于登录和接收与回收服务相关的通知。</p>
-            <p>您可以在隐私设置中管理授权，我们会采取必要措施保护您的个人信息。</p>
-          </div>
-        ) : (
-          <div className="space-y-3 text-body text-muted-foreground">
-            <p>本服务提供黄金在线估价、寄件回收、检测结果查询、报价确认与结算进度查询。</p>
-            <p>在线估价仅供参考，最终回收金额以实物检测结果和您确认的报价为准。</p>
-          </div>
-        )}
-      </BottomSheet>
     </DetailPage>
   )
 }

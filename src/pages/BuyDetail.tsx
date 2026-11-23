@@ -1,6 +1,6 @@
 import { Button, Card, DetailPage, Gallery, IconButton, MediaVisual, PriceText, ProductSkuSheet, SegmentedTabs, TextLink, Toast } from '@/components'
 import { useEffect, useState } from 'react'
-import { BadgeCheck, ChevronRight, CircleAlert, Headphones, ShieldCheck, ShoppingCart, Truck } from 'lucide-react'
+import { ChevronRight, CircleAlert, Headphones, ShoppingCart } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { images } from '@/assets/images'
 
@@ -8,12 +8,6 @@ import { addToCart, cartCount, subscribeCart } from '@/mocks/cart'
 import { writeCheckout } from '@/mocks/checkout'
 import { findProduct, soldOf, taglineOf, variantsOf } from '@/mocks/goldShop'
 import { paths } from '@/routes/paths'
-
-const SERVICES = [
-  { icon: BadgeCheck, title: '一物一证', text: '随货附质检证书' },
-  { icon: ShieldCheck, title: '集团检测', text: '安盛华检测背书' },
-  { icon: Truck, title: '顺丰保价', text: '全程保价配送' },
-]
 
 const PARAMS = [
   ['品牌', '安盛华'],
@@ -168,16 +162,6 @@ export function BuyDetailPage() {
           <div className="border-t border-border-subtle px-4 py-3">
             <p className="text-caption text-primary">贵金属商品 · 不支持 7 天无理由退换</p>
           </div>
-        </Card>
-
-        <Card padding="md" className="grid grid-cols-3 gap-2">
-          {SERVICES.map(({ icon: Icon, title, text }) => (
-            <div key={title} className="flex flex-col items-center gap-1 text-center">
-              <Icon size={20} className="text-gold-700" />
-              <p className="text-caption-strong text-foreground">{title}</p>
-              <p className="text-caption text-subtle-foreground">{text}</p>
-            </div>
-          ))}
         </Card>
 
         <Card padding="md" className="space-y-2 bg-primary-soft ring-primary-border">

@@ -1,6 +1,6 @@
 {
   "name": "gold-recycling-h5",
-  "version": "0.1.0",
+  "version": "0.2.7",
   "private": true,
   "type": "module",
   "description": "黄金回收 H5 原型（微信内置浏览器 / PC 浏览器演示）",
@@ -31,6 +31,7 @@
   "dependencies": {
     "clsx": "^2.1.1",
     "lucide-react": "0.577.0",
+    "marked": "^18.2.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.2",

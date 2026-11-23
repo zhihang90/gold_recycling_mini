@@ -7,7 +7,7 @@ import { createExternalStore } from '@/stores/createExternalStore'
  * - 卡片主按钮直达业务页；订单相关消息点卡片直达对应订单详情；系统通知进消息详情
  */
 
-export type MessageCategory = 'order' | 'live' | 'quote' | 'fund' | 'service' | 'system'
+export type MessageCategory = 'order' | 'live' | 'quote' | 'fund' | 'service' | 'system' | 'alert'
 
 export type MessageFilter = MessageCategory | 'all'
 
@@ -43,11 +43,21 @@ export interface MessageItem {
   orderLink?: string
   /** 关键资金与终价类不允许删除，保留期限与交易凭证一致 */
   deletable: boolean
+  /** === 金价提醒专属字段（category === 'alert' 时使用） === */
+  /** 商品名称（如「黄金涨价提醒」） */
+  alertProductName?: string
+  /** 目标金价 */
+  alertTargetPrice?: number
+  /** 报价时间（精确到分钟的完整时间戳） */
+  alertQuoteTime?: string
+  /** 温馨提示（如「现价775.10元，已到目标」） */
+  alertHint?: string
 }
 
-/** 分类 Tab 配置（V1.3 P-26） */
+/** 分类配置（侧边栏列表用） */
 export const MESSAGE_CATEGORIES: { value: MessageFilter; label: string }[] = [
   { value: 'all', label: '全部' },
+  { value: 'alert', label: '金价提醒' },
   { value: 'order', label: '订单进度' },
   { value: 'live', label: '检测直播' },
   { value: 'quote', label: '终价提醒' },
@@ -56,8 +66,52 @@ export const MESSAGE_CATEGORIES: { value: MessageFilter; label: string }[] = [
   { value: 'system', label: '系统通知' },
 ]
 
-/** 演示消息：覆盖 6 个分类 + 3 类置顶关键消息，关联真实回收订单 fixture */
+/** 演示消息：覆盖 7 个分类 + 3 类置顶关键消息 + 金价提醒 */
 export const DEMO_MESSAGES: MessageItem[] = [
+  // === 金价提醒（新分类，按时间倒序置顶） ===
+  {
+    id: 'm-alert-gold-up',
+    category: 'alert',
+    title: '金价通知',
+    summary: '黄金涨价提醒，目标价 775.08 已触发',
+    time: '今天 17:03',
+    pinned: false,
+    deletable: true,
+    alertProductName: '黄金涨价提醒',
+    alertTargetPrice: 775.08,
+    alertQuoteTime: '2026-11-23 17:03',
+    alertHint: '现价 775.10 元/克，已到目标',
+    action: { label: '查看金价', to: '/market' },
+  },
+  {
+    id: 'm-alert-gold-down',
+    category: 'alert',
+    title: '金价通知',
+    summary: '黄金跌价提醒，目标价 775.06 已触发',
+    time: '今天 16:56',
+    pinned: false,
+    deletable: true,
+    alertProductName: '黄金跌价提醒',
+    alertTargetPrice: 775.06,
+    alertQuoteTime: '2026-11-23 16:56',
+    alertHint: '现价 774.85 元/克，已到目标',
+    action: { label: '查看金价', to: '/market' },
+  },
+  {
+    id: 'm-alert-silver-up',
+    category: 'alert',
+    title: '金价通知',
+    summary: '白银涨价提醒，目标价 9.650 已触发',
+    time: '今天 15:20',
+    pinned: false,
+    deletable: true,
+    alertProductName: '白银涨价提醒',
+    alertTargetPrice: 9.65,
+    alertQuoteTime: '2026-11-23 15:20',
+    alertHint: '现价 9.672 元/克，已到目标',
+    action: { label: '查看金价', to: '/market' },
+  },
+  // === 原有消息 ===
   {
     id: 'm-quote-timeout',
     category: 'quote',

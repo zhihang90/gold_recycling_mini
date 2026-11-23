@@ -346,7 +346,12 @@ export function BuyCheckoutPage() {
   /** 取消支付：订单已创建，直接进入详情页继续付款 */
   const cancelPayment = () => {
     setPayOpen(false)
-    if (payOrderId) navigate(orderDetailPath(payOrderId), { replace: true })
+    if (payOrderId) {
+      navigate(orderDetailPath(payOrderId), {
+        replace: true,
+        state: { fromCheckout: true },
+      })
+    }
   }
 
   if (items.length === 0) {
