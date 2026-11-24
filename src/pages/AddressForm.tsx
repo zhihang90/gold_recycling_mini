@@ -1,4 +1,14 @@
-import { Button, Card, DetailPage, FormField, PasteRecognizeBox, PickerSheet, RadioRow, TextLink } from '@/components'
+import {
+  Button,
+  Card,
+  DetailPage,
+  FormField,
+  PasteRecognizeBox,
+  PickerSheet,
+  RadioRow,
+  TextLink,
+  Toast,
+} from '@/components'
 import { useState } from 'react'
 import { ChevronRight, MapPin } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -17,7 +27,7 @@ import {
 import { paths } from '@/routes/paths'
 
 /** 演示用的地址文本：点「粘贴并识别」时自动填入并拆分 */
-const DEMO_PASTE = '陈智航 17688825090 广东省深圳市盐田区深盐路2088号太平洋工业区3栋601'
+const DEMO_PASTE = '张三 17688825090 广东省深圳市盐田区深盐路2088号太平洋工业区3栋601'
 
 /** 右侧竖向图标动作：定位，图标在上、红色短标签在下 */
 function SideAction({
@@ -45,7 +55,10 @@ function SideAction({
       />
       <span
         aria-hidden="true"
-        className={cn('text-caption', tone === 'primary' ? 'text-primary' : 'text-subtle-foreground')}
+        className={cn(
+          'text-caption',
+          tone === 'primary' ? 'text-primary' : 'text-subtle-foreground',
+        )}
       >
         {label}
       </span>
@@ -79,9 +92,9 @@ export function AddressFormPage() {
   )
   /** 保存中：按钮转圈并禁用，避免重复写入 */
   const [saving, setSaving] = useState(false)
+  const [toast, setToast] = useState<string | null>(null)
 
   const phoneValid = isPhoneNumber(phone)
-  const canSave = name.trim() !== '' && phoneValid && region !== '' && place.trim() !== ''
 
   const handleRecognize = () => {
     const raw = pasteText.trim() || DEMO_PASTE
@@ -137,7 +150,22 @@ export function AddressFormPage() {
   }
 
   const handleSave = () => {
-    if (!canSave) return
+    if (!name.trim()) {
+      setToast('请输入联系人姓名')
+      return
+    }
+    if (!phoneValid) {
+      setToast('请输入正确的手机号')
+      return
+    }
+    if (!region) {
+      setToast('请选择所在地区')
+      return
+    }
+    if (!place.trim()) {
+      setToast('请输入详细地址')
+      return
+    }
 
     const next: ShippingAddress = {
       id: editing?.id ?? `addr-${Date.now()}`,
@@ -165,102 +193,106 @@ export function AddressFormPage() {
   }
 
   return (
-    <DetailPage
-      title={editing ? '编辑地址' : '新增地址'}
-      footer={
-        <Button size="lg" block loading={saving} disabled={!canSave} onClick={handleSave}>
-          确定
-        </Button>
-      }
-    >
-      <PasteRecognizeBox
-        value={pasteText}
-        onChange={setPasteText}
-        onRecognize={handleRecognize}
-        hint={recognizeHint?.text ?? '支持一次粘贴姓名、手机号与地址'}
-        error={recognizeHint?.error}
-      />
+    <>
+      <DetailPage
+        title={editing ? '编辑地址' : '新增地址'}
+        footer={
+          <Button size="lg" block loading={saving} onClick={handleSave}>
+            确定
+          </Button>
+        }
+      >
+        <PasteRecognizeBox
+          value={pasteText}
+          onChange={setPasteText}
+          onRecognize={handleRecognize}
+          hint={recognizeHint?.text ?? '支持一次粘贴姓名、手机号与地址'}
+          error={recognizeHint?.error}
+        />
 
-      <Card padding="md" className="space-y-1">
-        <h2 className="pb-2 text-card-title text-foreground">联系人信息</h2>
+        <Card padding="md" className="space-y-1">
+          <h2 className="pb-2 text-card-title text-foreground">联系人信息</h2>
 
-        <div className="grid grid-cols-2 gap-3">
-          <FormField bare label="真实姓名" value={name} onChange={setName} required />
+          <div className="grid grid-cols-2 gap-3">
+            <FormField bare label="真实姓名" value={name} onChange={setName} required />
+            <FormField
+              bare
+              label="手机号"
+              value={phone}
+              onChange={setPhone}
+              type="tel"
+              inputMode="tel"
+              maxLength={11}
+              required
+              className="border-l border-border-subtle pl-3"
+              error={phone.length === 11 && !phoneValid ? '手机号格式不正确' : undefined}
+            />
+          </div>
+
+          <div className="flex items-end gap-2">
+            <button
+              type="button"
+              onClick={() => setRegionOpen(true)}
+              className="flex h-11 min-w-0 flex-1 items-center justify-between gap-2 border-b border-border-subtle text-left transition"
+            >
+              <span
+                className={cn(
+                  'truncate text-body',
+                  region ? 'text-foreground' : 'text-subtle-foreground',
+                )}
+              >
+                {region || '省市区'}
+              </span>
+              <ChevronRight size={16} className="shrink-0 text-icon-muted" aria-hidden="true" />
+            </button>
+            <SideAction icon={MapPin} label="定位" onClick={fillLocation} tone="primary" />
+          </div>
+
           <FormField
             bare
-            label="手机号"
-            value={phone}
-            onChange={setPhone}
-            type="tel"
-            inputMode="tel"
-            maxLength={11}
+            label="详细地址"
+            value={place}
+            onChange={setPlace}
+            placeholder="详细地址（例如 **街 ** 号）"
             required
-            className="border-l border-border-subtle pl-3"
-            error={phone.length === 11 && !phoneValid ? '手机号格式不正确' : undefined}
           />
-        </div>
-
-        <div className="flex items-end gap-2">
-          <button
-            type="button"
-            onClick={() => setRegionOpen(true)}
-            className="flex h-11 min-w-0 flex-1 items-center justify-between gap-2 border-b border-border-subtle text-left transition"
-          >
-            <span
-              className={cn(
-                'truncate text-body',
-                region ? 'text-foreground' : 'text-subtle-foreground',
-              )}
-            >
-              {region || '省市区'}
-            </span>
-            <ChevronRight size={16} className="shrink-0 text-icon-muted" aria-hidden="true" />
-          </button>
-          <SideAction icon={MapPin} label="定位" onClick={fillLocation} tone="primary" />
-        </div>
-
-        <FormField
-          bare
-          label="详细地址"
-          value={place}
-          onChange={setPlace}
-          placeholder="详细地址（例如 **街 ** 号）"
-          required
-        />
-        <FormField
-          bare
-          label="门牌号"
-          value={doorNo}
-          onChange={setDoorNo}
-          placeholder="门牌号（选填）（例如：xx栋xx室）"
-        />
-        <FormField
-          bare
-          label="公司名称"
-          value={company}
-          onChange={setCompany}
-          placeholder="公司名称（选填）"
-        />
-
-        <div className="flex items-center justify-between gap-3 pt-2">
-          <RadioRow
-            label="默认寄件地址"
-            name="default-address"
-            checked={isDefault}
-            onChange={() => setIsDefault(true)}
+          <FormField
+            bare
+            label="门牌号"
+            value={doorNo}
+            onChange={setDoorNo}
+            placeholder="门牌号（选填）（例如：xx栋xx室）"
           />
-          <TextLink onClick={handleClear}>清空</TextLink>
-        </div>
-      </Card>
+          <FormField
+            bare
+            label="公司名称"
+            value={company}
+            onChange={setCompany}
+            placeholder="公司名称（选填）"
+          />
 
-      <PickerSheet
-        open={regionOpen}
-        onClose={() => setRegionOpen(false)}
-        title="选择省市区"
-        options={REGION_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
-        value={region}
-        onConfirm={setRegion}
-      />
-    </DetailPage>
+          <div className="flex items-center justify-between gap-3 pt-2">
+            <RadioRow
+              label="默认寄件地址"
+              name="default-address"
+              checked={isDefault}
+              onChange={() => setIsDefault(true)}
+            />
+            <TextLink onClick={handleClear}>清空</TextLink>
+          </div>
+        </Card>
+
+        <PickerSheet
+          open={regionOpen}
+          onClose={() => setRegionOpen(false)}
+          title="选择省市区"
+          options={REGION_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
+          value={region}
+          onConfirm={setRegion}
+        />
+      </DetailPage>
+
+      <Toast open={!!toast} message={toast ?? ''} onClose={() => setToast(null)} />
+    </>
   )
 }

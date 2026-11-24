@@ -30,7 +30,7 @@ import {
   type RecycleOrder,
   type RecycleStatus,
 } from '@/mocks/recycleOrders'
-import { paths } from '@/routes/paths'
+import { paths, routePath } from '@/routes/paths'
 
 const DEFAULT_CENTER = '安盛华集团检测中心'
 
@@ -47,21 +47,11 @@ const STATUS_REASON: Partial<Record<RecycleStatus, string>> = {
 }
 
 /** 状态专属详情卡：审核中不展示校验细节，其余状态各自成独立区块 */
-type RecycleDetailCard =
-  | 'testing'
-  | 'inspection'
-  | 'payment'
-  | 'paid'
-  | 'closed'
+type RecycleDetailCard = 'testing' | 'inspection' | 'payment' | 'paid' | 'closed'
 
 /** 底部操作标识：文案、样式与行为集中在视图内实现 */
 type RecycleOrderAction =
-  | 'cancel'
-  | 'changePickup'
-  | 'reject'
-  | 'confirm'
-  | 'contact'
-  | 'recycleAgain'
+  'cancel' | 'changePickup' | 'reject' | 'confirm' | 'contact' | 'recycleAgain'
 
 /**
  * 各状态的页面结构配置：结构差异只看这张表，不再散落在 JSX 条件里。
@@ -160,7 +150,8 @@ function TestingCard({ order }: DetailCardProps) {
         </div>
       ) : live === 'upcoming' ? (
         <InlineNotice tone="info" title="检测即将开始">
-          检测排程：今日 14:30 开始；开始前 30 分钟将推送通知，点击即可进入观看，检测不会早于通知时间开始。
+          检测排程：今日 14:30 开始；开始前 30
+          分钟将推送通知，点击即可进入观看，检测不会早于通知时间开始。
         </InlineNotice>
       ) : (
         <div className="overflow-hidden rounded-lg ring-1 ring-border-subtle">
@@ -294,7 +285,8 @@ function InspectionCard({ order, onToast }: DetailCardProps) {
         <PriceText value={inspection.amount} size="section" tone="price" />
       </div>
       <p className="text-caption text-muted-foreground">
-        请在 30 分钟内确认，截止前将提醒 1 次；超时未确认自动视为接受，不允许二次议价。不接受报价将安排原物退回，退回运费由平台承担。
+        请在 30 分钟内确认，截止前将提醒 1
+        次；超时未确认自动视为接受，不允许二次议价。不接受报价将安排原物退回，退回运费由平台承担。
       </p>
     </Card>
   )
@@ -305,9 +297,7 @@ function PaymentCard({ order, onToast }: DetailCardProps) {
   const scene = useRecycleScene()
   const failed = scene.state === 'failed'
   const reason = (
-    ['limit', 'mismatch', 'review', 'risk'].includes(scene.reason ?? '')
-      ? scene.reason
-      : 'limit'
+    ['limit', 'mismatch', 'review', 'risk'].includes(scene.reason ?? '') ? scene.reason : 'limit'
   ) as 'limit' | 'mismatch' | 'review' | 'risk'
   const repayable = failed && (reason === 'limit' || reason === 'mismatch')
 
@@ -329,10 +319,7 @@ function PaymentCard({ order, onToast }: DetailCardProps) {
             tone="danger"
             title="打款失败"
             action={
-              <Button
-                size="sm"
-                onClick={() => onToast('已进入更换账户流程，请选择本人支付宝账户')}
-              >
+              <Button size="sm" onClick={() => onToast('已进入更换账户流程，请选择本人支付宝账户')}>
                 更换账户重付
               </Button>
             }
@@ -400,11 +387,7 @@ function PaidCard({ order, onToast }: DetailCardProps) {
       >
         查看电子回单
       </TextLink>
-      <TextLink
-        onClick={() => onToast('到账凭证已开始下载')}
-        showArrow
-        className="text-caption"
-      >
+      <TextLink onClick={() => onToast('到账凭证已开始下载')} showArrow className="text-caption">
         下载到账凭证
       </TextLink>
     </Card>
@@ -480,9 +463,7 @@ export function RecycleOrderStatusPage() {
   const [rejectOpen, setRejectOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   // 终价确认倒计时：进入页面即开始，剩余时间并入状态说明
-  const [confirmDeadline] = useState(
-    () => Date.now() + (order?.confirmRemainMin ?? 30) * 60_000,
-  )
+  const [confirmDeadline] = useState(() => Date.now() + (order?.confirmRemainMin ?? 30) * 60_000)
   const confirmRemaining = useRemainingText(confirmDeadline)
 
   // 状态页之间切换时重新取演示订单
@@ -580,7 +561,7 @@ export function RecycleOrderStatusPage() {
     contact: {
       label: '联系客服',
       variant: 'secondary',
-      onClick: () => setToast('客服将在 9:00–21:00 回复'),
+      onClick: () => navigate(`${routePath('support.chat')}?orderId=${order.id}&kind=recycle`),
     },
     recycleAgain: { label: '再次回收', onClick: () => navigate(paths.quote) },
   }

@@ -1,7 +1,16 @@
-import { PromoCarousel, Card, Chip, TabPage, MediaVisual, RateBoard } from '@/components'
+import {
+  PromoCarousel,
+  Card,
+  Chip,
+  ChipRow,
+  SupportFab,
+  TabPage,
+  MediaVisual,
+  RateBoard,
+} from '@/components'
 import type { PromoSlide } from '@/components'
 import { useState } from 'react'
-import { ChevronDown, Factory, Layers, Truck } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 import { images } from '@/assets/images'
@@ -12,46 +21,6 @@ import { cn } from '@/lib/utils'
 import { paths } from '@/routes/paths'
 
 const BRAND_TAGS = ['交易所会员', '权威检测', '顺丰保价']
-
-const ABOUT_HONORS = [
-  '上海黄金交易所会员单位',
-  '中国黄金协会副会长单位',
-  '中国珠宝玉石首饰行业协会副会长单位',
-  '民营企业进出口 500 强',
-]
-
-const ADVANTAGES = [
-  {
-    icon: Layers,
-    title: '不限品类 高价回收',
-    text: '足金首饰、投资金条、金币均可回收，按实时金价计价',
-  },
-  {
-    icon: Truck,
-    title: '简单 方便 快捷',
-    text: '在线估价，顺丰上门取件，全程保价可查',
-  },
-  {
-    icon: Factory,
-    title: '直达精炼厂',
-    text: '没有中间商差价，确认终价当天发起打款',
-  },
-]
-
-const BRANDS = [
-  '上海黄金交易所',
-  '山东黄金',
-  '紫金矿业',
-  '广西黄金',
-  '广东黄金',
-  '中国黄金协会',
-  '顺丰速运',
-  '支付宝',
-  '微信支付',
-  '京东',
-  '交通银行',
-  '安盛华检测',
-]
 
 /**
  * 首页：品牌头 + 检测 Banner + 信任标签 + 金价看板 + 信任与答疑三板块。
@@ -137,46 +106,9 @@ export function HomePage() {
       />
 
       <section className="space-y-2">
-        <SectionTitle title="回收优势" note="为什么选择我们" />
-        <Card padding="none" className="divide-y divide-border-subtle overflow-hidden">
-          {ADVANTAGES.map(({ icon: Icon, title, text }) => (
-            <div key={title} className="flex items-center gap-3 px-4 py-3.5">
-              <div className="min-w-0 flex-1">
-                <p className="text-body-strong text-foreground">{title}</p>
-                <p className="mt-1 text-caption text-subtle-foreground">{text}</p>
-              </div>
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gold-50 text-gold-700 ring-1 ring-gold-200">
-                <Icon size={20} strokeWidth={1.8} aria-hidden="true" />
-              </span>
-            </div>
-          ))}
-        </Card>
-      </section>
-
-      <section className="space-y-2">
-        <SectionTitle title="合作品牌" note="渠道与资质" />
-        <Card padding="none" className="overflow-hidden">
-          <div className="marquee">
-            <ul className="marquee-track py-2.5">
-              {[...BRANDS, ...BRANDS].map((brand, index) => (
-                <li
-                  key={`${brand}-${index}`}
-                  aria-hidden={index >= BRANDS.length ? true : undefined}
-                  className="flex shrink-0 items-center gap-1.5 px-3 text-caption-strong text-muted-foreground"
-                >
-                  <span className="h-1 w-1 rounded-full bg-gold-300" aria-hidden="true" />
-                  {brand}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </Card>
-      </section>
-
-      <section className="space-y-2">
         <SectionTitle title="大家都在问" note={`${FAQ_ITEMS.length} 个高频问题`} />
         <Card padding="none" className="overflow-hidden">
-          <div className="hide-scrollbar flex gap-2 overflow-x-auto px-4 py-3">
+          <ChipRow className="px-4 py-3">
             {FAQ_CATEGORIES.map((category) => (
               <Chip
                 key={category.value}
@@ -189,17 +121,14 @@ export function HomePage() {
                 {category.label}
               </Chip>
             ))}
-          </div>
+          </ChipRow>
 
           <ul className="border-t border-border-subtle">
             {faqItems.map((item, index) => {
               const expanded = openFaq === item.id
               const panelId = `faq-${item.id}`
               return (
-                <li
-                  key={item.id}
-                  className="border-b border-border-subtle last:border-b-0"
-                >
+                <li key={item.id} className="border-b border-border-subtle last:border-b-0">
                   <button
                     type="button"
                     aria-expanded={expanded}
@@ -232,27 +161,7 @@ export function HomePage() {
         </Card>
       </section>
 
-      <section className="space-y-2">
-        <SectionTitle title="关于安盛华" note="集团背景" />
-        <Card padding="md" className="space-y-3">
-          <p className="text-body text-muted-foreground">
-            安盛华集团深耕黄金珠宝与贵金属贸易，经营黄金、白银、铂金及珠宝饰品的购销与进出口，
-            是上海黄金交易所会员单位。回收业务以集团标准检测、全程录像与透明计价为基础，
-            让每一克的来源与重量都可追溯。
-          </p>
-
-          <ul className="flex flex-wrap gap-1.5">
-            {ABOUT_HONORS.map((honor) => (
-              <li
-                key={honor}
-                className="rounded-full bg-gold-50 px-2.5 py-1 text-caption text-gold-800 ring-1 ring-gold-200"
-              >
-                {honor}
-              </li>
-            ))}
-          </ul>
-        </Card>
-      </section>
+      <SupportFab />
     </TabPage>
   )
 }

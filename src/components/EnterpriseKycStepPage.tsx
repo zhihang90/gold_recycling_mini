@@ -11,7 +11,6 @@ interface EnterpriseKycStepPageProps {
   children: ReactNode
   /** 默认取前一步；基本信息页等特殊返回目标可显式指定 */
   previousPath?: string
-  nextDisabled?: boolean
   /** 缺省跳转下一步；需要弹窗或其他业务动作时由页面覆写 */
   onNext?: () => void
   onBack?: () => void
@@ -27,7 +26,6 @@ export function EnterpriseKycStepPage({
   completedIndices,
   children,
   previousPath,
-  nextDisabled = false,
   onNext,
   onBack,
   footer,
@@ -60,7 +58,7 @@ export function EnterpriseKycStepPage({
       >
         上一步
       </Button>
-      <Button size="lg" className="flex-[2]" onClick={handleNext} disabled={nextDisabled}>
+      <Button size="lg" className="flex-[2]" onClick={handleNext}>
         保存并下一步
       </Button>
     </div>

@@ -3,6 +3,7 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useViewportFit } from '@/lib/useViewportFit'
 import { BottomTabNav } from './BottomTabNav'
+import { ReviewStatePanel } from './ReviewStatePanel'
 
 /**
  * 演示外壳：
@@ -26,6 +27,7 @@ export function Layout({ children, showTab }: { children: ReactNode; showTab: bo
 
   return (
     <div className="app-h w-full bg-canvas min-[900px]:flex min-[900px]:items-center min-[900px]:justify-center min-[900px]:bg-surface-2 min-[900px]:pl-[340px]">
+      <ReviewStatePanel />
       {/* ui-allow: PC 评审设备外框，圆角与固定高度属于演示壳，不是页面 UI */}
       <div
         data-phone-frame

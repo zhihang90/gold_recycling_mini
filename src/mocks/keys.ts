@@ -34,6 +34,10 @@ export const STORAGE_KEYS = {
   SALES_ORDERS: 'gold_sales_orders',
   /** 收款账户（银行卡列表） */
   BANK_ACCOUNTS: 'gold-recycling.bank-accounts',
+  /** 当前在线客服会话（未结束时恢复） */
+  SUPPORT_SESSION: 'gold-recycling.support-session',
+  /** 投诉与建议提交记录 */
+  SUPPORT_FEEDBACK: 'gold-recycling.support-feedback',
 } as const
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS]

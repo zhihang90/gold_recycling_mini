@@ -5,6 +5,10 @@ export interface QuickAction {
   key: string
   label: string
   icon: LucideIcon
+  /** 图标方形底（如 bg-primary/10）；传了就渲染为带色块的方形图标 */
+  iconBg?: string
+  /** 图标前景色（如 text-primary）；配合 iconBg 使用 */
+  iconFg?: string
   /** 右上角数量角标，0 或未传时不展示 */
   badge?: number
   onClick?: () => void
@@ -50,8 +54,18 @@ export function QuickActionGrid({
                 />
               </>
             ) : null}
-            <span className="relative flex items-center justify-center">
-              <Icon size={22} className="text-icon-strong" aria-hidden="true" />
+            <span
+              className={cn(
+                'relative flex items-center justify-center',
+                item.iconBg && item.iconFg && 'h-10 w-10 rounded-md',
+                item.iconBg && item.iconFg && item.iconBg,
+              )}
+            >
+              <Icon
+                size={item.iconBg && item.iconFg ? 20 : 22}
+                className={item.iconFg ?? 'text-icon-strong'}
+                aria-hidden="true"
+              />
               {item.badge ? (
                 <span className="absolute -top-2 -right-3 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-caption leading-none text-destructive-foreground tabular">
                   {item.badge > 99 ? '99+' : item.badge}

@@ -43,11 +43,15 @@ type TopTab = 'setup' | 'list'
 export function MarketAlertSettingsPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const [topTab, setTopTab] = useState<TopTab>(() => (params.get('tab') === 'list' ? 'list' : 'setup'))
+  const [topTab, setTopTab] = useState<TopTab>(() =>
+    params.get('tab') === 'list' ? 'list' : 'setup',
+  )
   const [draft, setDraft] = useState<AlertSettings>(() => readAlertSettings())
 
   // 每个商品独立管理目标价（按 productCode 存），避免切 tab 互相覆盖
-  const [targetsByProduct, setTargetsByProduct] = useState<Record<string, { high: string; low: string }>>(() => {
+  const [targetsByProduct, setTargetsByProduct] = useState<
+    Record<string, { high: string; low: string }>
+  >(() => {
     const init: Record<string, { high: string; low: string }> = {}
     ALERT_PRODUCT_TABS.forEach((t) => {
       init[t.code] = { high: '', low: '' }
@@ -67,10 +71,7 @@ export function MarketAlertSettingsPage() {
     setToastOpen(true)
   }
 
-  const currentQuote = useMemo(
-    () => quoteByCode(draft.productCode),
-    [draft.productCode],
-  )
+  const currentQuote = useMemo(() => quoteByCode(draft.productCode), [draft.productCode])
 
   /** 当前参考价：跟随 priceMode（销售价 / 回购价）切换 */
   const currentRefPrice = useMemo(() => {
@@ -92,7 +93,6 @@ export function MarketAlertSettingsPage() {
   const lowValid =
     currentTarget.low.trim() === '' || /^\d+(\.\d{1,2})?$/.test(currentTarget.low.trim())
   const hasAnyTarget = currentTarget.high.trim() !== '' || currentTarget.low.trim() !== ''
-  const canSave = draft.enabled && hasAnyTarget && highValid && lowValid
 
   // 进入页面时刷新我的提醒列表（list 模式下切 productCode 也重算以实时过滤）
   const [alertListVersion, setAlertListVersion] = useState(0)
@@ -100,12 +100,25 @@ export function MarketAlertSettingsPage() {
   const filteredAlerts = allAlerts.filter((a) => a.code === draft.productCode)
 
   const handleSave = () => {
-    if (!canSave || !currentQuote) return
+    if (!draft.enabled) {
+      showToast('请先开启每日价格提醒')
+      return
+    }
+    if (!hasAnyTarget) {
+      showToast('请填写至少一个目标价')
+      return
+    }
+    if (!highValid || !lowValid) {
+      showToast('请输入正确的目标价（最多 2 位小数）')
+      return
+    }
+    if (!currentQuote) {
+      showToast('当前暂无报价，请稍后重试')
+      return
+    }
     writeAlertSettings(draft)
     // 清掉同 productCode 已有的提醒（保持目标价最新）
-    allAlerts
-      .filter((a) => a.code === draft.productCode)
-      .forEach((a) => removeAlert(a.id))
+    allAlerts.filter((a) => a.code === draft.productCode).forEach((a) => removeAlert(a.id))
     if (currentTarget.high.trim() !== '') {
       addAlert({
         code: draft.productCode,
@@ -136,7 +149,7 @@ export function MarketAlertSettingsPage() {
         onBack={() => navigate(-1)}
         footer={
           topTab === 'setup' ? (
-            <Button block variant="primary" disabled={!canSave} onClick={handleSave}>
+            <Button block variant="primary" onClick={handleSave}>
               设置提醒
             </Button>
           ) : undefined
@@ -175,9 +188,7 @@ export function MarketAlertSettingsPage() {
             priceModeLabel={priceModeLabel}
             priceUnit={priceUnit}
             currentTarget={currentTarget}
-            setCurrentTarget={(t) =>
-              setTargetsByProduct((m) => ({ ...m, [draft.productCode]: t }))
-            }
+            setCurrentTarget={(t) => setTargetsByProduct((m) => ({ ...m, [draft.productCode]: t }))}
             pushIntervalLabel={pushIntervalLabel}
             priceChangeLabel={priceChangeLabel}
             onPushTimeOpen={() => setPushTimeOpen(true)}
@@ -344,7 +355,8 @@ function SettingsContent({
           {/* 当前参考价（跟随模式切换） */}
           <div className="rounded-sm bg-surface-2 px-3 py-2.5">
             <p className="text-caption text-subtle-foreground">
-              当前 {productLabel}{priceModeLabel}
+              当前 {productLabel}
+              {priceModeLabel}
             </p>
             <p className="mt-1 text-body-strong tabular text-price">
               ¥{fmtPrice(currentRefPrice)} {priceUnit}
@@ -404,9 +416,7 @@ function SettingsContent({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-body text-foreground">勿扰时间</p>
-              <p className="mt-0.5 text-caption text-subtle-foreground">
-                勿扰时段内不推送价格通知
-              </p>
+              <p className="mt-0.5 text-caption text-subtle-foreground">勿扰时段内不推送价格通知</p>
             </div>
             <button
               type="button"
@@ -434,9 +444,7 @@ function SettingsContent({
       {/* ============ 关闭后空态提示 ============ */}
       {!draft.enabled && (
         <Card padding="lg" className="text-center">
-          <p className="text-body text-muted-foreground">
-            开启每日价格提醒后可设置推送条件
-          </p>
+          <p className="text-body text-muted-foreground">开启每日价格提醒后可设置推送条件</p>
         </Card>
       )}
     </div>
@@ -535,13 +543,16 @@ function AlertsListContent({
       ) : (
         <div className="space-y-2">
           {alerts.map((alert) => {
-            const productLabel = ALERT_PRODUCT_TABS.find((t) => t.code === alert.code)?.label ?? quoteName(alert.code)
+            const productLabel =
+              ALERT_PRODUCT_TABS.find((t) => t.code === alert.code)?.label ?? quoteName(alert.code)
             const direction = alert.direction === 'above' ? '上涨至' : '下跌至'
             return (
               <Card key={alert.id} padding="md" className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Badge tone={alert.status === 'pending' ? 'info' : 'success'}>{productLabel}</Badge>
+                    <Badge tone={alert.status === 'pending' ? 'info' : 'success'}>
+                      {productLabel}
+                    </Badge>
                     <Badge tone={alert.status === 'pending' ? 'info' : 'success'}>
                       {alert.status === 'pending' ? '监控中' : '已触发'}
                     </Badge>

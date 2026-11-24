@@ -1,4 +1,4 @@
-import { Button, Card, Chip, MarkdownDoc, PageHeader, PageShell } from '@/components'
+import { Button, Card, Chip, MarkdownDoc, PageHeader, PageShell, Toast } from '@/components'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -17,6 +17,7 @@ export function QuoteAgreementPage() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [readPercent, setReadPercent] = useState(0)
   const [source, setSource] = useState('')
+  const [toast, setToast] = useState<string | null>(null)
 
   const syncProgress = useCallback(() => {
     const element = scrollRef.current
@@ -38,10 +39,15 @@ export function QuoteAgreementPage() {
     }
   }, [syncProgress])
 
-  const canConfirm = readPercent >= 100 && Boolean(source)
-
   const onConfirm = () => {
-    if (!canConfirm) return
+    if (readPercent < 100) {
+      setToast('请滑动阅读完须知后再确认')
+      return
+    }
+    if (!source) {
+      setToast('请选择黄金来源')
+      return
+    }
     saveAgreementConfirmation({ source, agreedAt: Date.now() })
     navigate(paths.quote, { replace: true })
   }
@@ -100,13 +106,14 @@ export function QuoteAgreementPage() {
         <Button
           size="lg"
           block
-          disabled={!canConfirm}
           onClick={onConfirm}
           className="h-auto min-h-12 py-2.5 text-caption-strong"
         >
           请阅读《须知》《协议》后确认并同意（已阅读 {readPercent}%）
         </Button>
       </div>
+
+      <Toast open={!!toast} message={toast ?? ''} onClose={() => setToast(null)} />
     </PageShell>
   )
 }

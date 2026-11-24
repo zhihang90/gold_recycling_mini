@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes } from 'react'
+import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 /**
@@ -16,7 +16,8 @@ export function Chip({
       type={type}
       aria-pressed={active}
       className={cn(
-        'inline-flex h-8 shrink-0 items-center justify-center rounded-full px-3.5 text-body transition',
+        'inline-flex h-8 shrink-0 items-center justify-center whitespace-nowrap rounded-full px-3.5 text-body transition',
+        'disabled:cursor-not-allowed disabled:opacity-40',
         active
           ? 'bg-primary-soft text-primary ring-1 ring-primary-border'
           : 'bg-card text-muted-foreground ring-1 ring-border-subtle',
@@ -25,4 +26,12 @@ export function Chip({
       {...props}
     />
   )
+}
+
+/**
+ * 胶囊筛选组：统一换行展示，避免长标签在横向滚动容器右缘被裁切。
+ * 页面不要再自己拼 overflow-x-auto 的 chip 行。
+ */
+export function ChipRow({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={cn('flex flex-wrap items-center gap-2', className)}>{children}</div>
 }

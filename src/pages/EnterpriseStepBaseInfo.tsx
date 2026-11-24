@@ -25,7 +25,7 @@ const MOCK_OCR_RESULT = {
   creditCode: '91440300MA5D8X9X8X',
   companyType: '有限责任公司',
   capital: '500 万元',
-  legalName: '陈智航',
+  legalName: '张三',
   legalIdNo: '440300199001011234',
   legalPhone: '13800138000',
 }

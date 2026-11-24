@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 import { round2 } from '@/lib/money'
 import { Button } from './Button'
 import { Card } from './Card'
-import { Chip } from './Chip'
+import { Chip, ChipRow } from './Chip'
 import { PriceText } from './PriceText'
 import { SegmentedTabs } from './SegmentedTabs'
 
@@ -110,7 +110,7 @@ export function RateBoard({
 
             <Sparkline points={active?.points ?? []} />
 
-            <div className="hide-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1">
+            <ChipRow>
               {series.map((item) => (
                 <Chip
                   key={item.key}
@@ -120,7 +120,7 @@ export function RateBoard({
                   {item.label}
                 </Chip>
               ))}
-            </div>
+            </ChipRow>
 
             <p className="truncate text-caption text-subtle-foreground tabular">
               数据参考{source} · 更新于 {updatedAt}
@@ -218,7 +218,10 @@ function Sparkline({ points }: { points: RateBoardPoint[] }) {
           </svg>
           <span
             className="absolute size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold-600 ring-2 ring-card"
-            style={{ left: `${coords[coords.length - 1].x}%`, top: `${coords[coords.length - 1].y}%` }}
+            style={{
+              left: `${coords[coords.length - 1].x}%`,
+              top: `${coords[coords.length - 1].y}%`,
+            }}
             aria-hidden
           />
         </div>

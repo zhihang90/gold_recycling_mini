@@ -23,7 +23,10 @@ function ClearButton({
       type="button"
       onClick={onClick}
       aria-label={`清空${label}`}
-      className={cn('group flex h-11 w-10 shrink-0 items-center justify-center rounded-full', className)}
+      className={cn(
+        'group flex h-11 w-10 shrink-0 items-center justify-center rounded-full',
+        className,
+      )}
     >
       <span
         className={cn(
@@ -121,6 +124,7 @@ export function FormField({
     className: cn(
       'w-full text-body text-foreground outline-none placeholder:text-subtle-foreground',
       disabled && 'cursor-not-allowed text-ink-400',
+      readOnly && 'cursor-not-allowed text-muted-foreground',
     ),
   } satisfies TextareaHTMLAttributes<HTMLTextAreaElement>
 
@@ -188,9 +192,7 @@ export function FormField({
             autoComplete={autoComplete}
             className={cn(shared.className, 'min-w-0 flex-1 bg-transparent')}
           />
-          {unit ? (
-            <span className="shrink-0 text-body text-subtle-foreground">{unit}</span>
-          ) : null}
+          {unit ? <span className="shrink-0 text-body text-subtle-foreground">{unit}</span> : null}
           {clearable ? <ClearButton label={label} onClick={handleClear} /> : null}
           {trailing ? <span className="shrink-0">{trailing}</span> : null}
         </div>
@@ -235,20 +237,17 @@ export function FormField({
             )}
           />
           {clearable ? (
-            <ClearButton
-              label={label}
-              onClick={handleClear}
-              className="absolute right-1 top-1"
-            />
+            <ClearButton label={label} onClick={handleClear} className="absolute right-1 top-1" />
           ) : null}
         </div>
       ) : (
         <div
           className={cn(
             'flex h-11 items-center gap-2 rounded-sm bg-card px-3 ring-1 ring-border transition',
-            'focus-within:ring-primary',
+            readOnly ? 'focus-within:ring-border' : 'focus-within:ring-primary',
             error && 'ring-destructive',
             disabled && 'bg-muted',
+            readOnly && 'bg-muted',
           )}
         >
           <input
@@ -261,9 +260,7 @@ export function FormField({
             autoComplete={autoComplete}
             className={cn(shared.className, 'min-w-0 flex-1 bg-transparent')}
           />
-          {unit ? (
-            <span className="shrink-0 text-body text-subtle-foreground">{unit}</span>
-          ) : null}
+          {unit ? <span className="shrink-0 text-body text-subtle-foreground">{unit}</span> : null}
           {clearable ? <ClearButton label={label} onClick={handleClear} /> : null}
           {trailing ? <span className="shrink-0">{trailing}</span> : null}
         </div>

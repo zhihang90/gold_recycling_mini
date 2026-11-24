@@ -1,4 +1,17 @@
-import { Badge, Button, Card, Chip, IconButton, MediaVisual, PriceText, ProductSkuSheet, TabPage, Toast } from '@/components'
+import {
+  Badge,
+  Button,
+  Card,
+  Chip,
+  ChipRow,
+  IconButton,
+  MediaVisual,
+  PriceText,
+  ProductSkuSheet,
+  SupportFab,
+  TabPage,
+  Toast,
+} from '@/components'
 import { useState } from 'react'
 import { ShoppingCart, TrendingUp } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
@@ -54,18 +67,13 @@ export function BuyPage() {
             <span className="text-caption text-gold-700">元/克</span>
           </div>
         </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => navigate(paths.home)}
-        >
+        <Button variant="secondary" size="sm" onClick={() => navigate(paths.home)}>
           我要卖金
         </Button>
       </div>
 
       <div className="space-y-2.5">
-        {/* 上下留 1px 余量：overflow 容器会同时裁切纵向内容，避免胶囊描边被切掉 */}
-        <div className="hide-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 py-1">
+        <ChipRow>
           {SHOP_CATEGORIES.map((item) => (
             <Chip
               key={item.value}
@@ -75,25 +83,17 @@ export function BuyPage() {
               {item.label}
             </Chip>
           ))}
-        </div>
+        </ChipRow>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         {products.map((product) => {
           const variants = variantsOf(product)
           return (
-            <Card
-              key={product.id}
-              padding="none"
-              className="flex h-full flex-col overflow-hidden"
-            >
+            <Card key={product.id} padding="none" className="flex h-full flex-col overflow-hidden">
               <Link to={buyDetailPath(product.id)} className="block">
                 <div className="relative">
-                  <MediaVisual
-                    src={product.image}
-                    alt={product.name}
-                    className="bg-gold-50"
-                  />
+                  <MediaVisual src={product.image} alt={product.name} className="bg-gold-50" />
                   <span
                     aria-hidden="true"
                     className="pointer-events-none absolute left-2 top-2 flex items-center gap-1"
@@ -165,6 +165,8 @@ export function BuyPage() {
       />
 
       <Toast open={Boolean(toast)} message={toast ?? ''} onClose={() => setToast(null)} />
+
+      <SupportFab />
     </TabPage>
   )
 }

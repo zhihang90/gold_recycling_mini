@@ -2,18 +2,8 @@ import { Layout, PrototypeNav, EmptyState, PageHeader, PageShell } from '@/compo
 import { useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
-import { APP_ROUTES, isTabPath } from '@/routes/routes.config'
+import { APP_ROUTES, isTabPath, matchRoute } from '@/routes/routes.config'
 import { paths } from '@/routes/paths'
-
-/** 浏览器标题跟随当前页面：按路由清单取页面标题，动态段按通配匹配。 */
-function matchRoute(pathname: string) {
-  return (
-    APP_ROUTES.find((route) => route.path === pathname) ??
-    APP_ROUTES.find((route) =>
-      new RegExp(`^${route.path.replace(/:[^/]+/g, '[^/]+')}$`).test(pathname),
-    )
-  )
-}
 
 function NotFoundPage() {
   return (
@@ -44,13 +34,7 @@ export default function App() {
             const Component = route.component
             // 查询串变化（弹层状态 / demo 参数）视为一次新视图，重新挂载页面，
             // 否则同路径下切换 ?sheet=&state= 不会更新页面内部的弹层状态
-            return (
-              <Route
-                key={route.path}
-                path={route.path}
-                element={<Component key={search} />}
-              />
-            )
+            return <Route key={route.path} path={route.path} element={<Component key={search} />} />
           })}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

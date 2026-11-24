@@ -105,6 +105,8 @@ export interface Member {
 export interface RealNameAuth {
   name: string
   idNo: string
+  /** 港澳通行证号码，选填 */
+  permitNo?: string
   verifiedAt: number
 }
 
@@ -130,7 +132,7 @@ export function clearPendingRealNameAuth() {
 
 /** 演示预填：个人实名快速展示 */
 export const DEMO_REAL_NAME = {
-  name: '陈智航',
+  name: '张三',
   idNo: '440300199001011234',
   photos: {
     front: ['https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600'],
@@ -196,14 +198,23 @@ export function isMemberVerified(member: Member | null): boolean {
 }
 
 /** 提交个人实名：不修改企业认证类型与审核状态。 */
-export function submitRealNameAuth(name: string, idNo: string): Member {
+export function submitRealNameAuth(name: string, idNo: string, permitNo?: string): Member {
   if (!name.trim() || name.trim().length < 2) throw new Error('请输入真实姓名')
   if (!isIdCard(idNo)) throw new Error('身份证号格式不正确')
   const member = readMember()
   if (!member) throw new Error('请先登录')
+  // 人脸核验会二次提交；未传该参数时保留表单阶段填写的通行证号码
+  const nextPermitNo =
+    permitNo === undefined ? member.realNameAuth?.permitNo : permitNo.trim() || undefined
+  const realNameAuth: RealNameAuth = {
+    name: name.trim(),
+    idNo: idNo.trim(),
+    verifiedAt: Date.now(),
+  }
+  if (nextPermitNo) realNameAuth.permitNo = nextPermitNo
   const updated: Member = {
     ...member,
-    realNameAuth: { name: name.trim(), idNo: idNo.trim(), verifiedAt: Date.now() },
+    realNameAuth,
   }
   writeSession(STORAGE_KEYS.MEMBER, updated)
   return updated
@@ -338,7 +349,7 @@ export function maskIdCard(idNo: string) {
   if (idNo.length < 10) return idNo
   return `${idNo.slice(0, 4)}********${idNo.slice(-4)}`
 }
-/** 姓名展示用：保留首字，其余用 * 替代（陈智航 → 陈**） */
+/** 姓名展示用：保留首字，其余用 * 替代（张三 → 陈**） */
 export function maskName(name: string) {
   if (name.length <= 1) return name
   return `${name.slice(0, 1)}${'*'.repeat(name.length - 1)}`
@@ -385,7 +396,7 @@ export const MOCK_ENTERPRISE_KYC: EnterpriseKyc = {
     licenseNo: '',
     companyType: '有限责任公司',
     capital: '500 万元',
-    legalName: '陈智航',
+    legalName: '张三',
     legalIdNo: '440300199001011234',
     legalPhone: '13800138000',
   },
@@ -394,7 +405,7 @@ export const MOCK_ENTERPRISE_KYC: EnterpriseKyc = {
     back: [],
   },
   legal: {
-    name: '陈智航',
+    name: '张三',
     idNo: '440300199001011234',
     phone: '13800138000',
     idFront: ['https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600'],

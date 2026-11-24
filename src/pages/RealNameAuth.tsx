@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Landmark, ScanFace, ShieldCheck } from 'lucide-react'
+import { IdCard, Landmark, ScanFace, ShieldCheck } from 'lucide-react'
 
 import {
   BottomSheet,
@@ -26,8 +26,7 @@ export function RealNameAuthPage() {
   const saved = member?.realNameAuth
   const isDemo = member?.phone === DEMO_PHONE
   // 演示用户且还未通过 → 展示预填；已通过则回显实际值
-  const prefill =
-    isDemo && !saved?.verifiedAt ? DEMO_REAL_NAME : undefined
+  const prefill = isDemo && !saved?.verifiedAt ? DEMO_REAL_NAME : undefined
 
   const [toast, setToast] = useState<string | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -59,6 +58,17 @@ export function RealNameAuthPage() {
             拍摄时保证证件四角完整、文字清晰，避免反光与遮挡。
           </p>
           <IdPhotoFields saved={saved} prefill={prefill} onToast={setToast} />
+        </Card>
+
+        <Card padding="lg" className="space-y-3">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="font-semibold">上传港澳通行证照片</h2>
+            <span className="text-caption text-subtle-foreground">选填</span>
+          </div>
+          <p className="text-caption text-muted-foreground">
+            使用港澳通行证办理时，请上传证件正面与反面；不上传不影响本次认证。
+          </p>
+          <PermitPhotoFields />
         </Card>
 
         <Card padding="lg" className="space-y-4">
@@ -93,6 +103,7 @@ export function RealNameAuthPage() {
 interface Saved {
   name: string
   idNo: string
+  permitNo?: string
   verifiedAt: number
 }
 
@@ -112,12 +123,8 @@ function IdPhotoFields({
   prefill?: Prefill
   onToast: (msg: string) => void
 }) {
-  const [idFront, setIdFront] = useState<string[]>(
-    saved ? [] : prefill?.photos.front ?? [],
-  )
-  const [idBack, setIdBack] = useState<string[]>(
-    saved ? [] : prefill?.photos.back ?? [],
-  )
+  const [idFront, setIdFront] = useState<string[]>(saved ? [] : (prefill?.photos.front ?? []))
+  const [idBack, setIdBack] = useState<string[]>(saved ? [] : (prefill?.photos.back ?? []))
   const [errors, setErrors] = useState<{ photos?: string }>({})
 
   return (
@@ -161,6 +168,43 @@ function IdPhotoFields({
   )
 }
 
+/** 港澳通行证照片上传（正反面，选填） */
+function PermitPhotoFields() {
+  const [front, setFront] = useState<string[]>([])
+  const [back, setBack] = useState<string[]>([])
+
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <div className="space-y-1.5">
+        <PhotoUploader
+          value={front}
+          onChange={setFront}
+          max={1}
+          columns={1}
+          aspect="wide"
+          showCount={false}
+          addLabel="点击上传"
+          addIcon={IdCard}
+        />
+        <p className="text-center text-caption text-muted-foreground">正面</p>
+      </div>
+      <div className="space-y-1.5">
+        <PhotoUploader
+          value={back}
+          onChange={setBack}
+          max={1}
+          columns={1}
+          aspect="wide"
+          showCount={false}
+          addLabel="点击上传"
+          addIcon={Landmark}
+        />
+        <p className="text-center text-caption text-muted-foreground">反面</p>
+      </div>
+    </div>
+  )
+}
+
 /** 姓名 + 身份证号 + 提交按钮 */
 function NameIdFields({
   saved,
@@ -175,6 +219,7 @@ function NameIdFields({
 }) {
   const [name, setName] = useState(saved?.name ?? prefill?.name ?? '')
   const [idNo, setIdNo] = useState(saved?.idNo ?? prefill?.idNo ?? '')
+  const [permitNo, setPermitNo] = useState(saved?.permitNo ?? '')
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors] = useState<{ name?: string; idNo?: string }>({})
 
@@ -188,7 +233,7 @@ function NameIdFields({
     setSubmitting(true)
     window.setTimeout(() => {
       if (!readMember()) saveMember(DEMO_PHONE)
-      submitRealNameAuth(name.trim(), idNo.trim().toUpperCase())
+      submitRealNameAuth(name.trim(), idNo.trim().toUpperCase(), permitNo)
       setSubmitting(false)
       onAllValid()
     }, 500)
@@ -220,6 +265,14 @@ function NameIdFields({
         inputMode="text"
         required
         error={errors.idNo}
+      />
+      <FormField
+        label="港澳通行证号码（选填）"
+        placeholder="请输入港澳通行证号码"
+        value={permitNo}
+        onChange={setPermitNo}
+        maxLength={20}
+        inputMode="text"
       />
       <Button size="lg" block loading={submitting} onClick={handleSubmit}>
         提交认证

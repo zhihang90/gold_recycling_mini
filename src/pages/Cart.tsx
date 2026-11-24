@@ -1,4 +1,14 @@
-import { BottomActionBar, Button, Card, MediaVisual, PriceText, Stepper, TabPage, TextLink } from '@/components'
+import {
+  BottomActionBar,
+  Button,
+  Card,
+  MediaVisual,
+  PriceText,
+  Stepper,
+  TabPage,
+  TextLink,
+  Toast,
+} from '@/components'
 import { useState } from 'react'
 import { Check, ShoppingCart } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -29,9 +39,7 @@ function CartCheck({
       onClick={onChange}
       className={cn(
         'relative flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition after:absolute after:-inset-2 after:content-[""]',
-        checked
-          ? 'border-gold-700 bg-gold-700 text-gold-50'
-          : 'border-border-subtle bg-card',
+        checked ? 'border-gold-700 bg-gold-700 text-gold-50' : 'border-border-subtle bg-card',
       )}
     >
       {checked ? <Check size={12} strokeWidth={3} /> : null}
@@ -47,6 +55,7 @@ export function CartPage() {
     demoScene === 'cart' ? DEMO_CART : readCart(),
   )
   const [managing, setManaging] = useState(false)
+  const [toast, setToast] = useState<string | null>(null)
 
   const rows = items.flatMap((item) => {
     const product = GOLD_PRODUCTS.find((entry) => entry.id === item.productId)
@@ -56,10 +65,7 @@ export function CartPage() {
 
   const selectedRows = rows.filter((row) => row.item.selected)
   const selectedCount = selectedRows.reduce((total, row) => total + row.item.quantity, 0)
-  const total = selectedRows.reduce(
-    (sum, row) => sum + row.variant.price * row.item.quantity,
-    0,
-  )
+  const total = selectedRows.reduce((sum, row) => sum + row.variant.price * row.item.quantity, 0)
   const allSelected = rows.length > 0 && rows.every((row) => row.item.selected)
   const empty = rows.length === 0
 
@@ -81,9 +87,7 @@ export function CartPage() {
   }
 
   const changeQuantity = (variantId: string, quantity: number) => {
-    update(
-      items.map((item) => (item.variantId === variantId ? { ...item, quantity } : item)),
-    )
+    update(items.map((item) => (item.variantId === variantId ? { ...item, quantity } : item)))
   }
 
   const removeItem = (variantId: string) => {
@@ -113,11 +117,7 @@ export function CartPage() {
       ) : (
         <div className="flex-1 space-y-3">
           {rows.map(({ item, product, variant }) => (
-            <Card
-              key={item.variantId}
-              padding="sm"
-              className="flex items-start gap-3"
-            >
+            <Card key={item.variantId} padding="sm" className="flex items-start gap-3">
               <span className="pt-6">
                 <CartCheck
                   checked={item.selected}
@@ -171,8 +171,11 @@ export function CartPage() {
           </div>
           <Button
             className="shrink-0"
-            disabled={selectedCount === 0}
             onClick={() => {
+              if (selectedCount === 0) {
+                setToast('请先选择要结算的商品')
+                return
+              }
               writeCheckout(
                 selectedRows.map(({ item, product, variant }) => ({
                   productId: product.id,
@@ -187,6 +190,8 @@ export function CartPage() {
           </Button>
         </div>
       </BottomActionBar>
+
+      <Toast open={!!toast} message={toast ?? ''} onClose={() => setToast(null)} />
     </TabPage>
   )
 }

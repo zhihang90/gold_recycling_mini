@@ -1,12 +1,7 @@
 import type { ComponentType } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { ClipboardList, Home, LineChart, ShoppingBag, ShoppingCart, User } from 'lucide-react'
-import {
-  ROUTE_GROUPS,
-  ROUTE_MANIFEST,
-  type RouteGroup,
-  type TabIconName,
-} from './manifest'
+import { ROUTE_GROUPS, ROUTE_MANIFEST, type RouteGroup, type TabIconName } from './manifest'
 
 export { ROUTE_GROUPS }
 export type AppRouteGroup = RouteGroup
@@ -21,6 +16,8 @@ export interface AppTab {
 }
 
 export interface AppRoute {
+  /** 与 manifest 一致的路由 ID，供页面状态等按路由取数 */
+  id: string
   path: string
   /** 桌面左栏展示用的名称 */
   label: string
@@ -71,6 +68,7 @@ function resolvePage(page: string): ComponentType {
 
 /** 正式页面路由表：新增页面只需在 manifest.ts 加一条，这里不需要改 */
 export const APP_ROUTES: AppRoute[] = ROUTE_MANIFEST.map((route) => ({
+  id: route.id,
   path: route.path,
   label: route.label,
   pageTitle: route.pageTitle,
@@ -99,4 +97,14 @@ export const TAB_PATHS = TAB_ROUTES.map((route) => route.path)
 
 export function isTabPath(pathname: string) {
   return TAB_PATHS.includes(pathname)
+}
+
+/** 当前路径命中的路由；动态段按通配匹配，供标题与评审状态共用 */
+export function matchRoute(pathname: string) {
+  return (
+    APP_ROUTES.find((route) => route.path === pathname) ??
+    APP_ROUTES.find((route) =>
+      new RegExp(`^${route.path.replace(/:[^/]+/g, '[^/]+')}$`).test(pathname),
+    )
+  )
 }

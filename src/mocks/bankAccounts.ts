@@ -21,7 +21,7 @@ export const MAX_BANK_ACCOUNTS = 5
 const SEED_ACCOUNTS: BankAccount[] = [
   {
     id: 'bank-pingan',
-    holder: '陈智航',
+    holder: '张三',
     cardNo: '6225380067119455',
     bank: '平安银行',
     city: '广东 深圳',

@@ -1,6 +1,19 @@
-import { Badge, BottomSheet, Button, Card, CountdownBar, EmptyState, IconButton, ListPage, MediaVisual, PaymentPasswordSheet, PriceText, SegmentedTabs, Toast } from '@/components'
+import {
+  Badge,
+  BottomSheet,
+  Button,
+  Card,
+  CountdownBar,
+  EmptyState,
+  ListPage,
+  MediaVisual,
+  PaymentPasswordSheet,
+  PriceText,
+  SegmentedTabs,
+  Toast,
+} from '@/components'
 import { useEffect, useState } from 'react'
-import { Bell, ClipboardList, Store } from 'lucide-react'
+import { ClipboardList, Store } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { addToCart } from '@/mocks/cart'
@@ -27,7 +40,6 @@ import {
   type SalesOrder,
   type SalesStatus,
 } from '@/mocks/salesOrders'
-import { messageUnreadCount, useMessageReadState } from '@/mocks/messages'
 import { cn } from '@/lib/utils'
 import {
   ORDER_STATUS_BADGE_TONE,
@@ -121,9 +133,6 @@ export function OrdersPage() {
   const [payId, setPayId] = useState<string | null>(null)
   const [timeline, setTimeline] = useState<TimelineSheet | null>(null)
   const [toast, setToast] = useState<string | null>(null)
-  // 消息未读数：顶栏铃铛角标，与消息中心共享已读状态
-  const messageState = useMessageReadState()
-  const unread = messageUnreadCount(messageState)
 
   const typeParam = params.get('type')
   const statusParam = params.get('status')
@@ -209,14 +218,13 @@ export function OrdersPage() {
   }
 
   return (
-    <ListPage
-      title="订单"
-      showBack
-      onBack={() => navigate(paths.me)}
-      contentClassName="space-y-3"
-    >
+    <ListPage title="订单" showBack onBack={() => navigate(paths.me)} contentClassName="space-y-3">
       <div className="-mx-4 flex items-center justify-between gap-3 px-4 pb-1">
-        <div role="tablist" aria-label="订单类型" className="relative flex flex-1 items-end self-stretch">
+        <div
+          role="tablist"
+          aria-label="订单类型"
+          className="relative flex flex-1 items-end self-stretch"
+        >
           {[
             { key: 'sales' as const, label: '购买订单' },
             { key: 'recycle' as const, label: '回收订单' },
@@ -251,18 +259,6 @@ export function OrdersPage() {
               <span className="h-0.5 w-6 rounded-full bg-gold-700" />
             </span>
           </span>
-        </div>
-        <div className="relative shrink-0">
-          <IconButton
-            icon={Bell}
-            label="消息中心"
-            onClick={() => navigate(paths.messages)}
-          />
-          {unread > 0 ? (
-            <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-caption leading-none text-destructive-foreground tabular">
-              {unread > 99 ? '99+' : unread}
-            </span>
-          ) : null}
         </div>
       </div>
 
@@ -371,9 +367,7 @@ export function OrdersPage() {
               <div className="flex items-end justify-between gap-3 border-t border-border-subtle pt-2.5">
                 <p className="truncate text-caption text-subtle-foreground">{order.createdAt}</p>
                 <div className="shrink-0 text-right">
-                  <p className="text-caption text-subtle-foreground">
-                    共 {salesCount(order)} 件
-                  </p>
+                  <p className="text-caption text-subtle-foreground">共 {salesCount(order)} 件</p>
                   <p className="mt-0.5 text-body-strong text-gold-800">
                     合计 ¥{salesTotal(order).toLocaleString()}
                   </p>
@@ -402,17 +396,10 @@ export function OrdersPage() {
               >
                 {order.status === 'pending-payment' ? (
                   <>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => setCancelId(order.id)}
-                    >
+                    <Button size="sm" variant="secondary" onClick={() => setCancelId(order.id)}>
                       取消订单
                     </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => setPayId(order.id)}
-                    >
+                    <Button size="sm" onClick={() => setPayId(order.id)}>
                       立即支付
                     </Button>
                   </>
@@ -464,10 +451,7 @@ export function OrdersPage() {
                     >
                       申请售后
                     </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => rebuy(order)}
-                    >
+                    <Button size="sm" onClick={() => rebuy(order)}>
                       再次购买
                     </Button>
                   </>
@@ -484,10 +468,7 @@ export function OrdersPage() {
                 ) : null}
 
                 {order.status === 'cancelled' ? (
-                  <Button
-                    size="sm"
-                    onClick={() => rebuy(order)}
-                  >
+                  <Button size="sm" onClick={() => rebuy(order)}>
                     再次购买
                   </Button>
                 ) : null}
@@ -610,10 +591,7 @@ export function OrdersPage() {
         onClose={() => setTimeline(null)}
         title={timeline?.title ?? ''}
         footer={
-          <Button
-            block
-            onClick={() => setTimeline(null)}
-          >
+          <Button block onClick={() => setTimeline(null)}>
             知道了
           </Button>
         }
@@ -640,9 +618,7 @@ export function OrdersPage() {
                     {step.label}
                   </p>
                   {step.description ? (
-                    <p className="mt-0.5 text-caption text-subtle-foreground">
-                      {step.description}
-                    </p>
+                    <p className="mt-0.5 text-caption text-subtle-foreground">{step.description}</p>
                   ) : null}
                 </div>
               </li>

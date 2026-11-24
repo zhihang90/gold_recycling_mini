@@ -1,4 +1,4 @@
-import { STORAGE_KEYS } from "./keys"
+import { STORAGE_KEYS } from './keys'
 import { readSession, writeSession } from './storage'
 export interface ShippingAddress {
   id: string
@@ -25,7 +25,7 @@ export interface AddressLocation {
 export const DEFAULT_ADDRESSES: ShippingAddress[] = [
   {
     id: 'home',
-    name: '陈智航',
+    name: '张三',
     phone: '17688825090',
     region: '广东省 深圳市 盐田区',
     place: '深盐路2088号太平洋工业区3栋',

@@ -15,7 +15,7 @@ import { paths } from '@/routes/paths'
 const STEPS = ['正对屏幕', '张张嘴', '点点头'] as const
 
 /** 从左侧菜单直达时没有表单暂存，用同一套演示数据兜底 */
-const FALLBACK_AUTH = { name: '陈智航', idNo: '440300199001011234', phone: '13800138000' }
+const FALLBACK_AUTH = { name: '张三', idNo: '440300199001011234', phone: '13800138000' }
 
 type Stage = 'scanning' | 'success'
 

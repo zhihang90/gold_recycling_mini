@@ -37,7 +37,7 @@ import {
   type SalesOrder,
   type SalesStatus,
 } from '@/mocks/salesOrders'
-import { paths } from '@/routes/paths'
+import { paths, routePath } from '@/routes/paths'
 
 const LOGISTICS_STEPS: TimelineItem[] = [
   {
@@ -79,7 +79,11 @@ interface StatusView {
 const STATUS_VIEWS: Record<SalesStatus, StatusView> = {
   'pending-payment': { logistics: false, amountLabel: '应付款', actions: ['cancel', 'pay'] },
   'pending-shipment': { logistics: false, amountLabel: '实付款', actions: ['contact'] },
-  'pending-receipt': { logistics: true, amountLabel: '实付款', actions: ['contact', 'confirmReceipt'] },
+  'pending-receipt': {
+    logistics: true,
+    amountLabel: '实付款',
+    actions: ['contact', 'confirmReceipt'],
+  },
   completed: { logistics: false, amountLabel: '实付款', actions: ['rebuy'] },
   cancelled: { logistics: false, amountLabel: '实付款', actions: ['rebuy'] },
   'after-sale': { logistics: false, amountLabel: '实付款', actions: ['contact'] },
@@ -134,13 +138,7 @@ function OrderGoodsCard({ order }: { order: SalesOrder }) {
 }
 
 /** 物流信息卡：仅在配置开启且订单带运单时由详情页渲染 */
-function OrderLogisticsCard({
-  order,
-  onCopy,
-}: {
-  order: SalesOrder
-  onCopy: () => void
-}) {
+function OrderLogisticsCard({ order, onCopy }: { order: SalesOrder; onCopy: () => void }) {
   if (!order.express) return null
 
   return (
@@ -167,9 +165,7 @@ export function BuyOrderDetailPage() {
     orderId ? findSalesOrder(orderId) : undefined,
   )
   /** 从确认订单页取消支付跳到详情时，返回键应落到订单列表，而不是结算流程 */
-  const fromCheckout = Boolean(
-    (location.state as { fromCheckout?: boolean } | null)?.fromCheckout,
-  )
+  const fromCheckout = Boolean((location.state as { fromCheckout?: boolean } | null)?.fromCheckout)
 
   // 订单详情之间切换时同步重新读取，避免沿用上一笔订单的状态
   useEffect(() => {
@@ -195,9 +191,7 @@ export function BuyOrderDetailPage() {
       onOrderChange={setOrder}
       persist
       onBack={
-        fromCheckout
-          ? () => navigate(ordersListPath(order.status), { replace: true })
-          : undefined
+        fromCheckout ? () => navigate(ordersListPath(order.status), { replace: true }) : undefined
       }
     />
   )
@@ -239,7 +233,7 @@ export function BuyOrderDetailView({
     if (next) onOrderChange(next)
   }
 
-  const contact = () => setToast('客服将在 9:00–21:00 回复')
+  const contact = () => navigate(`${routePath('support.chat')}?orderId=${order.id}&kind=sales`)
 
   const copyExpress = async () => {
     if (!order.express) return
@@ -340,10 +334,7 @@ export function BuyOrderDetailView({
       </Card>
 
       <Card padding="md">
-        <KeyValueRow
-          label="商品总额"
-          value={<PriceText value={total} size="body" tone="ink" />}
-        />
+        <KeyValueRow label="商品总额" value={<PriceText value={total} size="body" tone="ink" />} />
         <KeyValueRow label="运费" value={<PriceText value={0} size="body" tone="ink" />} />
         <div className="mt-1 flex items-center justify-between border-t border-border-subtle pt-3">
           <span className="text-body text-foreground">{view.amountLabel}</span>

@@ -51,7 +51,7 @@ export function BankCardFormPage() {
   const [submitting, setSubmitting] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
-  const holder = member?.realNameAuth?.name ?? '陈智航'
+  const holder = member?.realNameAuth?.name ?? '张三'
   const full = readBankAccounts().length >= MAX_BANK_ACCOUNTS
 
   useEffect(() => {
@@ -81,8 +81,6 @@ export function BankCardFormPage() {
   }
 
   const validPhone = /^1[3-9]\d{9}$/.test(phone)
-  const valid =
-    cardNo.length >= 16 && cardNo.length <= 19 && !!bank && !!city && validPhone && code.length === 6
 
   const handleSendCode = () => {
     if (!validPhone) {
@@ -99,6 +97,26 @@ export function BankCardFormPage() {
       setToast(`最多可添加 ${MAX_BANK_ACCOUNTS} 张银行卡`)
       return
     }
+    if (cardNo.length < 16 || cardNo.length > 19) {
+      setToast('请输入正确的银行卡号')
+      return
+    }
+    if (!bank) {
+      setToast('请输入银行名称或识别卡号')
+      return
+    }
+    if (!city) {
+      setToast('请选择开户城市')
+      return
+    }
+    if (!validPhone) {
+      setToast('请输入正确的银行预留手机号')
+      return
+    }
+    if (code.length !== 6) {
+      setToast('请输入 6 位验证码')
+      return
+    }
     // 提交中：按钮转圈并禁用，避免重复添加
     setSubmitting(true)
     addBankAccount({ holder, cardNo, bank, city })
@@ -113,7 +131,7 @@ export function BankCardFormPage() {
       <DetailPage
         title="添加银行卡"
         footer={
-          <Button size="lg" block loading={submitting} disabled={!valid} onClick={handleSubmit}>
+          <Button size="lg" block loading={submitting} onClick={handleSubmit}>
             确定
           </Button>
         }
@@ -142,7 +160,9 @@ export function BankCardFormPage() {
               onClick={() => setCityOpen(true)}
               className="mt-1 flex h-11 w-full items-center justify-between gap-3 rounded-sm bg-card px-3 text-left ring-1 ring-border transition active:bg-surface-2"
             >
-              <span className={cn('text-body', city ? 'text-foreground' : 'text-subtle-foreground')}>
+              <span
+                className={cn('text-body', city ? 'text-foreground' : 'text-subtle-foreground')}
+              >
                 {city || '请选择开户城市'}
               </span>
               <span className="text-body text-icon-muted">选择</span>

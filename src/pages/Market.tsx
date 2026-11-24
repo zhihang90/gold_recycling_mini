@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   Chip,
+  ChipRow,
   FormField,
   IconButton,
   InlineNotice,
@@ -16,6 +17,7 @@ import {
 import { cn } from '@/lib/utils'
 import { formatDateTime, round2 } from '@/lib/money'
 import { useDialogGuard } from '@/lib/useDialogGuard'
+import { useReviewState } from '@/lib/useReviewState'
 import {
   ALERT_DIRECTION_LABEL,
   ALERT_LIMIT,
@@ -26,7 +28,6 @@ import {
   DOMESTIC_CONTRACTS,
   FX_RATES,
   INTERNATIONAL_CONTRACTS,
-  LOCK_NOTE,
   MARKET_QUOTES,
   NEWS_DISCLAIMER,
   PHYSICAL_METALS,
@@ -35,7 +36,6 @@ import {
   RELATED_PRODUCTS,
   RISK_NOTE,
   RISK_TEXT,
-  TRADE_FEE_RATE,
   TRADE_SPECS,
   WATCH_LIMIT,
   addAlert,
@@ -48,14 +48,12 @@ import {
   quoteByCode,
   quoteChange,
   quoteName,
-  readAlerts,
   readRiskAck,
   readWatchlist,
   removeAlert,
   removeWatch,
   simulateMarketTick,
   sortedNews,
-  tradeAmount,
   writeRiskAck,
   type ChartPeriod,
   type DomesticContract,
@@ -79,9 +77,31 @@ type ChartMode = 'line' | 'candle'
 let lastQuoteCode = DEFAULT_QUOTE_CODE
 
 function formatHms(timestamp: number) {
-  const date = new Date(timestamp)
-  const pad = (value: number) => String(value).padStart(2, '0')
-  return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+  return getBeijingNow(new Date(timestamp)).time
+}
+
+const BEIJING_TIME_ZONE = 'Asia/Shanghai'
+const beijingFormatter = new Intl.DateTimeFormat('zh-CN', {
+  timeZone: BEIJING_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hourCycle: 'h23',
+})
+
+/** 顶部时间统一按北京时间展示，不随设备时区变化 */
+function getBeijingNow(date: Date) {
+  const parts = beijingFormatter.formatToParts(date)
+  const pick = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? '00'
+  return {
+    date: `${pick('year')}-${pick('month')}-${pick('day')}`,
+    time: `${pick('hour')}:${pick('minute')}:${pick('second')}`,
+    hour: Number(pick('hour')),
+  }
 }
 
 function buyProductFor(grams: number) {
@@ -105,7 +125,6 @@ function QuoteView({ demo }: { demo: string | null }) {
   const navigate = useNavigate()
   const [quoteTab, setQuoteTab] = useState<QuoteTab>(DEFAULT_QUOTE_TAB)
   const [watchlist, setWatchlist] = useState<string[]>(() => readWatchlist())
-  const [alerts, setAlerts] = useState<PriceAlert[]>(() => readAlerts())
   const [riskAcked, setRiskAcked] = useState<boolean>(() => readRiskAck())
   const [manageOpen, setManageOpen] = useState(false)
   const [toast, setToast] = useState('')
@@ -113,12 +132,14 @@ function QuoteView({ demo }: { demo: string | null }) {
 
   const scene: MarketScene | null =
     demo === 'offline' || demo === 'delay' || demo === 'closed' ? demo : null
+  const { values: reviewValues } = useReviewState('market')
+  const reviewPhase = reviewValues.phase ?? 'auto'
 
   /** 卡片 2 固定展示 Au99.99 的概览 + 图表；TradeCard 固定展示 platform-buy */
   const chartQuote = quoteByCode('au9999')!
   const tradeQuote = quoteByCode('platform-buy')!
 
-  useMarketTicker(scene === null, () => setAlerts(readAlerts()))
+  useMarketTicker(scene === null && reviewPhase !== 'closed', () => {})
 
   const showToast = (message: string) => {
     setToast(message)
@@ -146,8 +167,6 @@ function QuoteView({ demo }: { demo: string | null }) {
     showToast('已加入自选')
   }
 
-  const triggered = alerts.filter((alert) => alert.status === 'triggered')
-
   /** 统一顶部横幅的实时时钟（每秒更新一次） */
   const [clock, setClock] = useState(() => new Date())
   useEffect(() => {
@@ -155,14 +174,15 @@ function QuoteView({ demo }: { demo: string | null }) {
     return () => window.clearInterval(timer)
   }, [])
 
-  const pad2 = (v: number) => String(v).padStart(2, '0')
-  const dateStr = `${clock.getFullYear()}-${pad2(clock.getMonth() + 1)}-${pad2(clock.getDate())} ${pad2(clock.getHours())}:${pad2(clock.getMinutes())}:${pad2(clock.getSeconds())}`
+  const beijingNow = getBeijingNow(clock)
+  const dateStr = `${beijingNow.date} ${beijingNow.time}`
 
-  /** 开市状态：scene=closed→闭市，scene=offline→断网，否则按时间判断（9:00-24:00 开市） */
-  const isClosed = scene === 'closed'
+  /** 开市状态：评审开关优先，其次按演示场景与真实时间判断（北京时间 9:00-24:00 开市） */
+  const isClosed = scene === 'closed' || reviewPhase === 'closed'
   const isOffline = scene === 'offline'
-  const nowHour = clock.getHours()
-  const marketOpen = scene === null && nowHour >= 9
+  const nowHour = beijingNow.hour
+  const marketOpen =
+    !isClosed && !isOffline && (reviewPhase === 'open' || (scene === null && nowHour >= 9))
 
   return (
     <>
@@ -172,28 +192,12 @@ function QuoteView({ demo }: { demo: string | null }) {
             正在重连，价格停止更新，恢复后自动继续刷新。
           </InlineNotice>
         ) : null}
-        {scene === 'closed' ? (
-          <InlineNotice tone="warning" title="当前休市">
-            休市期间行情暂停更新，开市后可交易。
-          </InlineNotice>
-        ) : null}
-        {triggered.length > 0 ? (
-          <InlineNotice tone="success" title="到价提醒已触发">
-            {triggered
-              .slice(0, 2)
-              .map((alert) => {
-                const unit = quoteByCode(alert.code)?.unit ?? ''
-                return `${quoteName(alert.code)} ${ALERT_DIRECTION_LABEL[alert.direction]} ${alert.target.toFixed(2)} ${unit}`.trim()
-              })
-              .join('；')}
-          </InlineNotice>
-        ) : null}
 
-        {/* 统一顶部横幅：交易日 + 开盘状态（固定置顶，平铺） */}
-        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-border-subtle bg-price px-4 py-2 text-caption text-paper">
+        {/* 统一顶部横幅：交易日 + 开盘状态（铺满吸顶） */}
+        <div className="-mx-4 -mt-4 sticky top-0 z-10 flex items-center gap-3 border-b border-border-subtle bg-price px-4 py-2 text-caption text-paper">
           <span className="tabular">{dateStr}</span>
           <span className="inline-flex items-center gap-1">
-            {isOffline ? '断网' : isClosed || !marketOpen ? '闭市' : '开盘中'}
+            {isOffline ? '断网' : isClosed || !marketOpen ? '休市' : '开盘中'}
           </span>
         </div>
 
@@ -209,13 +213,18 @@ function QuoteView({ demo }: { demo: string | null }) {
           />
           {quoteTab === 'physical' ? (
             <PhysicalMetalTable
+              locked={scene !== null || !marketOpen}
               onBuy={() => navigate('/buy')}
               onSell={() => navigate('/orders?type=recycle')}
             />
           ) : quoteTab === 'domestic' ? (
-            <DomesticContractsTable onSelect={(code) => showToast(`${quoteName(code)} 详情页待开放`)} />
+            <DomesticContractsTable
+              onSelect={(code) => showToast(`${quoteName(code)} 详情页待开放`)}
+            />
           ) : (
-            <InternationalContractsTable onSelect={(code) => showToast(`${quoteName(code)} 详情页待开放`)} />
+            <InternationalContractsTable
+              onSelect={(code) => showToast(`${quoteName(code)} 详情页待开放`)}
+            />
           )}
         </Card>
 
@@ -237,16 +246,17 @@ function QuoteView({ demo }: { demo: string | null }) {
 
         <TradeCard
           scene={scene}
-          onToast={showToast}
+          marketOpen={marketOpen}
           onBuy={(grams) => navigate(buyDetailPath(buyProductFor(grams)))}
+          onSell={(grams) => navigate(`${paths.quote}?category=bar&weight=${grams}`)}
         />
+
+        <p className="px-1 text-center text-caption text-subtle-foreground">{RISK_NOTE}</p>
 
         <NewsSummaryCard
           onOpenDetail={(id) => navigate(`/market/news/${id}`)}
           onMore={() => navigate('/market/news')}
         />
-
-        <p className="px-1 text-center text-caption text-subtle-foreground">{RISK_NOTE}</p>
       </div>
 
       <RiskDialog
@@ -297,12 +307,21 @@ function useMarketTicker(enabled: boolean, onTick: () => void) {
 }
 
 function PhysicalMetalTable({
+  locked,
   onBuy,
   onSell,
 }: {
+  locked: boolean
   onBuy: () => void
   onSell: () => void
 }) {
+  /** 黄金行与「报价与交易」卡共用平台金条实时价，避免同页出现两套金价口径 */
+  const goldBuyQuote = quoteByCode('platform-buy')!
+  const goldSale = getLivePrice('platform-buy')
+  const goldBuyback = getLivePrice('platform-recycle')
+  const goldHigh = Math.max(goldBuyQuote.high, goldSale, goldBuyback)
+  const goldLow = Math.min(goldBuyQuote.low, goldSale, goldBuyback)
+
   const fmt = (metal: PhysicalMetal, value: number | null) =>
     value == null ? '--' : value.toFixed(metal.precision)
 
@@ -319,13 +338,13 @@ function PhysicalMetalTable({
       {/* 数据行 */}
       <ul className="divide-y divide-border-subtle">
         {PHYSICAL_METALS.map((metal) => {
-          const buyback = fmt(metal, metal.buyback)
-          const sale = fmt(metal, metal.sale)
-          const highStr = fmt(metal, metal.high)
-          const lowStr = fmt(metal, metal.low)
+          const isGold = metal.name === '黄金'
+          const buyback = fmt(metal, isGold ? goldBuyback : metal.buyback)
+          const sale = fmt(metal, isGold ? goldSale : metal.sale)
+          const highStr = fmt(metal, isGold ? goldHigh : metal.high)
+          const lowStr = fmt(metal, isGold ? goldLow : metal.low)
           const hasBuyback = metal.buyback != null
           const hasSale = metal.sale != null
-          const isGold = metal.name === '黄金'
           return (
             <li
               key={metal.name}
@@ -348,7 +367,8 @@ function PhysicalMetalTable({
                   <button
                     type="button"
                     onClick={onSell}
-                    className="rounded-sm border border-success/50 px-2 py-0.5 text-micro leading-none text-success hover:bg-success/10 active:bg-success/20"
+                    disabled={locked}
+                    className="rounded-sm border border-success/50 px-2 py-0.5 text-micro leading-none text-success hover:bg-success/10 active:bg-success/20 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     卖出
                   </button>
@@ -371,7 +391,8 @@ function PhysicalMetalTable({
                   <button
                     type="button"
                     onClick={onBuy}
-                    className="rounded-sm border border-price/50 px-2 py-0.5 text-micro leading-none text-price hover:bg-price/10 active:bg-price/20"
+                    disabled={locked}
+                    className="rounded-sm border border-price/50 px-2 py-0.5 text-micro leading-none text-price hover:bg-price/10 active:bg-price/20 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     买入
                   </button>
@@ -403,6 +424,9 @@ function PhysicalMetalTable({
           )
         })}
       </ul>
+      <p className="border-t border-border-subtle px-3 py-2 text-caption text-subtle-foreground">
+        黄金为平台投资金条实时挂牌价，与下方报价卡口径一致；其余为实物挂牌参考价。
+      </p>
     </>
   )
 }
@@ -545,7 +569,11 @@ function OverviewCard({
     { label: '今开', value: quote.open.toFixed(quote.precision), className: 'text-foreground' },
     { label: '最高', value: quote.high.toFixed(quote.precision), className: 'text-price' },
     { label: '最低', value: quote.low.toFixed(quote.precision), className: 'text-success' },
-    { label: '昨收', value: quote.prevClose.toFixed(quote.precision), className: 'text-foreground' },
+    {
+      label: '昨收',
+      value: quote.prevClose.toFixed(quote.precision),
+      className: 'text-foreground',
+    },
     { label: '成交量', value: quote.volume, className: 'text-foreground' },
     { label: '成交额', value: quote.turnover, className: 'text-foreground' },
   ]
@@ -638,7 +666,7 @@ function ChartCard({ quote }: { quote: Quote }) {
         <span className="text-caption text-subtle-foreground">{quote.unit}</span>
       </div>
 
-      <div className="hide-scrollbar flex gap-1.5 overflow-x-auto pb-0.5">
+      <ChipRow className="gap-1.5">
         {CHART_PERIODS.map((item) => (
           <Chip
             key={item}
@@ -649,7 +677,7 @@ function ChartCard({ quote }: { quote: Quote }) {
             {item}
           </Chip>
         ))}
-      </div>
+      </ChipRow>
 
       <PriceChart code={quote.code} period={period} mode={mode} price={price} />
 
@@ -713,7 +741,8 @@ function PriceChart({
   )
 
   const count = mode === 'line' ? line.length : candles.length
-  const labels = mode === 'line' ? line.map((point) => point.label) : candles.map((item) => item.label)
+  const labels =
+    mode === 'line' ? line.map((point) => point.label) : candles.map((item) => item.label)
   const values =
     mode === 'line'
       ? line.map((point) => point.price)
@@ -751,7 +780,8 @@ function PriceChart({
   )
 
   const activeIndex = active != null && active < count ? active : null
-  const activeX = activeIndex == null ? 0 : mode === 'line' ? xOf(activeIndex) : candleX(activeIndex)
+  const activeX =
+    activeIndex == null ? 0 : mode === 'line' ? xOf(activeIndex) : candleX(activeIndex)
 
   const clearHide = () => {
     if (hideRef.current !== null) {
@@ -983,84 +1013,137 @@ function RelatedCard({ onTip }: { onTip: (message: string) => void }) {
 
 function TradeCard({
   scene,
-  onToast,
+  marketOpen,
   onBuy,
+  onSell,
 }: {
   scene: MarketScene | null
-  onToast: (message: string) => void
+  marketOpen: boolean
   onBuy: (grams: number) => void
+  onSell: (grams: number) => void
 }) {
+  const [mode, setMode] = useState<'buy' | 'sell'>('buy')
   const [grams, setGrams] = useState(DEFAULT_TRADE_GRAMS)
   const buyPrice = getLivePrice('platform-buy')
   const recyclePrice = getLivePrice('platform-recycle')
-  const spread = round2(buyPrice - recyclePrice)
-  const { subtotal, fee, total } = tradeAmount(grams, buyPrice)
-  const locked = scene !== null
+  const buyTotal = round2(grams * buyPrice)
+  const sellTotal = round2(grams * recyclePrice)
+  const priceOptions = [
+    { value: 'buy' as const, priceLabel: '买入价', label: '我要买', price: buyPrice },
+    { value: 'sell' as const, priceLabel: '回购价', label: '我要卖', price: recyclePrice },
+  ]
+  const locked = scene !== null || !marketOpen
   const reason =
     scene === 'offline'
       ? '网络异常，暂时无法下单'
       : scene === 'delay'
         ? '行情数据延迟，暂不可下单'
-        : scene === 'closed'
+        : scene === 'closed' || !marketOpen
           ? '当前休市，开市后可交易'
           : ''
 
   return (
     <Card padding="md" className="space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-card-title text-foreground">报价与交易</p>
-        <span className="text-caption text-subtle-foreground">费率以实际规则为准</span>
-      </div>
+      <p className="text-card-title text-foreground">平台金条报价与交易</p>
 
-      <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-md bg-surface-2 px-3 py-2">
-          <p className="text-caption text-subtle-foreground">买入价</p>
-          <p className="mt-0.5 text-body-strong tabular text-price">{buyPrice.toFixed(2)}</p>
-          <p className="text-caption text-subtle-foreground">元/克</p>
-        </div>
-        <div className="rounded-md bg-surface-2 px-3 py-2">
-          <p className="text-caption text-subtle-foreground">回购价</p>
-          <p className="mt-0.5 text-body-strong tabular text-success">{recyclePrice.toFixed(2)}</p>
-          <p className="text-caption text-subtle-foreground">买卖价差 ¥{spread.toFixed(2)}/克</p>
-        </div>
+      {/* P0+P1 重写：统一选中态配色 / radio→pressed / 间距节奏 / 单位弱化 / 箭头替代圆点 / 语义色统一 */}
+      <div
+        role="radiogroup"
+        aria-label="交易方向"
+        className="divide-y divide-border-subtle overflow-hidden rounded-md ring-1 ring-border-subtle"
+      >
+        {priceOptions.map((option) => {
+          const active = mode === option.value
+          return (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={active}
+              onClick={() => setMode(option.value)}
+              className={cn(
+                'flex w-full items-center gap-2 px-3 py-3 text-left transition',
+                active ? 'bg-primary-soft/40' : 'bg-card active:bg-surface-2',
+              )}
+            >
+              <span className="flex min-w-0 items-center gap-2">
+                {/* 价格主体：标签caption + 金额强调 + 单位弱化，单位比标签更弱 */}
+                <span className="shrink-0 text-caption text-subtle-foreground">
+                  {option.priceLabel}：
+                </span>
+                <span className="text-body-strong tabular text-foreground">
+                  ¥{option.price.toFixed(2)}
+                </span>
+                <span className="shrink-0 text-caption text-muted-foreground">元/克</span>
+                {/* 方向文字紧跟价格组，间距统一 */}
+                <span
+                  className={cn(
+                    'shrink-0 text-body',
+                    active ? 'text-foreground font-medium' : 'text-muted-foreground',
+                  )}
+                >
+                  {option.label}
+                </span>
+              </span>
+              {/* 右对齐箭头，替代圆点（圆点暗示独立控件，箭头只做选中锚点） */}
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'ml-auto flex shrink-0 items-center text-lg leading-none transition',
+                  active ? 'text-primary' : 'text-border',
+                )}
+              >
+                ›
+              </span>
+            </button>
+          )
+        })}
       </div>
 
       <div>
-        <p className="text-caption text-subtle-foreground">规格（克）</p>
-        <div className="hide-scrollbar mt-1.5 flex gap-2 overflow-x-auto">
+        <p className="text-caption text-subtle-foreground">
+          {mode === 'buy' ? '规格（克）' : '卖出克重（克）'}
+        </p>
+        <ChipRow className="mt-1.5">
           {TRADE_SPECS.map((spec) => (
             <Chip key={spec} active={spec === grams} onClick={() => setGrams(spec)}>
               {spec}g
             </Chip>
           ))}
-        </div>
+        </ChipRow>
       </div>
 
-      <div className="space-y-1 rounded-md bg-surface-2 px-3 py-2 text-caption text-muted-foreground">
-        <div className="flex justify-between">
-          <span>金价小计</span>
-          <span className="tabular">¥{subtotal.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>手续费（{(TRADE_FEE_RATE * 100).toFixed(1)}%）</span>
-          <span className="tabular">¥{fee.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between text-body-strong text-foreground">
-          <span>合计</span>
-          <span className="tabular">¥{total.toFixed(2)}</span>
-        </div>
+      <div className="flex items-end justify-between gap-3 border-t border-border-subtle pt-2.5">
+        <span className="text-caption text-subtle-foreground">
+          {mode === 'buy' ? `合计 · ${grams}g` : '预计到账'}
+        </span>
+        <p className="text-body-strong tabular text-foreground">
+          ¥{(mode === 'buy' ? buyTotal : sellTotal).toFixed(2)}
+        </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <Button variant="secondary" size="md" onClick={() => onToast('预约购金即将开放')}>
-          预约购金
-        </Button>
-        <Button variant="primary" size="md" disabled={locked} onClick={() => onBuy(grams)}>
-          立即买入
-        </Button>
-      </div>
+      {mode === 'sell' ? (
+        <p className="-mt-1.5 text-caption text-subtle-foreground">
+          预计到账按当前回购价估算，最终以检测克重与确认时报价为准。
+        </p>
+      ) : null}
 
       {locked ? <p className="text-caption text-warning">{reason}</p> : null}
+
+      <Button
+        variant="primary"
+        size="md"
+        block
+        disabled={locked}
+        onClick={() => (mode === 'buy' ? onBuy(grams) : onSell(grams))}
+      >
+        {locked
+          ? mode === 'buy'
+            ? '暂不可买入'
+            : '暂不可卖出'
+          : mode === 'buy'
+            ? '立即买入'
+            : '立即卖金'}
+      </Button>
     </Card>
   )
 }
@@ -1167,7 +1250,8 @@ function AlertSheet({
 
   const targetValid = /^\d+(\.\d{1,2})?$/.test(target.trim()) && Number(target) > 0
   const error =
-    serverError || (target.trim() !== '' && !targetValid ? '请输入正确的目标价（最多 2 位小数）' : '')
+    serverError ||
+    (target.trim() !== '' && !targetValid ? '请输入正确的目标价（最多 2 位小数）' : '')
 
   const save = () => {
     if (!targetValid) return
@@ -1303,35 +1387,49 @@ function ManageSheet({
 
 function RiskDialog({ open, onConfirm }: { open: boolean; onConfirm: () => void }) {
   const [checked, setChecked] = useState(false)
+  const [toast, setToast] = useState<string | null>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   useDialogGuard({ open, onClose: () => {}, panelRef, historyKey: '__market-risk' })
 
   if (!open) return null
 
   const content = (
-    <div className="absolute inset-0 z-50 flex items-center justify-center px-6">
-      <div className="absolute inset-0 bg-black/45" />
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label="投资风险提示"
-        tabIndex={-1}
-        className="relative w-full max-w-80 rounded-lg bg-card p-4 shadow-lg outline-none"
-      >
-        <div className="flex items-center gap-2">
-          <ShieldAlert size={18} className="text-warning" />
-          <h2 className="text-card-title text-foreground">投资风险提示</h2>
+    <>
+      <div className="absolute inset-0 z-50 flex items-center justify-center px-6">
+        <div className="absolute inset-0 bg-black/45" />
+        <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="投资风险提示"
+          tabIndex={-1}
+          className="relative w-full max-w-80 rounded-lg bg-card p-4 shadow-lg outline-none"
+        >
+          <div className="flex items-center gap-2">
+            <ShieldAlert size={18} className="text-warning" />
+            <h2 className="text-card-title text-foreground">投资风险提示</h2>
+          </div>
+          <p className="mt-2 text-body leading-relaxed text-muted-foreground">{RISK_TEXT}</p>
+          <AgreementCheck checked={checked} onChange={setChecked} className="mt-3">
+            我已阅读并理解以上风险提示
+          </AgreementCheck>
+          <Button
+            block
+            className="mt-3"
+            onClick={() => {
+              if (!checked) {
+                setToast('请先勾选并同意投资风险提示')
+                return
+              }
+              onConfirm()
+            }}
+          >
+            继续查看
+          </Button>
         </div>
-        <p className="mt-2 text-body leading-relaxed text-muted-foreground">{RISK_TEXT}</p>
-        <AgreementCheck checked={checked} onChange={setChecked} className="mt-3">
-          我已阅读并理解以上风险提示
-        </AgreementCheck>
-        <Button block className="mt-3" disabled={!checked} onClick={onConfirm}>
-          继续查看
-        </Button>
       </div>
-    </div>
+      <Toast open={!!toast} message={toast ?? ''} onClose={() => setToast(null)} />
+    </>
   )
 
   const host = document.querySelector<HTMLElement>('[data-phone-frame]')

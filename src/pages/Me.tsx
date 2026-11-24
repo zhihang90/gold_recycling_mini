@@ -1,62 +1,37 @@
 import { TabPage, Card, BottomSheet, Button, ProfileCard, QuickActionGrid } from '@/components'
-import type { QuickAction } from '@/components'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BadgeCheck,
   Bell,
-  CircleCheck,
   CircleChevronRight,
   CircleHelp,
   CreditCard,
   Headphones,
   MapPin,
   MessageSquare,
-  Package,
-  ScanLine,
   ShieldCheck,
-  Truck,
   UserRound,
   Wallet,
-  WalletCards,
 } from 'lucide-react'
 
 import { getEnterpriseAuthStatus, maskPhone, readMember, readNickname } from '@/mocks/member'
 import { DEMO_RECYCLE_ORDERS, type RecycleStatus } from '@/mocks/recycleOrders'
 import { readSalesOrders, type SalesStatus } from '@/mocks/salesOrders'
 import { messageUnreadCount, useMessageReadState } from '@/mocks/messages'
-import { ordersFilterPath, paths } from '@/routes/paths'
+import { ordersFilterPath, paths, routePath } from '@/routes/paths'
 
-/** 买金订单：销售订单的四个高频状态，不含自提；最后一格进入全部订单。 */
-const SALES_SHORTCUTS: { key: SalesStatus | 'all'; label: string; icon: typeof Wallet }[] = [
-  { key: 'pending-payment', label: '待付款', icon: Wallet },
-  { key: 'pending-shipment', label: '待发货', icon: Package },
-  { key: 'pending-receipt', label: '待收货', icon: Truck },
-  { key: 'completed', label: '已完成', icon: CircleCheck },
-  { key: 'all', label: '全部', icon: CircleChevronRight },
-]
-
-/** 回收订单：沿用回收流程的四个业务节点，最后一格进入全部订单。 */
-const RECYCLE_SHORTCUTS: { key: RecycleStatus | 'all'; label: string; icon: typeof Wallet }[] = [
-  { key: 'pending-ship', label: '待寄出', icon: Package },
-  { key: 'testing', label: '检测中', icon: ScanLine },
-  { key: 'pending-confirm', label: '待确认', icon: BadgeCheck },
-  { key: 'pending-payment', label: '待打款', icon: WalletCards },
-  { key: 'all', label: '全部', icon: CircleChevronRight },
-]
-
-/** 只给需要用户处理的节点显示角标，已完成与全部不打扰。 */
-const BADGED_SALES: SalesStatus[] = ['pending-payment', 'pending-receipt']
-const BADGED_RECYCLE: RecycleStatus[] = ['pending-confirm', 'pending-payment']
-
-type InfoSheet = 'faq' | 'service' | null
+type InfoSheet = 'faq' | null
 
 const SHEET_TITLES: Record<Exclude<InfoSheet, null>, string> = {
   faq: '常见问题',
-  service: '客服与投诉',
 }
 
-/** 个人中心：未登录引导登录，已登录展示订单状态、常用服务与账户入口。 */
+/**
+ * 我的页面：头部账户卡 + 消息卡 + 业务与服务合并卡 + 关于我们入口。
+ * 订单不再在卡片里展示每个状态，只给「买金订单」「回收订单」两个入口行，
+ * 点进订单中心后再按状态筛选。
+ */
 export function MePage() {
   const navigate = useNavigate()
   const [member] = useState(() => readMember())
@@ -69,8 +44,17 @@ export function MePage() {
   const personalVerified = Boolean(member?.realNameAuth?.verifiedAt)
   const enterpriseStatus = getEnterpriseAuthStatus(member)
 
+  const salesPending = member
+    ? salesOrders.filter((o) => o.status === 'pending-payment' || o.status === 'pending-receipt').length
+    : 0
+  const recyclePending = member
+    ? recycleOrders.filter(
+        (o) => o.status === 'pending-confirm' || o.status === 'pending-payment',
+      ).length
+    : 0
+
   return (
-    <TabPage>
+    <TabPage contentClassName={member ? 'pt-0' : undefined}>
       {member ? (
         <Card
           padding="md"
@@ -80,7 +64,7 @@ export function MePage() {
             <button
               type="button"
               onClick={() => navigate(paths.meProfile)}
-              className="flex w-[calc(100%-36px)] items-center gap-3 text-left"
+              className="flex w-full items-center gap-3 text-left"
             >
               <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gold-50 text-gold-800">
                 <UserRound size={30} aria-hidden="true" />
@@ -105,114 +89,98 @@ export function MePage() {
                 <p className="mt-1 text-body text-gold-50/80 tabular">{maskPhone(member.phone)}</p>
               </div>
             </button>
-
-            {/* 用户卡右上角：消息中心铃铛（主入口，未读角标） */}
-            <button
-              type="button"
-              onClick={() => navigate(paths.messages)}
-              aria-label="消息中心"
-              className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold-50/15 text-gold-50 transition active:bg-gold-50/25"
-            >
-              <MessageSquare size={18} aria-hidden="true" />
-              {unread > 0 ? (
-                <span
-                  aria-hidden="true"
-                  className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-destructive px-1 text-micro font-medium leading-none text-destructive-foreground ring-1 ring-gold-900"
-                >
-                  {unread > 99 ? '99+' : unread}
-                </span>
-              ) : null}
-            </button>
           </div>
         </Card>
       ) : (
-        <ProfileCard
-          title="登录 / 注册"
-          description="登录后查看回收进度与收款记录"
-          icon={UserRound}
-          onClick={goLogin}
-        />
+        <ProfileCard title="登录 / 注册" icon={UserRound} onClick={goLogin} />
       )}
 
-      {/* 金价涨跌提醒入口（点击进入 market/alert-settings?tab=list） */}
-      <Card padding="md" className="overflow-hidden">
+      {/* 消息中心 + 金价涨跌提醒 */}
+      <Card padding="none" className="overflow-hidden">
+        <button
+          type="button"
+          onClick={() => navigate(paths.messages)}
+          className="flex w-full items-center gap-3 px-4 py-3 text-left transition active:bg-surface-2"
+        >
+          <MessageSquare size={20} className="shrink-0 text-primary" aria-hidden="true" />
+          <div className="min-w-0 flex-1">
+            <p className="text-body text-foreground">我的消息</p>
+          </div>
+          <span className="shrink-0 text-caption text-subtle-foreground">
+            {unread > 0 ? `${unread}条未读` : '暂无未读'}
+          </span>
+          <CircleChevronRight size={16} className="shrink-0 text-icon-muted" />
+        </button>
+        <div className="border-t border-border-subtle" />
         <button
           type="button"
           onClick={() => navigate(`${paths.marketAlertSettings}?tab=list`)}
-          className="flex w-full items-center gap-3 text-left active:bg-surface-2"
+          className="flex w-full items-center gap-3 px-4 py-3 text-left transition active:bg-surface-2"
         >
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-price/10 text-price">
-            <Bell size={20} aria-hidden="true" />
-          </span>
-          <div className="min-w-0 flex-1 space-y-0.5">
+          <Bell size={20} className="shrink-0 text-price" aria-hidden="true" />
+          <div className="min-w-0 flex-1">
             <p className="text-body text-foreground">金价涨跌提醒</p>
-            <p className="text-caption text-subtle-foreground">设置目标价，到价自动通知</p>
           </div>
           <CircleChevronRight size={16} className="shrink-0 text-icon-muted" />
         </button>
       </Card>
 
-      <Card padding="md" className="space-y-3">
-        <h2 className="text-card-title text-foreground">我的订单</h2>
-        <OrderRow
-          label="买金订单"
-          items={SALES_SHORTCUTS.map((item) => ({
-            key: item.key,
-            label: item.label,
-            icon: item.icon,
-            badge: badgeCount(salesOrders, item.key, BADGED_SALES),
-            onClick: member ? () => navigate(ordersFilterPath('sales', item.key)) : goLogin,
-          }))}
+      {/* 业务入口（订单 + 账户工具） */}
+      <Card padding="none" className="overflow-hidden">
+        <EntryRow
+          icon={Wallet}
+          iconTone="primary"
+          title="我的订单"
+          badge={salesPending + recyclePending > 0 ? salesPending + recyclePending : undefined}
+          onClick={member ? () => navigate(paths.orders) : goLogin}
         />
-        <div className="border-t border-border-subtle pt-3">
-          <OrderRow
-            label="回收订单"
-            items={RECYCLE_SHORTCUTS.map((item) => ({
-              key: item.key,
-              label: item.label,
-              icon: item.icon,
-              badge: badgeCount(recycleOrders, item.key, BADGED_RECYCLE),
-              onClick: member ? () => navigate(ordersFilterPath('recycle', item.key)) : goLogin,
-            }))}
-          />
-        </div>
+        <div className="border-t border-border-subtle" />
+        <EntryRow
+          icon={ShieldCheck}
+          iconTone="primary"
+          title="实名认证"
+          onClick={member ? () => navigate(paths.meProfile) : goLogin}
+        />
+        <div className="border-t border-border-subtle" />
+        <EntryRow
+          icon={MapPin}
+          iconTone="price"
+          title="寄件地址"
+          onClick={member ? () => navigate(paths.ship.addresses) : goLogin}
+        />
+        <div className="border-t border-border-subtle" />
+        <EntryRow
+          icon={CreditCard}
+          iconTone="success"
+          title="收款账户"
+          onClick={member ? () => navigate(paths.meAccounts) : goLogin}
+        />
       </Card>
 
+      {/* 常用服务：图标网格，无圆圈底色 */}
       <Card padding="md">
-        <h2 className="mb-2 text-card-title text-foreground">我的服务</h2>
+        <h2 className="mb-2 text-card-title text-foreground">常用服务</h2>
         <QuickActionGrid
-          columns={5}
+          columns={4}
           separateLast={false}
           items={[
             {
-              key: 'auth',
-              label: '实名认证',
-              icon: ShieldCheck,
-              onClick: member ? () => navigate(paths.meProfile) : goLogin,
-            },
-            {
-              key: 'address',
-              label: '寄件地址',
-              icon: MapPin,
-              onClick: member ? () => navigate(paths.ship.addresses) : goLogin,
-            },
-            {
-              key: 'account',
-              label: '收款账户',
-              icon: CreditCard,
-              onClick: member ? () => navigate(paths.meAccounts) : goLogin,
-            },
-            {
               key: 'service',
-              label: '联系客服',
+              label: '在线客服',
               icon: Headphones,
-              onClick: () => setInfoSheet('service'),
+              onClick: () => navigate(routePath('support.home')),
             },
             {
               key: 'faq',
               label: '常见问题',
               icon: CircleHelp,
               onClick: () => setInfoSheet('faq'),
+            },
+            {
+              key: 'about',
+              label: '关于我们',
+              icon: BadgeCheck,
+              onClick: () => navigate(paths.meAbout),
             },
           ]}
         />
@@ -250,33 +218,49 @@ export function MePage() {
             </section>
           </div>
         ) : null}
-
-        {infoSheet === 'service' ? (
-          <p className="text-body text-muted-foreground">
-            可在回收单详情中联系客服，咨询报价、结算或退回问题。
-          </p>
-        ) : null}
       </BottomSheet>
     </TabPage>
   )
 }
 
-/** 一类订单的状态入口：标题 + 一行五格（最后一格为全部）。 */
-function OrderRow({ label, items }: { label: string; items: QuickAction[] }) {
-  return (
-    <div>
-      <p className="mb-1 text-caption text-subtle-foreground">{label}</p>
-      <QuickActionGrid items={items} columns={5} />
-    </div>
-  )
+/** 卡片内统一的「图标 + 标题 + 角标 / 右箭头」入口行；图标直接用语义色前景，无圆圈背景。 */
+type Tone = 'primary' | 'price' | 'success' | 'gold'
+const TONE_FG: Record<Tone, string> = {
+  primary: 'text-primary',
+  price: 'text-price',
+  success: 'text-success',
+  gold: 'text-gold-700',
 }
 
-/** 只为需要用户处理的节点计算角标，0 件时不显示。 */
-function badgeCount<T extends string>(
-  orders: { status: T }[],
-  status: T | 'all',
-  badged: readonly T[],
-) {
-  if (status === 'all' || !badged.includes(status)) return undefined
-  return orders.filter((order) => order.status === status).length || undefined
+function EntryRow({
+  icon: Icon,
+  iconTone,
+  title,
+  badge,
+  onClick,
+}: {
+  icon: typeof Wallet
+  iconTone: Tone
+  title: string
+  badge?: number
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="relative flex w-full items-center gap-3 px-4 py-3 text-left transition active:bg-surface-2"
+    >
+      <Icon size={20} className={`shrink-0 ${TONE_FG[iconTone]}`} aria-hidden="true" />
+      <div className="min-w-0 flex-1">
+        <p className="text-body text-foreground">{title}</p>
+      </div>
+      {badge != null ? (
+        <span className="shrink-0 rounded-full bg-destructive px-2 py-0.5 text-tiny text-destructive-foreground tabular">
+          {badge}
+        </span>
+      ) : null}
+      <CircleChevronRight size={16} className="shrink-0 text-icon-muted" />
+    </button>
+  )
 }
