@@ -1,7 +1,6 @@
-import { paths } from './paths'
-
 /** 桌面演示菜单的顶层分组，同时决定左栏卡片顺序 */
 export const ROUTE_GROUPS = [
+  '用户KYC',
   '黄金回收',
   '投资金销售',
   '公共业务模块',
@@ -23,8 +22,8 @@ export interface TabMeta {
 }
 
 /**
- * 路由清单：新增页面只改两处——paths.ts 加一行路径、这里加一条记录。
- * 路由注册、左栏菜单、底部 Tab、视觉基线都从本清单派生，不再各自维护。
+ * 路由清单：路径与页面元数据的唯一来源。
+ * 新增页面只需在这里加一条记录并新建页面；路由注册、左栏菜单、底部 Tab、视觉基线自动派生。
  */
 export interface RouteMeta {
   /** 唯一标识，用点分层级；默认也用作视觉基线文件名（点转横线） */
@@ -58,11 +57,11 @@ export interface RouteMeta {
   hidden?: boolean
 }
 
-export const ROUTE_MANIFEST: RouteMeta[] = [
+const ROUTE_DEFINITIONS = [
   // ==================== 黄金回收 ====================
   {
     id: 'quote',
-    path: paths.quote,
+    path: '/quote',
     label: '回收预约',
     group: '黄金回收',
     section: '回收预约',
@@ -71,7 +70,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'quote.agreement',
-    path: paths.quoteAgreement,
+    path: '/quote/agreement',
     label: '阅读并同意须知',
     pageTitle: '阅读并同意相关须知',
     group: '黄金回收',
@@ -82,7 +81,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'quote.submitResult',
-    path: paths.submitResult,
+    path: '/quote/submit-result',
     label: '提交结果',
     group: '黄金回收',
     section: '回收预约',
@@ -91,7 +90,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'orders.recycle.review',
-    path: paths.orderRecycle.review,
+    path: '/orders/recycle/review',
     label: '审核中',
     group: '黄金回收',
     section: '回收订单状态',
@@ -101,7 +100,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'orders.recycle.pendingShip',
-    path: paths.orderRecycle.pendingShip,
+    path: '/orders/recycle/pending-ship',
     label: '待寄出',
     group: '黄金回收',
     section: '回收订单状态',
@@ -111,7 +110,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'orders.recycle.pendingReceipt',
-    path: paths.orderRecycle.pendingReceipt,
+    path: '/orders/recycle/pending-receipt',
     label: '待签收',
     group: '黄金回收',
     section: '回收订单状态',
@@ -121,7 +120,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'orders.recycle.testing',
-    path: paths.orderRecycle.testing,
+    path: '/orders/recycle/testing',
     label: '检测中',
     group: '黄金回收',
     section: '回收订单状态',
@@ -131,7 +130,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'orders.recycle.pendingConfirm',
-    path: paths.orderRecycle.pendingConfirm,
+    path: '/orders/recycle/pending-confirm',
     label: '待确认',
     group: '黄金回收',
     section: '回收订单状态',
@@ -141,7 +140,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'orders.recycle.pendingPayment',
-    path: paths.orderRecycle.pendingPayment,
+    path: '/orders/recycle/pending-payment',
     label: '待打款',
     group: '黄金回收',
     section: '回收订单状态',
@@ -151,7 +150,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'orders.recycle.completed',
-    path: paths.orderRecycle.completed,
+    path: '/orders/recycle/completed',
     label: '已完成',
     group: '黄金回收',
     section: '回收订单状态',
@@ -161,7 +160,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'orders.recycle.cancelled',
-    path: paths.orderRecycle.cancelled,
+    path: '/orders/recycle/cancelled',
     label: '已取消',
     group: '黄金回收',
     section: '回收订单状态',
@@ -171,7 +170,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'orders.recycle.closed',
-    path: paths.orderRecycle.closed,
+    path: '/orders/recycle/closed',
     label: '已关闭',
     group: '黄金回收',
     section: '回收订单状态',
@@ -181,7 +180,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'orders.recycle.entry',
-    path: `${paths.orders}?type=recycle`,
+    path: '/orders?type=recycle',
     label: '回收订单',
     group: '黄金回收',
     section: '回收订单列表',
@@ -192,7 +191,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   // ==================== 投资金销售 ====================
   {
     id: 'buy',
-    path: paths.buy,
+    path: '/buy',
     label: '买金',
     group: '投资金销售',
     section: '商品与购买',
@@ -202,18 +201,18 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'buy.detail',
-    path: paths.buyDetail,
+    path: '/buy/:productId',
     label: '商品详情',
     group: '投资金销售',
     section: '商品与购买',
     order: 11,
-    menuPath: paths.buyDetail.replace(':productId', 'bar-sheet'),
+    menuPath: '/buy/bar-sheet',
     page: 'BuyDetail',
     visual: false,
   },
   {
     id: 'cart',
-    path: paths.cart,
+    path: '/cart',
     label: '购物车',
     group: '投资金销售',
     section: '商品与购买',
@@ -223,44 +222,44 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'checkout',
-    path: paths.checkout,
+    path: '/checkout',
     label: '确认订单',
     pageTitle: '确认订单',
     group: '投资金销售',
     section: '商品与购买',
     order: 13,
-    menuPath: `${paths.checkout}?demo=checkout`,
+    menuPath: '/checkout?demo=checkout',
     page: 'BuyCheckout',
     visual: false,
   },
   {
     id: 'checkout.success',
-    path: paths.checkoutSuccess,
+    path: '/checkout/success',
     label: '支付成功',
     pageTitle: '支付成功',
     group: '投资金销售',
     section: '商品与购买',
     order: 14,
-    menuPath: `${paths.checkoutSuccess}?demo=success`,
+    menuPath: '/checkout/success?demo=success',
     page: 'BuyCheckoutSuccess',
     visual: false,
   },
   {
     id: 'orders.detail',
-    path: paths.orderDetail,
+    path: '/orders/:orderId',
     label: '订单详情',
     pageTitle: '订单详情',
     group: '投资金销售',
     section: '购买订单详情',
     order: 20,
     hidden: true,
-    menuPath: paths.orderDetail.replace(':orderId', 'SO20261105003'),
+    menuPath: '/orders/SO20261105003',
     page: 'BuyOrderDetail',
     visual: false,
   },
   {
     id: 'orders.buy.pendingPayment',
-    path: paths.orderBuy.pendingPayment,
+    path: '/orders/buy/pending-payment',
     label: '待付款',
     group: '投资金销售',
     section: '购买订单状态',
@@ -270,7 +269,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'orders.buy.pendingShipment',
-    path: paths.orderBuy.pendingShipment,
+    path: '/orders/buy/pending-shipment',
     label: '待发货',
     group: '投资金销售',
     section: '购买订单状态',
@@ -280,7 +279,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'orders.buy.pendingReceipt',
-    path: paths.orderBuy.pendingReceipt,
+    path: '/orders/buy/pending-receipt',
     label: '待收货',
     group: '投资金销售',
     section: '购买订单状态',
@@ -290,7 +289,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'orders.buy.completed',
-    path: paths.orderBuy.completed,
+    path: '/orders/buy/completed',
     label: '已完成',
     group: '投资金销售',
     section: '购买订单状态',
@@ -300,7 +299,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'orders.buy.afterSale',
-    path: paths.orderBuy.afterSale,
+    path: '/orders/buy/after-sale',
     label: '售后中',
     group: '投资金销售',
     section: '购买订单状态',
@@ -310,7 +309,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'orders.buy.cancelled',
-    path: paths.orderBuy.cancelled,
+    path: '/orders/buy/cancelled',
     label: '已取消',
     group: '投资金销售',
     section: '购买订单状态',
@@ -320,7 +319,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'orders.buy.entry',
-    path: `${paths.orders}?type=sales`,
+    path: '/orders?type=sales',
     label: '购买订单',
     group: '投资金销售',
     section: '购买订单列表',
@@ -331,7 +330,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   // ==================== 公共模块 ====================
   {
     id: 'home',
-    path: paths.home,
+    path: '/home',
     label: '首页',
     pageTitle: '安盛华黄金回收',
     group: '公共业务模块',
@@ -342,7 +341,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'market',
-    path: paths.market,
+    path: '/market',
     label: '行情',
     pageTitle: '行情与资讯',
     group: '公共业务模块',
@@ -354,7 +353,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'market.news',
-    path: paths.marketNewsList,
+    path: '/market/news',
     label: '资讯列表',
     pageTitle: '资讯',
     group: '公共业务模块',
@@ -365,19 +364,19 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'market.newsDetail',
-    path: paths.marketNewsDetail,
+    path: '/market/news/:newsId',
     label: '资讯详情',
     pageTitle: '资讯详情',
     group: '公共业务模块',
     section: '入口',
     order: 11.3,
-    menuPath: paths.marketNewsDetail.replace(':newsId', 'n-20261123015954763800'),
+    menuPath: '/market/news/n-20261123015954763800',
     page: 'MarketNewsDetail',
     visual: false,
   },
   {
     id: 'market.alertSettings',
-    path: paths.marketAlertSettings,
+    path: '/market/alert-settings',
     label: '设置提醒',
     pageTitle: '设置提醒',
     group: '公共业务模块',
@@ -388,39 +387,72 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'login',
-    path: paths.login,
-    label: '登录授权',
+    path: '/login',
+    label: '注册 / 登录',
     pageTitle: '用户登录',
-    group: '公共业务模块',
-    section: '入口',
-    order: 11,
+    group: '用户KYC',
+    section: '注册登录',
+    order: 1,
     page: 'Login',
   },
   {
     id: 'login.agreement.service',
-    path: paths.loginAgreementService,
+    path: '/login/agreement/service',
     label: '用户协议',
     pageTitle: '用户协议',
-    group: '公共业务模块',
-    section: '入口',
-    order: 11.1,
+    group: '用户KYC',
+    section: '注册登录',
+    order: 1.1,
     page: 'AgreementDoc',
     visual: false,
   },
   {
     id: 'login.agreement.privacy',
-    path: paths.loginAgreementPrivacy,
+    path: '/login/agreement/privacy',
     label: '隐私政策',
     pageTitle: '隐私政策',
-    group: '公共业务模块',
-    section: '入口',
-    order: 11.2,
+    group: '用户KYC',
+    section: '注册登录',
+    order: 1.2,
+    page: 'AgreementDoc',
+    visual: false,
+  },
+  {
+    id: 'me.agreement.enterprise.customer',
+    path: '/agreement/customer-enterprise',
+    label: '企业客户身份识别协议',
+    pageTitle: '企业客户身份识别协议',
+    group: '用户KYC',
+    section: '企业实名认证',
+    order: 30,
+    page: 'AgreementDoc',
+    visual: false,
+  },
+  {
+    id: 'me.agreement.enterprise.aml',
+    path: '/agreement/aml-enterprise',
+    label: '反洗钱告知书（企业）',
+    pageTitle: '反洗钱告知书（企业）',
+    group: '用户KYC',
+    section: '企业实名认证',
+    order: 31,
+    page: 'AgreementDoc',
+    visual: false,
+  },
+  {
+    id: 'me.agreement.enterprise.privacy',
+    path: '/agreement/privacy-enterprise',
+    label: '信息使用授权书（企业）',
+    pageTitle: '信息使用授权书（企业）',
+    group: '用户KYC',
+    section: '企业实名认证',
+    order: 32,
     page: 'AgreementDoc',
     visual: false,
   },
   {
     id: 'orders',
-    path: paths.orders,
+    path: '/orders',
     label: '订单中心',
     group: '公共业务模块',
     section: '订单中心',
@@ -429,7 +461,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'messages',
-    path: paths.messages,
+    path: '/messages',
     label: '消息中心',
     pageTitle: '消息中心',
     group: '公共业务模块',
@@ -440,20 +472,20 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'messages.detail',
-    path: paths.messageDetail,
+    path: '/messages/:id',
     label: '消息详情',
     pageTitle: '消息详情',
     group: '公共业务模块',
     section: '消息',
     order: 31,
     hidden: true,
-    menuPath: paths.messageDetail.replace(':id', 'm-quote-pending'),
+    menuPath: '/messages/m-quote-pending',
     visual: false,
     page: 'MessageDetail',
   },
   {
     id: 'me',
-    path: paths.me,
+    path: '/me',
     label: '我的',
     group: '公共业务模块',
     section: '账户',
@@ -463,7 +495,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'me.profile',
-    path: paths.meProfile,
+    path: '/me/profile',
     label: '个人中心',
     group: '公共业务模块',
     section: '账户',
@@ -473,47 +505,114 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'me.auth',
-    path: paths.meAuth,
+    path: '/me/auth',
     label: '实名认证',
-    group: '公共业务模块',
-    section: '账户',
-    order: 42,
+    group: '用户KYC',
+    section: '个人',
+    order: 10,
     page: 'RealNameAuth',
     visual: false,
   },
   {
-    id: 'me.authFace',
-    path: paths.meAuthFace,
-    label: '人脸识别',
+    id: 'me.enterprise',
+    path: '/me/enterprise',
+    label: '企业认证（hub）',
+    pageTitle: '企业认证',
     group: '公共业务模块',
     section: '账户',
-    order: 42.1,
+    order: 42.2,
+    page: 'EnterpriseAuth',
+    hidden: true,
+    visual: false,
+  },
+  {
+    id: 'me.enterprise.base-info',
+    path: '/me/enterprise/base-info',
+    label: '填写基本信息',
+    pageTitle: '企业基本信息',
+    group: '用户KYC',
+    section: '企业实名认证',
+    order: 20,
+    page: 'EnterpriseStepBaseInfo',
+    visual: false,
+  },
+  {
+    id: 'me.enterprise.face',
+    path: '/me/enterprise/face',
+    label: '人脸识别',
+    pageTitle: '法人人脸识别',
+    group: '用户KYC',
+    section: '企业实名认证',
+    order: 21,
+    page: 'EnterpriseFaceVerify',
+    visual: false,
+  },
+  {
+    id: 'me.enterprise.bank',
+    path: '/me/enterprise/bank',
+    label: '填写对公账户',
+    pageTitle: '对公账户',
+    group: '用户KYC',
+    section: '企业实名认证',
+    order: 22,
+    page: 'EnterpriseStepBank',
+    visual: false,
+  },
+  {
+    id: 'me.enterprise.bankVerify',
+    path: '/me/enterprise/bank-verify',
+    label: '打款验证',
+    pageTitle: '对公打款验证',
+    group: '用户KYC',
+    section: '企业实名认证',
+    order: 23,
+    page: 'EnterpriseStepBankVerify',
+    visual: false,
+  },
+  {
+    id: 'me.enterprise.status',
+    path: '/me/kyc/status',
+    label: '认证成功',
+    pageTitle: '认证成功',
+    group: '用户KYC',
+    section: '企业实名认证',
+    order: 24,
+    page: 'EnterpriseKycStatus',
+    visual: false,
+  },
+  {
+    id: 'me.authFace',
+    path: '/me/auth/face',
+    label: '人脸识别',
+    group: '用户KYC',
+    section: '个人',
+    order: 11,
     page: 'RealNameAuthFace',
     visual: false,
   },
   {
     id: 'me.accounts',
-    path: paths.meAccounts,
+    path: '/me/accounts',
     label: '收款账户',
-    group: '公共业务模块',
-    section: '账户',
-    order: 43,
+    group: '用户KYC',
+    section: '银行账户',
+    order: 30,
     page: 'BankAccounts',
     visual: false,
   },
   {
     id: 'me.accountForm',
-    path: paths.meAccountForm,
+    path: '/me/accounts/new',
     label: '添加银行卡',
-    group: '公共业务模块',
-    section: '账户',
-    order: 44,
+    group: '用户KYC',
+    section: '银行账户',
+    order: 31,
     page: 'BankCardForm',
     visual: false,
   },
   {
     id: 'ship.addresses',
-    path: paths.ship.addresses,
+    path: '/ship/addresses',
     label: '我的地址',
     group: '公共业务模块',
     section: '地址',
@@ -523,7 +622,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'ship.addressForm',
-    path: paths.ship.addressForm,
+    path: '/ship/addresses/form',
     label: '新增地址',
     group: '公共业务模块',
     section: '地址',
@@ -535,7 +634,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   // ==================== 组件库 ====================
   {
     id: 'guide.states',
-    path: paths.guide.states,
+    path: '/style-guide/states',
     label: '弹层状态总览',
     pageTitle: '弹层状态总览',
     group: '公共组件库',
@@ -545,7 +644,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'guide.common',
-    path: paths.guide.common,
+    path: '/style-guide/common',
     label: '公共组件',
     group: '公共组件库',
     order: 10,
@@ -553,7 +652,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'guide.form',
-    path: paths.guide.form,
+    path: '/style-guide/form',
     label: '表单组件',
     group: '公共组件库',
     order: 11,
@@ -561,7 +660,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'guide.feedback',
-    path: paths.guide.feedback,
+    path: '/style-guide/feedback',
     label: '反馈组件',
     group: '公共组件库',
     order: 12,
@@ -569,7 +668,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'guide.display',
-    path: paths.guide.display,
+    path: '/style-guide/display',
     label: '展示组件',
     group: '公共组件库',
     order: 13,
@@ -580,7 +679,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   // ==================== 黄金回收组件 ====================
   {
     id: 'guide.quote',
-    path: paths.guide.quote,
+    path: '/style-guide/quote',
     label: '报价与估价',
     group: '公共组件库',
     order: 20,
@@ -589,7 +688,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'guide.assay',
-    path: paths.guide.assay,
+    path: '/style-guide/assay',
     label: '检测与合规',
     group: '公共组件库',
     order: 21,
@@ -598,7 +697,7 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'guide.order',
-    path: paths.guide.order,
+    path: '/style-guide/order',
     label: '订单与状态',
     group: '公共组件库',
     order: 22,
@@ -607,14 +706,19 @@ export const ROUTE_MANIFEST: RouteMeta[] = [
   },
   {
     id: 'guide.trade',
-    path: paths.guide.trade,
+    path: '/style-guide/trade',
     label: '交易与收货',
     group: '公共组件库',
     order: 23,
     page: 'style-guide/Trade',
     visual: false,
   },
-]
+] as const satisfies readonly RouteMeta[]
+
+export type RouteId = (typeof ROUTE_DEFINITIONS)[number]['id']
+
+/** 对消费方暴露完整元数据类型，避免可选字段在字面量联合类型上不可访问。 */
+export const ROUTE_MANIFEST: readonly RouteMeta[] = ROUTE_DEFINITIONS
 
 /** 视觉基线文件名：显式 shot 优先，否则 id 中的点转横线 */
 export function shotName(route: RouteMeta) {

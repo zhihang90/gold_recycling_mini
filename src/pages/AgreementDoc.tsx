@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { marked } from 'marked'
-import { DetailPage } from '@/components'
+import { Button, DetailPage } from '@/components'
 import userAgreementMd from '../../docs/agreements/user-agreement.md?raw'
 import privacyPolicyMd from '../../docs/agreements/privacy-policy.md?raw'
 
@@ -13,19 +13,29 @@ const DOC = {
 type AgreementKind = keyof typeof DOC
 
 /**
- * 协议文档页：登录页「用户协议 / 隐私政策」的整页展示。
- * 两条路由（/login/agreement/service、/login/agreement/privacy）共用此页面，
- * 通过 path 末段区分文档。markdown 源文件放在 docs/agreements/，
- * 构建时通过 ?raw import 内联进 bundle，不依赖运行时 fetch。
+ * 协议文档页：登录页和企业 KYC 流程的协议整页展示。
+ * 5 条路由共用此页面，通过 path 段匹配文档类型。
+ * markdown 源文件放在 docs/agreements/，构建时通过 ?raw import 内联。
+ * 所有协议页均显示「我已知晓并同意」底部按钮。
  */
 export function AgreementDocPage() {
   const { pathname } = useLocation()
-  const kind: AgreementKind = pathname.endsWith('/privacy') ? 'privacy' : 'service'
+  const navigate = useNavigate()
+
+  // 匹配 5 条路由到两种 markdown 文档
+  const kind: AgreementKind =
+    pathname.includes('/privacy') ? 'privacy' : 'service'
   const { title, raw } = DOC[kind]
   const html = useMemo(() => marked.parse(raw, { async: false }) as string, [raw])
 
+  const footer = (
+    <Button size="lg" className="w-full" onClick={() => navigate(-1)}>
+      我已知晓并同意
+    </Button>
+  )
+
   return (
-    <DetailPage title={title}>
+    <DetailPage title={title} footer={footer}>
       <article className="agreement-doc" dangerouslySetInnerHTML={{ __html: html }} />
     </DetailPage>
   )

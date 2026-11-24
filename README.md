@@ -52,8 +52,9 @@ gold_recycling_mini/
 │   ├── stores/
 │   │   └── createExternalStore.ts  # 极简 external store（暂无业务状态）
 │   ├── routes/
-│   │   ├── paths.ts            # 路径唯一来源
-│   │   ├── routes.config.ts    # 路由表 + Tab/菜单元数据（唯一来源）
+│   │   ├── manifest.ts         # 路由路径与元数据唯一来源（含 Tab / 菜单 / 视觉配置）
+│   │   ├── paths.ts            # 类型化 routePath + 动态路径函数 + 旧别名
+│   │   ├── routes.config.ts    # 由 manifest 自动装配路由与页面模块
 │   │   └── prototypeMenu.ts    # 桌面左栏菜单（由路由表生成）
 │   ├── assets/
 │   │   └── images.ts           # 图片地址唯一入口
@@ -134,9 +135,9 @@ gold_recycling_mini/
 
 ## 五、新增页面的步骤
 
-1. **加路径**：`src/routes/paths.ts` 里补一条（含参数路径写成函数，如 `order: (id: string) => '/orders/' + id`）。
-2. **写页面**：按类型套模板——一级页 `TabPage`、二级页 `DetailPage`、列表页 `ListPage`；内容间距与留白由模板负责，卡片用 `Card`。
-3. **注册路由**：`src/routes/routes.config.ts` 的 `APP_ROUTES` 里加 `{ path, label, group, order, component }`——桌面左栏菜单自动出现；一级页再补 `tab: { label, icon, order }`，底部 Tab 自动出现，不用改 `app.tsx`。
+1. **写页面**：在 `src/pages/` 新建页面并按约定导出 `XxxPage`。按类型套模板——一级页 `TabPage`、二级页 `DetailPage`、列表页 `ListPage`；内容间距与留白由模板负责，卡片用 `Card`。
+2. **登记路由**：只在 `src/routes/manifest.ts` 加一条 `{ id, path, label, group, page }`——路由和桌面左栏菜单自动出现；一级页再补 `tab: { label, icon, order }`，底部 Tab 自动出现，不用改 `routes.config.ts` 或 `app.tsx`。
+3. **页面跳转**：使用 `routePath('route.id')` 或现有动态路径函数，路由 ID 有类型检查；新页面不要再补 `paths.ts` 别名。
 4. **自检**：`npm run verify`，有视觉变更时再跑 `npm run visual:check`；最后用 `npm run preview` 在 375 宽与 ≥900 宽的窗口各看一遍。
 
 新增页面时的硬约束：

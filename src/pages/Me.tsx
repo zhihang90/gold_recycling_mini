@@ -14,13 +14,14 @@ import {
   MessageSquare,
   Package,
   ScanLine,
+  ShieldCheck,
   Truck,
   UserRound,
   Wallet,
   WalletCards,
 } from 'lucide-react'
 
-import { isMemberVerified, maskPhone, readMember } from '@/mocks/member'
+import { getEnterpriseAuthStatus, maskPhone, readMember, readNickname } from '@/mocks/member'
 import { DEMO_RECYCLE_ORDERS, type RecycleStatus } from '@/mocks/recycleOrders'
 import { readSalesOrders, type SalesStatus } from '@/mocks/salesOrders'
 import { messageUnreadCount, useMessageReadState } from '@/mocks/messages'
@@ -65,6 +66,8 @@ export function MePage() {
   const salesOrders = member ? readSalesOrders() : []
   const recycleOrders = member ? DEMO_RECYCLE_ORDERS : []
   const goLogin = () => navigate(paths.login)
+  const personalVerified = Boolean(member?.realNameAuth?.verifiedAt)
+  const enterpriseStatus = getEnterpriseAuthStatus(member)
 
   return (
     <TabPage>
@@ -83,7 +86,22 @@ export function MePage() {
                 <UserRound size={30} aria-hidden="true" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-section text-gold-50">黄金用户</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-section text-gold-50">{readNickname(member)}</p>
+                  {enterpriseStatus === 'passed' ? (
+                    <span className="rounded-full bg-gold-50 px-2.5 py-0.5 text-tiny font-medium text-gold-800">
+                      企业已认证
+                    </span>
+                  ) : personalVerified ? (
+                    <span className="rounded-full bg-gold-50 px-2.5 py-0.5 text-tiny font-medium text-gold-800">
+                      个人已实名
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-destructive px-2.5 py-0.5 text-tiny font-medium text-destructive-foreground">
+                      未实名
+                    </span>
+                  )}
+                </div>
                 <p className="mt-1 text-body text-gold-50/80 tabular">{maskPhone(member.phone)}</p>
               </div>
             </button>
@@ -99,25 +117,12 @@ export function MePage() {
               {unread > 0 ? (
                 <span
                   aria-hidden="true"
-                  className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-medium leading-none text-destructive-foreground ring-1 ring-gold-900"
+                  className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-destructive px-1 text-micro font-medium leading-none text-destructive-foreground ring-1 ring-gold-900"
                 >
                   {unread > 99 ? '99+' : unread}
                 </span>
               ) : null}
             </button>
-          </div>
-
-          {/* 实名 pill 独立一行，右对齐 */}
-          <div className="mt-3 flex justify-end">
-            {isMemberVerified(member) ? (
-              <span className="rounded-full bg-gold-50 px-2.5 py-1 text-caption-strong text-gold-800">
-                已实名
-              </span>
-            ) : (
-              <span className="rounded-full bg-destructive px-2.5 py-1 text-caption-strong text-destructive-foreground">
-                未实名
-              </span>
-            )}
           </div>
         </Card>
       ) : (
@@ -156,9 +161,7 @@ export function MePage() {
             label: item.label,
             icon: item.icon,
             badge: badgeCount(salesOrders, item.key, BADGED_SALES),
-            onClick: member
-              ? () => navigate(ordersFilterPath('sales', item.key))
-              : goLogin,
+            onClick: member ? () => navigate(ordersFilterPath('sales', item.key)) : goLogin,
           }))}
         />
         <div className="border-t border-border-subtle pt-3">
@@ -169,9 +172,7 @@ export function MePage() {
               label: item.label,
               icon: item.icon,
               badge: badgeCount(recycleOrders, item.key, BADGED_RECYCLE),
-              onClick: member
-                ? () => navigate(ordersFilterPath('recycle', item.key))
-                : goLogin,
+              onClick: member ? () => navigate(ordersFilterPath('recycle', item.key)) : goLogin,
             }))}
           />
         </div>
@@ -180,9 +181,15 @@ export function MePage() {
       <Card padding="md">
         <h2 className="mb-2 text-card-title text-foreground">我的服务</h2>
         <QuickActionGrid
-          columns={4}
+          columns={5}
           separateLast={false}
           items={[
+            {
+              key: 'auth',
+              label: '实名认证',
+              icon: ShieldCheck,
+              onClick: member ? () => navigate(paths.meProfile) : goLogin,
+            },
             {
               key: 'address',
               label: '寄件地址',

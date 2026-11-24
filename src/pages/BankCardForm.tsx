@@ -39,6 +39,10 @@ export function BankCardFormPage() {
   const [cardNo, setCardNo] = useState('')
   const [bank, setBank] = useState('')
   const [city, setCity] = useState('')
+  const [phone, setPhone] = useState('')
+  const [code, setCode] = useState('')
+  const [codeSent, setCodeSent] = useState(false)
+  const [codeCountdown, setCodeCountdown] = useState(0)
   const [cityOpen, setCityOpen] = useState(false)
   const [tipOpen, setTipOpen] = useState(true)
   const [tipSeconds, setTipSeconds] = useState(3)
@@ -56,6 +60,13 @@ export function BankCardFormPage() {
     return () => window.clearTimeout(timer)
   }, [tipOpen, tipSeconds])
 
+  // 验证码倒计时
+  useEffect(() => {
+    if (codeCountdown <= 0) return
+    const timer = window.setTimeout(() => setCodeCountdown((v) => v - 1), 1000)
+    return () => window.clearTimeout(timer)
+  }, [codeCountdown])
+
   const handleCardNo = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 19)
     setCardNo(digits)
@@ -69,7 +80,19 @@ export function BankCardFormPage() {
     setToast('已识别银行卡号，请核对信息')
   }
 
-  const valid = cardNo.length >= 16 && cardNo.length <= 19 && !!bank && !!city
+  const validPhone = /^1[3-9]\d{9}$/.test(phone)
+  const valid =
+    cardNo.length >= 16 && cardNo.length <= 19 && !!bank && !!city && validPhone && code.length === 6
+
+  const handleSendCode = () => {
+    if (!validPhone) {
+      setToast('请输入正确的手机号')
+      return
+    }
+    setCodeSent(true)
+    setCodeCountdown(60)
+    setToast(`验证码已发送至 ${phone}`)
+  }
 
   const handleSubmit = () => {
     if (full) {
@@ -125,6 +148,33 @@ export function BankCardFormPage() {
               <span className="text-body text-icon-muted">选择</span>
             </button>
           </div>
+
+          <FormField
+            label="银行预留手机号"
+            value={phone}
+            onChange={(v) => setPhone(v.replace(/\D/g, '').slice(0, 11))}
+            inputMode="numeric"
+            placeholder="请输入手机号"
+            error={phone.length > 0 && !validPhone ? '请输入正确的手机号' : undefined}
+          />
+
+          <FormField
+            label="验证码"
+            value={code}
+            onChange={(v) => setCode(v.replace(/\D/g, '').slice(0, 6))}
+            inputMode="numeric"
+            placeholder="请输入"
+            trailing={
+              <button
+                type="button"
+                disabled={codeCountdown > 0}
+                onClick={handleSendCode}
+                className="shrink-0 rounded-sm bg-primary px-3 py-1.5 text-caption text-primary-foreground transition active:bg-primary-active disabled:bg-muted disabled:text-muted-foreground"
+              >
+                {codeCountdown > 0 ? `${codeCountdown}s 后重发` : '获取验证码'}
+              </button>
+            }
+          />
 
           <p className="text-caption text-subtle-foreground">* 建议使用国有六大行或九大商业银行</p>
         </Card>

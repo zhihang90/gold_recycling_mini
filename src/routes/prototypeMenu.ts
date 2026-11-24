@@ -1,4 +1,3 @@
-import { paths } from './paths'
 import { APP_ROUTES, ROUTE_GROUPS } from './routes.config'
 import { SHEET_STATES } from './sheetStates'
 

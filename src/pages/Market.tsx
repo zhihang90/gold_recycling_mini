@@ -235,8 +235,6 @@ function QuoteView({ demo }: { demo: string | null }) {
           </div>
         </Card>
 
-        <RelatedCard onTip={showToast} />
-
         <TradeCard
           scene={scene}
           onToast={showToast}
@@ -350,7 +348,7 @@ function PhysicalMetalTable({
                   <button
                     type="button"
                     onClick={onSell}
-                    className="rounded-sm border border-success/50 px-2 py-0.5 text-[10px] leading-none text-success hover:bg-success/10 active:bg-success/20"
+                    className="rounded-sm border border-success/50 px-2 py-0.5 text-micro leading-none text-success hover:bg-success/10 active:bg-success/20"
                   >
                     卖出
                   </button>
@@ -373,7 +371,7 @@ function PhysicalMetalTable({
                   <button
                     type="button"
                     onClick={onBuy}
-                    className="rounded-sm border border-price/50 px-2 py-0.5 text-[10px] leading-none text-price hover:bg-price/10 active:bg-price/20"
+                    className="rounded-sm border border-price/50 px-2 py-0.5 text-micro leading-none text-price hover:bg-price/10 active:bg-price/20"
                   >
                     买入
                   </button>
@@ -1063,15 +1061,6 @@ function TradeCard({
       </div>
 
       {locked ? <p className="text-caption text-warning">{reason}</p> : null}
-
-      <div className="grid grid-cols-2 items-center gap-2">
-        <Button variant="tertiary" size="md" disabled>
-          申请回购
-        </Button>
-        <span className="text-caption text-subtle-foreground">回购功能即将开放</span>
-      </div>
-
-      <p className="text-caption text-subtle-foreground">{LOCK_NOTE}</p>
     </Card>
   )
 }

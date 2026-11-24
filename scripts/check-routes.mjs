@@ -1,13 +1,13 @@
 /**
- * 路由清单强校验：manifest.ts 与 pages/ 目录、paths.ts 的双向契约。
+ * 路由清单强校验：manifest.ts 与 pages/ 目录的双向契约。
  * 命中后修改 manifest 或页面文件名；不要用 ui-allow 例外机制——路由是硬约束，错了就得改。
  *
  * 检查项：
  *   1. manifest 每条 page 字段 → src/pages/<page>.tsx 文件必须存在
  *   2. src/pages/ 下每个 .tsx 文件 → 必须出现在 manifest（或显式豁免：shared / 内部组件）
  *   3. manifest 所有 id 唯一
- *   4. manifest 所有 path 唯一
- *   5. 带 tab 的路由 → tab.icon 必须是允许值（home/bag/cart/orders/user）
+ *   4. manifest 所有 path 唯一，且必须是可以静态解析的字面量
+ *   5. 带 tab 的路由 → tab.icon 必须是允许值（home/chart/bag/cart/user）
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
@@ -44,8 +44,8 @@ function readManifest() {
   while ((m = routeBlockRe.exec(src)) !== null) {
     const block = m[0]
     const id = m[1]
-    const pathMatch = block.match(/path:\s*paths\.([\w.]+)/) || block.match(/path:\s*['"]([^'"]+)['"]/)
-    const path = pathMatch ? (pathMatch[2] ?? pathMatch[1]) : null
+    const pathMatch = block.match(/path:\s*['"]([^'"]+)['"]/)
+    const path = pathMatch?.[1] ?? null
     const pageMatch = block.match(/page:\s*['"]([^'"]+)['"]/)
     const page = pageMatch ? pageMatch[1] : null
     const tabMatch = block.match(/tab:\s*\{[\s\S]*?icon:\s*['"]([^'"]+)['"]/)
@@ -66,6 +66,9 @@ if (manifestRoutes.length === 0) {
 
 // ---- 2. page 字段 → 文件必须存在 ----
 for (const r of manifestRoutes) {
+  if (!r.path) {
+    errors.push(`manifest 路由 id="${r.id}" 缺少可解析的字面量 path 字段`)
+  }
   if (!r.page) {
     errors.push(`manifest 路由 id="${r.id}" 缺少 page 字段`)
     continue
@@ -115,13 +118,13 @@ for (const r of manifestRoutes) {
 if (errors.length > 0) {
   console.error(`\n路由清单校验未通过，共 ${errors.length} 处：\n`)
   errors.forEach((e, i) => console.error(`  ${i + 1}. ${e}`))
-  console.error(
-    '\n修复方式：路由 id / path / page 是硬约束，错了就得改——没有 ui-allow 例外。',
-  )
+  console.error('\n修复方式：路由 id / path / page 是硬约束，错了就得改——没有 ui-allow 例外。')
   console.error(
     '如果新增了 src/pages/ 下的内部组件文件（不是路由页），请把它加入 scripts/check-routes.mjs 的 PAGE_EXEMPT 集合。',
   )
   process.exit(1)
 }
 
-console.log(`路由清单校验通过：${manifestRoutes.length} 条 manifest 条目 ↔ ${allPageFiles.size} 个页面文件，id/path 唯一，tab 图标合规。`)
+console.log(
+  `路由清单校验通过：${manifestRoutes.length} 条 manifest 条目 ↔ ${allPageFiles.size} 个页面文件，id/path 唯一，tab 图标合规。`,
+)

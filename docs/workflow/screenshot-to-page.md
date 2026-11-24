@@ -13,7 +13,7 @@
 
 | 字段 | 说明 |
 | --- | --- |
-| 路由 | `paths.xxx`，如 `/stores` |
+| 路由 | manifest 中的 `id` 与 `path`，如 `stores` / `/stores` |
 | 页面类型 | 一级 Tab 页 / 二级详情页 / 列表页 / 表单页 |
 | 模板 | `TabPage` / `DetailPage` / `ListPage` |
 | 状态 | 默认 / 加载 / 空 / 错误 / 未登录 |
@@ -22,10 +22,10 @@
 
 ## 3. 生成顺序
 
-1. `src/routes/paths.ts` 补路径。
-2. 选模板写页面：一级页 `TabPage`，二级页 `DetailPage`，列表页 `ListPage`，表单页用 `DetailPage` + 表单原语。
-3. 组件只用 `src/components/` 现有实现；缺组件先补组件 + `style-guide` 样张，再进页面。
-4. `src/routes/routes.config.ts` 注册路由、分组与排序；一级页补 `tab` 元数据。
+1. 选模板新建页面：一级页 `TabPage`，二级页 `DetailPage`，列表页 `ListPage`，表单页用 `DetailPage` + 表单原语。
+2. 组件只用 `src/components/` 现有实现；缺组件先补组件 + `style-guide` 样张，再进页面。
+3. 只在 `src/routes/manifest.ts` 登记路径、页面、分组与排序；一级页补 `tab` 元数据。
+4. 页面间跳转使用 `routePath('route.id')`；动态参数路径在 `paths.ts` 复用清单模板构造函数，不另写路径字面量。
 
 ## 4. 数据与图片
 

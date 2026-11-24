@@ -2,6 +2,7 @@
 
 /** 手机号：11 位，以 1 开头 */
 export function isPhoneNumber(value: string) {
+  if (!value) return false
   return /^1\d{10}$/.test(value)
 }
 
@@ -12,7 +13,7 @@ export function isSmsCode(value: string) {
 
 /** 预估重量（克）：必填，0.1–1000；返回错误文案，合法时返回 undefined */
 export function validateWeight(value: string) {
-  if (value.trim() === '') return '请输入预估重量'
+  if (!value || value.trim() === '') return '请输入预估重量'
   const weight = Number(value)
   if (!Number.isFinite(weight) || weight <= 0 || weight > 1000) {
     return '请输入 0.1–1000 克之间的重量'
@@ -27,6 +28,7 @@ export function validateWeight(value: string) {
  * 不做精确的校验码算法，原型场景够用。
  */
 export function isIdCard(value: string) {
+  if (!value) return false
   const v = value.trim()
   if (!/^\d{17}[\dXx]$/.test(v)) return false
   const yyyy = Number(v.slice(6, 10))

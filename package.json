@@ -1,6 +1,6 @@
 {
   "name": "gold-recycling-h5",
-  "version": "0.2.7",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "description": "黄金回收 H5 原型（微信内置浏览器 / PC 浏览器演示）",

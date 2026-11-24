@@ -19,11 +19,10 @@ const FALLBACK_AUTH = { name: '陈智航', idNo: '440300199001011234', phone: '1
 
 type Stage = 'scanning' | 'success'
 
-/** 实名认证第二步：人脸识别（进入即开始，模拟张嘴、点头动作） */
+/** 个人实名认证人脸识别（企业法人走独立页 /me/enterprise/face） */
 export function RealNameAuthFacePage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  /** 认证完成后回来源页：确认订单带 redirect，其余回个人中心 */
   const redirect = searchParams.get('redirect') ?? paths.me
   const [auth] = useState(() => readPendingRealNameAuth() ?? FALLBACK_AUTH)
   const [stage, setStage] = useState<Stage>('scanning')
@@ -43,6 +42,7 @@ export function RealNameAuthFacePage() {
         if (!readMember()) saveMember(auth.phone)
         submitRealNameAuth(auth.name, auth.idNo)
         clearPendingRealNameAuth()
+
         setStage('success')
         setToast('认证成功')
         at(() => navigate(redirect, { replace: true }), 1400)
@@ -55,10 +55,10 @@ export function RealNameAuthFacePage() {
   }, [auth, navigate, redirect])
 
   return (
-    <DetailPage title="实名认证" onBack={() => navigate(-1)}>
+    <DetailPage title="人脸识别" onBack={() => navigate(-1)}>
       <div className="flex items-center justify-between text-caption text-subtle-foreground">
-        <span>第 2 步，共 2 步</span>
-        <span>人脸识别</span>
+        <span>实名认证 · 人脸识别</span>
+        <span>活体检测中</span>
       </div>
 
       <div className="relative mx-auto aspect-3/4 w-full max-w-72 overflow-hidden rounded-lg bg-ink-900">

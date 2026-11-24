@@ -33,7 +33,7 @@
 ## 4. 页面结构
 
 - 一级页 `TabPage`、二级页 `DetailPage`、列表页 `ListPage`；不手拼外层与间距。
-- 独立全屏结果页（提交成功 / 失败、完成态等）必须单独注册路由（`paths.ts` + `manifest.ts`），不得在流程页内用 `submitted` 之类的状态切换整页；跨页数据写入 sessionStorage 快照，直达 / 刷新时给空态兜底。
+- 独立全屏结果页（提交成功 / 失败、完成态等）必须单独在 `manifest.ts` 注册路由，不得在流程页内用 `submitted` 之类的状态切换整页；跨页数据写入 sessionStorage 快照，直达 / 刷新时给空态兜底。
 - Tab 标签、Tab 顺序与桌面左栏菜单只由 `routes.config.ts` 派生。
 - 所有有独立路由的页面都必须出现在桌面左栏菜单中（评审不漏页）；带动态参数的路由用 `menuPath` 指定可用的示例入口；分组按业务流程归类，不把订单、账户混在同一组。
 - 依赖前置数据的页面支持 `?demo=<scene>` 直达样例状态（`useDemoScene`），左栏 `menuPath` 直接带上该参数；demo 首屏只读样例，不依赖上一步留下的存储。
@@ -41,7 +41,7 @@
 - 订单状态色只在 `src/mocks/<flow>.ts` 定义 tone（`SALES_STATUS_TONE` / `RECYCLE_STATUS_TONE`），展示统一取 `ORDER_STATUS_TONE_CLASS`，页面不另建映射。
 - 表单只用 `FormField`、`SelectField`、`PickerSheet`、`ChoiceGroup`、`SwitchField`、`AgreementCheck`。
 - 吸底 CTA 用 `BottomActionBar`，弹层用 `BottomSheet`，图片用 `MediaVisual` / `Gallery`。
-- 新页面按 `docs/workflow/screenshot-to-page.md`：`paths.ts` → 模板页面 → `routes.config.ts` 注册；mock 放 `src/mocks/<flow>.ts`，图片地址只放 `src/assets/images.ts`。
+- 新页面按 `docs/workflow/screenshot-to-page.md`：新建模板页面 → `manifest.ts` 登记路径与元数据；页面间跳转用 `routePath('route.id')`，不再改 `paths.ts`。mock 放 `src/mocks/<flow>.ts`，图片地址只放 `src/assets/images.ts`。
 
 ## 5. 反模式
 

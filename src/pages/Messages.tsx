@@ -59,7 +59,7 @@ function CategoryItem({
       {count > 0 ? (
         <span
           className={cn(
-            'inline-flex min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] leading-none',
+            'inline-flex min-w-[16px] items-center justify-center rounded-full px-1 text-micro leading-none',
             active ? 'bg-price text-paper' : 'bg-destructive text-paper',
           )}
         >

@@ -388,7 +388,7 @@ export function BuyCheckoutPage() {
                       <span className="text-body-strong text-foreground">{address.name}</span>
                       <span className="text-body text-muted-foreground">{maskPhone(address.phone)}</span>
                       {address.tag ? (
-                        <span className="rounded bg-gold-100 px-1.5 py-0.5 text-[10px] text-gold-800">{/* ui-allow: 地址标签 */}
+                        <span className="rounded bg-gold-100 px-1.5 py-0.5 text-micro text-gold-800">{/* ui-allow: 地址标签 */}
                           {address.tag}
                         </span>
                       ) : null}
@@ -404,7 +404,7 @@ export function BuyCheckoutPage() {
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 text-body text-subtle-foreground">
                     <span>请选择收货地址</span>
-                    <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] text-destructive">{/* ui-allow: 必填标记 */}
+                    <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-micro text-destructive">{/* ui-allow: 必填标记 */}
                       必填
                     </span>
                   </div>
