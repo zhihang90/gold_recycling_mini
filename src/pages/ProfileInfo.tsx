@@ -9,6 +9,7 @@ import {
   maskName,
   maskPhone,
   readMember,
+  readMemberLevel,
   readNickname,
   revokeRealNameAuth,
   saveNickname,
@@ -91,6 +92,12 @@ export function ProfileInfoPage() {
           showArrow
           divider
           onClick={openNicknameSheet}
+        />
+        <ListItem
+          title="会员等级"
+          right={readMemberLevel().name}
+          showArrow
+          onClick={() => navigate(paths.meMemberLevel)}
         />
       </Card>
 

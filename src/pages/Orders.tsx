@@ -41,6 +41,7 @@ import {
   type SalesStatus,
 } from '@/mocks/salesOrders'
 import { cn } from '@/lib/utils'
+import { useReviewState } from '@/lib/useReviewState'
 import {
   ORDER_STATUS_BADGE_TONE,
   ORDER_STATUS_ICON,
@@ -114,20 +115,56 @@ function ConfirmCountdown({ minutes }: { minutes: number }) {
   )
 }
 
+/** 评审面板可选筛选值：仅保留两类订单共有的业务语义 */
+const REVIEW_SALES_FILTERS: readonly SalesStatus[] = [
+  'pending-payment',
+  'pending-shipment',
+  'pending-receipt',
+  'completed',
+  'after-sale',
+]
+const REVIEW_RECYCLE_FILTERS: readonly RecycleTab[] = [
+  'all',
+  'pending-ship',
+  'pending-confirm',
+  'completed',
+  'after-sale',
+]
+
 /** 订单：买金订单与回收订单并行，两类订单各自一套状态与筛选。 */
 export function OrdersPage() {
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
-  const [tab, setTab] = useState<OrderTab>(params.get('type') === 'recycle' ? 'recycle' : 'sales')
+  const review = useReviewState('orders')
+  // 评审面板用「类型:状态」一个值同时决定两个维度，避免出现跨类型的非法筛选
+  const reviewScope = review.values.scope ?? 'auto'
+  const [scopeType = 'auto', scopeFilter = 'auto'] = reviewScope.split(':')
+  const reviewEmpty = review.values.data === 'empty'
+  const forcedTab: OrderTab | null =
+    scopeType === 'sales' ? 'sales' : scopeType === 'recycle' ? 'recycle' : null
+
+  const [tab, setTab] = useState<OrderTab>(
+    () => forcedTab ?? (params.get('type') === 'recycle' ? 'recycle' : 'sales'),
+  )
   // 指示条起始位置：跨重挂载时先落在旧页签，下一帧再滑到新页签
   const [indicatorFrom, setIndicatorFrom] = useState<OrderTab | null>(() =>
     lastOrderTab && lastOrderTab !== tab ? lastOrderTab : null,
   )
   const indicatorTab = indicatorFrom ?? tab
-  const [salesFilter, setSalesFilter] = useState<'all' | SalesStatus>(
-    (params.get('status') as SalesStatus | null) ?? 'all',
-  )
-  const [recycleFilter, setRecycleFilter] = useState<RecycleTab>('all')
+  const [salesFilter, setSalesFilter] = useState<'all' | SalesStatus>(() => {
+    if (forcedTab !== 'recycle' && REVIEW_SALES_FILTERS.includes(scopeFilter as SalesStatus)) {
+      return scopeFilter as SalesStatus
+    }
+    return (params.get('status') as SalesStatus | null) ?? 'all'
+  })
+  const [recycleFilter, setRecycleFilter] = useState<RecycleTab>(() => {
+    if (forcedTab !== 'sales' && REVIEW_RECYCLE_FILTERS.includes(scopeFilter as RecycleTab)) {
+      return scopeFilter as RecycleTab
+    }
+    return forcedTab === 'recycle'
+      ? (recycleTabOf(params.get('status') as RecycleStatus) ?? 'all')
+      : 'all'
+  })
   const [salesOrders, setSalesOrders] = useState(readSalesOrders)
   const [cancelId, setCancelId] = useState<string | null>(null)
   const [payId, setPayId] = useState<string | null>(null)
@@ -139,6 +176,8 @@ export function OrdersPage() {
 
   // 个人中心的订单入口带参数直达：参数变化时同步业务类型与状态筛选
   useEffect(() => {
+    // 评审面板已指定类型时不跟随 URL，避免面板被路由参数覆盖
+    if (forcedTab !== null) return
     if (typeParam === 'recycle') {
       setTab('recycle')
       // 个人中心可能带系统状态进来，统一折算成用户侧 Tab
@@ -147,7 +186,7 @@ export function OrdersPage() {
     }
     setTab('sales')
     setSalesFilter((statusParam as SalesStatus | null) ?? 'all')
-  }, [typeParam, statusParam])
+  }, [typeParam, statusParam, forcedTab])
 
   // 指示条动画：挂载后记录当前页签，并在下一帧把指示条释放到真实位置
   useEffect(() => {
@@ -173,14 +212,15 @@ export function OrdersPage() {
     })
   }
 
-  const salesRows =
-    salesFilter === 'all'
+  const salesRows = reviewEmpty
+    ? []
+    : salesFilter === 'all'
       ? salesOrders
       : salesOrders.filter((order) => order.status === salesFilter)
 
-  const recycleRows = DEMO_RECYCLE_ORDERS.filter((order) =>
-    matchesRecycleTab(order.status, recycleFilter),
-  )
+  const recycleRows = reviewEmpty
+    ? []
+    : DEMO_RECYCLE_ORDERS.filter((order) => matchesRecycleTab(order.status, recycleFilter))
 
   // 顶部直播提示：只在当前筛选结果里确有直播订单时出现
   const liveRecycleOrder =

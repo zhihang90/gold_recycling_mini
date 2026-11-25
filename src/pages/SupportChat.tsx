@@ -31,6 +31,7 @@ import {
   type SupportSession,
 } from '@/mocks/support'
 import { orderDetailPath, recycleOrderDetailPath, routePath } from '@/routes/paths'
+import { useReviewState } from '@/lib/useReviewState'
 
 type ChatMode = 'live' | 'demo'
 
@@ -79,13 +80,34 @@ function buildInitial(params: URLSearchParams) {
   return { session: created, mode: 'live' as ChatMode }
 }
 
+/** 评审面板：直接展示指定会话阶段，不写回真实会话记录 */
+function applyReviewStage(session: SupportSession, stage: string): SupportSession {
+  if (stage === 'bot') return { ...session, stage: 'bot', servedBy: 'bot' }
+  if (stage === 'agent') return { ...session, stage: 'agent', servedBy: 'agent' }
+  if (stage === 'queue') {
+    return {
+      ...session,
+      stage: 'queue',
+      servedBy: 'bot',
+      messages: [
+        ...session.messages,
+        supportSystemMessage('正在为您转接人工客服，当前排队 2 位，请稍候…'),
+      ],
+    }
+  }
+  return session
+}
+
 /** 在线会话：智能客服自动回复 → 排队转人工 → 会话结束进入评价 */
 export function SupportChatPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const initial = useRef(buildInitial(searchParams))
-  const [session, setSession] = useState(initial.current.session)
-  const [mode] = useState<ChatMode>(initial.current.mode)
+  const review = useReviewState('support.chat')
+  const stageMode = review.values.stage ?? 'auto'
+  const [session, setSession] = useState(() => applyReviewStage(initial.current.session, stageMode))
+  /** 评审阶段为只读演示，切到 demo 模式避免写回真实会话 */
+  const [mode] = useState<ChatMode>(stageMode === 'auto' ? initial.current.mode : 'demo')
   const [input, setInput] = useState('')
   const [typing, setTyping] = useState(false)
   const [endOpen, setEndOpen] = useState(false)

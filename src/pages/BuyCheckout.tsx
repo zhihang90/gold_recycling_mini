@@ -1,4 +1,22 @@
-import { AddressPickerSheet, AgreementCheck, BottomActionBar, BottomSheet, Button, Card, ConfirmDialog, FormField, MediaVisual, PageHeader, PageShell, PaymentPasswordSheet, PriceText, Stepper, SummaryActionBar, TextLink, Toast } from '@/components'
+import {
+  AddressPickerSheet,
+  AgreementCheck,
+  BottomActionBar,
+  BottomSheet,
+  Button,
+  Card,
+  ConfirmDialog,
+  FormField,
+  MediaVisual,
+  PageHeader,
+  PageShell,
+  PaymentPasswordSheet,
+  PriceText,
+  Stepper,
+  SummaryActionBar,
+  TextLink,
+  Toast,
+} from '@/components'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { BellRing, ChevronRight, ShieldCheck } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -27,6 +45,7 @@ import { isMemberVerified, readMember } from '@/mocks/member'
 import { DEMO_CART, readCart, writeCart } from '@/mocks/cart'
 import { findProduct, variantsOf, type GoldProduct, type GoldVariant } from '@/mocks/goldShop'
 import { useDemoScene } from '@/lib/useDemoScene'
+import { useReviewState } from '@/lib/useReviewState'
 import {
   createSalesOrder,
   readSalesOrders,
@@ -88,7 +107,8 @@ const NOTICE_PARAGRAPHS: { title?: string; body: ReactNode }[] = [
       <>
         黄金属于特殊商品，具有较高的市场波动性。由于金价波动产生的差额，商家不承担赔付义务。
         如您在下单后因金价波动申请退款或拒收，已支付的订单将无法处理，需按订单总价支付违约金，
-        违约金标准按金价差额绝对值收取，违约金不足 100 元按 100 元收取。请您在下单前关注实时金价，审慎下单。
+        违约金标准按金价差额绝对值收取，违约金不足 100 元按 100
+        元收取。请您在下单前关注实时金价，审慎下单。
       </>
     ),
   },
@@ -105,7 +125,8 @@ const NOTICE_PARAGRAPHS: { title?: string; body: ReactNode }[] = [
     title: '4. 证书相关说明',
     body: (
       <>
-        黄金商品均附带国家认可机构出具的检验证书（如 NGTC 国检证书），一物一证，证书编号可通过官方渠道查询。
+        黄金商品均附带国家认可机构出具的检验证书（如 NGTC
+        国检证书），一物一证，证书编号可通过官方渠道查询。
         如您未收到证书或证书信息与商品不符，请及时联系商家客服。证书为商品保值、售后服务的重要凭证，请妥善保管，遗失补发需支付相应费用。
       </>
     ),
@@ -157,12 +178,18 @@ export function BuyCheckoutPage() {
   const navigate = useNavigate()
   /** 演示直达：?demo=checkout 用购物车样例渲染，不依赖上一步数据 */
   const demo = useDemoScene() === 'checkout'
+  const review = useReviewState('checkout')
+  const addressMode = review.values.address ?? 'auto'
+  const agreeMode = review.values.agree ?? 'auto'
+  const reviewActive = addressMode !== 'auto' || agreeMode !== 'auto'
   /** 现场快照：去实名认证前写入，返回时恢复商品数量、地址与表单项 */
   const [resume] = useState(() => (demo ? readCheckoutResume() : null))
   const [demoItems, setDemoItems] = useState<CheckoutItem[]>(() =>
     demo ? toCheckoutItems(resume?.items.length ? resume.items : DEMO_CART) : [],
   )
   const [address, setAddress] = useState<ShippingAddress | null>(() => {
+    if (addressMode === 'none') return null
+    if (addressMode === 'have') return readAddresses()[0] ?? DEFAULT_ADDRESSES[0] ?? null
     if (!demo) return readSelectedAddress()
     const resumed = resume?.addressId
       ? readAddresses().find((item) => item.id === resume.addressId)
@@ -179,7 +206,9 @@ export function BuyCheckoutPage() {
       ? (candidate as PayMethod)
       : 'wechat'
   })
-  const [agree, setAgree] = useState(resume?.agree ?? draft?.agree ?? false)
+  const [agree, setAgree] = useState(
+    () => agreeMode === 'yes' || (agreeMode === 'auto' && (resume?.agree ?? draft?.agree ?? false)),
+  )
   const [toast, setToast] = useState<string | null>(null)
   /** 提交前拦截：未实名时弹窗引导先去认证 */
   const [authDialog, setAuthDialog] = useState(false)
@@ -222,9 +251,9 @@ export function BuyCheckoutPage() {
 
   // 表单草稿：离开本页去添加/编辑地址后返回，重挂载时恢复备注、支付方式与协议勾选
   useEffect(() => {
-    if (demo) return
+    if (demo || reviewActive) return
     writeCheckoutDraft({ note, payMethod, agree })
-  }, [demo, note, payMethod, agree])
+  }, [demo, reviewActive, note, payMethod, agree])
 
   useEffect(() => {
     // 现场快照只在从实名认证返回的这一次挂载使用，读完即清，避免下次进入带入旧数据
@@ -245,15 +274,11 @@ export function BuyCheckoutPage() {
     }
 
     const raw = readCheckout() ?? []
-    const next = raw.map((r) =>
-      r.variantId === variantId ? { ...r, quantity: value } : r,
-    )
+    const next = raw.map((r) => (r.variantId === variantId ? { ...r, quantity: value } : r))
     writeCheckout(next)
 
     const cart = readCart()
-    const cartNext = cart.map((c) =>
-      c.variantId === variantId ? { ...c, quantity: value } : c,
-    )
+    const cartNext = cart.map((c) => (c.variantId === variantId ? { ...c, quantity: value } : c))
     writeCart(cartNext)
 
     setReloadKey((k) => k + 1)
@@ -373,7 +398,10 @@ export function BuyCheckoutPage() {
       {/* 滚动容器：flex + min-h-0 让子项不会撑爆，overflow-y-auto 成为唯一滚动源
           底部 pb-32 给 absolute 定位的 BottomActionBar（含协议行）预留空间，避免内容被遮挡 */}
       <div className="flex min-h-0 flex-1 flex-col">
-        <div ref={innerScrollRef} className="hide-scrollbar min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-32">
+        <div
+          ref={innerScrollRef}
+          className="hide-scrollbar min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-32"
+        >
           {/* 收货地址 */}
           <Card padding="none" className="overflow-hidden">
             <button
@@ -386,9 +414,12 @@ export function BuyCheckoutPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="text-body-strong text-foreground">{address.name}</span>
-                      <span className="text-body text-muted-foreground">{maskPhone(address.phone)}</span>
+                      <span className="text-body text-muted-foreground">
+                        {maskPhone(address.phone)}
+                      </span>
                       {address.tag ? (
-                        <span className="rounded bg-gold-100 px-1.5 py-0.5 text-micro text-gold-800">{/* ui-allow: 地址标签 */}
+                        <span className="rounded bg-gold-100 px-1.5 py-0.5 text-micro text-gold-800">
+                          {/* ui-allow: 地址标签 */}
                           {address.tag}
                         </span>
                       ) : null}
@@ -404,7 +435,8 @@ export function BuyCheckoutPage() {
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 text-body text-subtle-foreground">
                     <span>请选择收货地址</span>
-                    <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-micro text-destructive">{/* ui-allow: 必填标记 */}
+                    <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-micro text-destructive">
+                      {/* ui-allow: 必填标记 */}
                       必填
                     </span>
                   </div>
@@ -480,9 +512,7 @@ export function BuyCheckoutPage() {
                     <span className="flex-1 text-body text-foreground">{opt.label}</span>
                     <span
                       className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                        selected
-                          ? 'border-gold-700 bg-gold-700'
-                          : 'border-icon-muted bg-card'
+                        selected ? 'border-gold-700 bg-gold-700' : 'border-icon-muted bg-card'
                       }`}
                     >
                       {selected ? <span className="h-2 w-2 rounded-full bg-card" /> : null}
@@ -577,7 +607,9 @@ export function BuyCheckoutPage() {
 
           {NOTICE_PARAGRAPHS.map((p, i) => (
             <div key={i}>
-              {p.title ? <h3 className="mb-1 text-body-strong text-foreground">{p.title}</h3> : null}
+              {p.title ? (
+                <h3 className="mb-1 text-body-strong text-foreground">{p.title}</h3>
+              ) : null}
               <p className="text-caption leading-relaxed text-subtle-foreground">{p.body}</p>
             </div>
           ))}
@@ -636,7 +668,9 @@ function Row({ label, value, muted }: { label: string; value: string; muted?: bo
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="text-body text-foreground">{label}</span>
-      <span className={`text-body ${muted ? 'text-muted-foreground' : 'text-foreground'}`}>{value}</span>
+      <span className={`text-body ${muted ? 'text-muted-foreground' : 'text-foreground'}`}>
+        {value}
+      </span>
     </div>
   )
 }
@@ -695,4 +729,3 @@ function CheckoutRow({
     </div>
   )
 }
-

@@ -18,6 +18,7 @@ import { writeCheckout } from '@/mocks/checkout'
 import { GOLD_PRODUCTS, findVariant } from '@/mocks/goldShop'
 import { cn } from '@/lib/utils'
 import { useDemoScene } from '@/lib/useDemoScene'
+import { useReviewState } from '@/lib/useReviewState'
 import { paths } from '@/routes/paths'
 
 /** 圆形勾选：购物车逐项与全选共用，点击热区用伪元素补到 44。 */
@@ -51,10 +52,17 @@ function CartCheck({
 export function CartPage() {
   const navigate = useNavigate()
   const demoScene = useDemoScene()
-  const [items, setItems] = useState<CartItem[]>(() =>
-    demoScene === 'cart' ? DEMO_CART : readCart(),
-  )
-  const [managing, setManaging] = useState(false)
+  const review = useReviewState('cart')
+  const itemsMode = review.values.items ?? 'auto'
+  const modeReview = review.values.mode ?? 'auto'
+  /** 评审指定了购物车内容时不写回本地存储，避免污染真实购物车 */
+  const reviewItems = itemsMode === 'empty' || itemsMode === 'filled'
+  const [items, setItems] = useState<CartItem[]>(() => {
+    if (itemsMode === 'empty') return []
+    if (itemsMode === 'filled') return DEMO_CART
+    return demoScene === 'cart' ? DEMO_CART : readCart()
+  })
+  const [managing, setManaging] = useState(modeReview === 'manage')
   const [toast, setToast] = useState<string | null>(null)
 
   const rows = items.flatMap((item) => {
@@ -71,7 +79,7 @@ export function CartPage() {
 
   const update = (next: CartItem[]) => {
     setItems(next)
-    if (demoScene !== 'cart') writeCart(next)
+    if (!reviewItems && demoScene !== 'cart') writeCart(next)
   }
 
   const toggleItem = (variantId: string) => {

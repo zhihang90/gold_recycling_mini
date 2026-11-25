@@ -1,16 +1,25 @@
-import { Badge, Button, Card, CountdownBar, DetailPage, EmptyState, TextLink, Toast } from '@/components'
+import {
+  Badge,
+  Button,
+  Card,
+  CountdownBar,
+  DetailPage,
+  EmptyState,
+  TextLink,
+  Toast,
+} from '@/components'
 import { Bell, CircleChevronRight, Gavel, Headset, Package, Radio, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import {
+  DEMO_MESSAGES,
   MESSAGE_CATEGORIES,
   filterMessages,
   isMessageRead,
   markAllMessagesRead,
   markMessageRead,
-  messageUnreadCount,
   unreadCountByCategory,
   useMessageReadState,
   type MessageAction,
@@ -19,6 +28,7 @@ import {
   type MessageItem,
 } from '@/mocks/messages'
 import { cn } from '@/lib/utils'
+import { useReviewState } from '@/lib/useReviewState'
 import { messageDetailPath } from '@/routes/paths'
 
 /** 分类视觉：图标与强调色（UI 层，不进 mock） */
@@ -86,12 +96,7 @@ function AlertMessageCard({
   const meta = CATEGORY_META.alert
 
   const price = message.alertTargetPrice
-  const priceStr =
-    price != null
-      ? price >= 100
-        ? price.toFixed(2)
-        : price.toFixed(3)
-      : '--'
+  const priceStr = price != null ? (price >= 100 ? price.toFixed(2) : price.toFixed(3)) : '--'
 
   return (
     <Card
@@ -127,7 +132,10 @@ function AlertMessageCard({
             {message.title}
           </span>
           {!read ? (
-            <span aria-hidden="true" className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-destructive" />
+            <span
+              aria-hidden="true"
+              className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-destructive"
+            />
           ) : null}
         </div>
         <span className="shrink-0 text-caption text-subtle-foreground tabular">{message.time}</span>
@@ -136,8 +144,16 @@ function AlertMessageCard({
       {/* 金价提醒详情行 */}
       <div className="space-y-1.5 rounded-md bg-surface-2 px-3 py-2.5 text-caption">
         <DetailRow label="商品名称" value={message.alertProductName ?? '--'} />
-        <DetailRow label="目标金价" value={`¥${priceStr} 元/克`} valueClassName="text-price font-medium" />
-        <DetailRow label="报价时间" value={message.alertQuoteTime ?? '--'} valueClassName="tabular" />
+        <DetailRow
+          label="目标金价"
+          value={`¥${priceStr} 元/克`}
+          valueClassName="text-price font-medium"
+        />
+        <DetailRow
+          label="报价时间"
+          value={message.alertQuoteTime ?? '--'}
+          valueClassName="tabular"
+        />
         <DetailRow
           label="温馨提示"
           value={message.alertHint ?? message.summary}
@@ -233,7 +249,9 @@ function MessageCard({
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           {message.pinned ? (
-            <Badge tone="warning" size="sm">置顶</Badge>
+            <Badge tone="warning" size="sm">
+              置顶
+            </Badge>
           ) : null}
           <span className="text-caption text-subtle-foreground">{message.time}</span>
         </div>
@@ -277,21 +295,38 @@ function groupAlertsByTime(items: MessageItem[]): { groupLabel: string; items: M
 export function MessagesPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const state = useMessageReadState()
+  const storedState = useMessageReadState()
+  const review = useReviewState('messages')
+  const reviewFilter = review.values.filter ?? 'auto'
+  const reviewRead = review.values.read ?? 'auto'
 
-  // 分类筛选落到 URL
+  /** 评审开关覆盖阅读状态：全部未读 / 全部已读，不写回本地存储 */
+  const state =
+    reviewRead === 'unread'
+      ? { readMap: {} as Record<string, boolean> }
+      : reviewRead === 'read'
+        ? {
+            readMap: Object.fromEntries(
+              DEMO_MESSAGES.map((message) => [message.id, true]),
+            ) as Record<string, boolean>,
+          }
+        : storedState
+
+  // 分类筛选：评审面板优先，其次落到 URL
   const rawFilter = searchParams.get('filter')
   const filter: MessageFilter =
-    rawFilter === 'order' ||
-    rawFilter === 'live' ||
-    rawFilter === 'quote' ||
-    rawFilter === 'fund' ||
-    rawFilter === 'service' ||
-    rawFilter === 'system' ||
-    rawFilter === 'alert' ||
-    rawFilter === 'all'
-      ? rawFilter
-      : 'all'
+    reviewFilter !== 'auto'
+      ? (reviewFilter as MessageFilter)
+      : rawFilter === 'order' ||
+          rawFilter === 'live' ||
+          rawFilter === 'quote' ||
+          rawFilter === 'fund' ||
+          rawFilter === 'service' ||
+          rawFilter === 'system' ||
+          rawFilter === 'alert' ||
+          rawFilter === 'all'
+        ? rawFilter
+        : 'all'
 
   const [toast, setToast] = useState<string | null>(null)
 
@@ -302,7 +337,7 @@ export function MessagesPage() {
   }))
 
   const list = filterMessages(filter)
-  const totalUnread = messageUnreadCount(state)
+  const totalUnread = DEMO_MESSAGES.filter((message) => !isMessageRead(message.id, state)).length
 
   const handleAction = (action: MessageAction) => {
     if (action.to) {
@@ -356,11 +391,7 @@ export function MessagesPage() {
         {/* 右侧消息列表 */}
         <main className="min-w-0 flex-1 space-y-3 p-3">
           {list.length === 0 ? (
-            <EmptyState
-              icon={Bell}
-              title="暂无消息"
-              description="该分类下暂无消息通知。"
-            />
+            <EmptyState icon={Bell} title="暂无消息" description="该分类下暂无消息通知。" />
           ) : alertOnly ? (
             // 纯金价提醒分类：按时间分节 + AlertMessageCard 模板
             groupAlertsByTime(list).map(({ groupLabel, items }) => (

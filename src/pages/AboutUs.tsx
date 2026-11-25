@@ -1,4 +1,4 @@
-import { Card, DetailPage } from '@/components'
+import { Card, DetailPage, PlatformQualificationsCard } from '@/components'
 
 const ABOUT_HONORS = [
   '上海黄金交易所会员单位',
@@ -29,6 +29,8 @@ export function AboutUsPage() {
           ))}
         </ul>
       </Card>
+
+      <PlatformQualificationsCard />
 
       <Card padding="md" className="space-y-2">
         <h2 className="text-body-strong text-foreground">联系我们</h2>

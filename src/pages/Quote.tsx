@@ -61,6 +61,7 @@ import { SHIPPING_RULES } from '@/mocks/shipping'
 import { clearAgreementConfirmation, readAgreementConfirmation } from '@/mocks/agreement'
 import { paths } from '@/routes/paths'
 import { useSheetScene } from '@/lib/useDemoScene'
+import { useReviewState } from '@/lib/useReviewState'
 import { images } from '@/assets/images'
 import { maskPhone, readAddresses, selectAddress, type ShippingAddress } from '@/mocks/addressBook'
 import { readBankAccounts, tailNo, type BankAccount } from '@/mocks/bankAccounts'
@@ -401,6 +402,12 @@ export function QuotePage() {
     draftCategory ?? (searchParams.get('category') === 'jewelry' ? 'jewelry' : 'bar')
   /** 弹层状态直达：?sheet=&state= 用于演示与状态枚举，不影响正常交互 */
   const sheetScene = useSheetScene()
+  const review = useReviewState('quote')
+  const inputMode = review.values.input ?? 'auto'
+  const docsMode = review.values.docs ?? 'auto'
+  const agreedMode = review.values.agreed ?? 'auto'
+  /** 评审覆盖时不写草稿，避免把演示值固化进真实表单 */
+  const reviewActive = inputMode !== 'auto' || docsMode !== 'auto' || agreedMode !== 'auto'
 
   const [category, setCategory] = useState(initialCategory)
   const [purity, setPurity] = useState(() => {
@@ -408,7 +415,11 @@ export function QuotePage() {
     const fallback = option?.purities[0] ?? '999.9'
     return draft?.purity && option?.purities.includes(draft.purity) ? draft.purity : fallback
   })
-  const [weight, setWeight] = useState(draft?.weight ?? searchParams.get('weight') ?? '')
+  const [weight, setWeight] = useState(() => {
+    if (inputMode === 'empty') return ''
+    if (inputMode === 'filled') return '20'
+    return draft?.weight ?? searchParams.get('weight') ?? ''
+  })
   /** 重量输入框聚焦态：未聚焦且无内容时使用折叠样式 */
   const [weightFocused, setWeightFocused] = useState(false)
   const [showDetailSheet, setShowDetailSheet] = useState(sheetScene.is('detail'))
@@ -418,26 +429,28 @@ export function QuotePage() {
   /** 提交中：按钮转圈并禁用，防止重复预约 */
   const [submitting, setSubmitting] = useState(false)
   /** 寄件地址默认不选中，由用户点击地址栏从地址簿选择；有草稿时按 id 回查 */
-  const [address, setAddress] = useState<ShippingAddress | null>(() =>
-    draft?.addressId
+  const [address, setAddress] = useState<ShippingAddress | null>(() => {
+    if (docsMode === 'none') return null
+    if (docsMode === 'ready') return readAddresses()[0] ?? null
+    return draft?.addressId
       ? (readAddresses().find((item) => item.id === draft.addressId) ?? null)
-      : null,
-  )
+      : null
+  })
   const [addressSheet, setAddressSheet] = useState(sheetScene.is('address'))
   /** 上门取件时间默认不选中，点击时间行后从弹层选择 */
-  const [pickupTime, setPickupTime] = useState<PickupTimeSlot | null>(
-    draft?.pickupTime ?? null,
-  )
+  const [pickupTime, setPickupTime] = useState<PickupTimeSlot | null>(draft?.pickupTime ?? null)
   const [pickupSheet, setPickupSheet] = useState(sheetScene.is('pickup'))
   /** 实物照片与凭证：默认空，弹层确认后回填 */
   const [photos, setPhotos] = useState<string[]>(() => (draft ? readQuoteDraftPhotos() : []))
   const [photoSheet, setPhotoSheet] = useState(sheetScene.is('photo'))
   /** 收款方式：默认不选中，弹层确认后回填；有草稿时按 id 回查 */
-  const [payAccount, setPayAccount] = useState<BankAccount | null>(() =>
-    draft?.payAccountId
+  const [payAccount, setPayAccount] = useState<BankAccount | null>(() => {
+    if (docsMode === 'none') return null
+    if (docsMode === 'ready') return readBankAccounts()[0] ?? null
+    return draft?.payAccountId
       ? (readBankAccounts().find((item) => item.id === draft.payAccountId) ?? null)
-      : null,
-  )
+      : null
+  })
   const [paySheet, setPaySheet] = useState(sheetScene.is('bank'))
   const [chartPeriod, setChartPeriod] = useState<string>(RATE_SERIES[0]?.key ?? 'today')
   const [swapMode, setSwapMode] = useState<'weight' | 'price'>('weight')
@@ -446,9 +459,11 @@ export function QuotePage() {
    * 是否已勾选两份协议：只在协议阅读页确认后回填。
    * 确认凭据是「一次性」的——页面挂载后立即消费，保证每次新预约都不会被默认勾选。
    */
-  const [agreed, setAgreed] = useState(
-    () => Boolean(readAgreementConfirmation()) || draft?.agreed === true,
-  )
+  const [agreed, setAgreed] = useState(() => {
+    if (agreedMode === 'yes') return true
+    if (agreedMode === 'no') return false
+    return Boolean(readAgreementConfirmation()) || draft?.agreed === true
+  })
 
   useEffect(() => {
     clearAgreementConfirmation()
@@ -456,6 +471,7 @@ export function QuotePage() {
 
   // 表单草稿：去阅读协议 / 选地址 / 绑收款账户后返回，页面重挂载时原样恢复
   useEffect(() => {
+    if (reviewActive) return
     writeQuoteDraft({
       category,
       purity,
@@ -465,7 +481,7 @@ export function QuotePage() {
       payAccountId: payAccount?.id ?? null,
       agreed,
     })
-  }, [category, purity, weight, address?.id, pickupTime, payAccount?.id, agreed])
+  }, [reviewActive, category, purity, weight, address?.id, pickupTime, payAccount?.id, agreed])
 
   // 照片单独一个 key：base64 体积大，写失败也不影响上面的字段
   useEffect(() => {
@@ -983,9 +999,7 @@ export function QuotePage() {
       <BankAccountPickerSheet
         open={paySheet}
         onClose={() => setPaySheet(false)}
-        accounts={
-          sheetScene.is('bank') && sheetScene.state === 'empty' ? [] : readBankAccounts()
-        }
+        accounts={sheetScene.is('bank') && sheetScene.state === 'empty' ? [] : readBankAccounts()}
         selectedId={payAccount?.id ?? null}
         onConfirm={(account) => {
           setPayAccount(account)
@@ -1001,9 +1015,7 @@ export function QuotePage() {
       <AddressPickerSheet
         open={addressSheet}
         onClose={() => setAddressSheet(false)}
-        addresses={
-          sheetScene.is('address') && sheetScene.state === 'empty' ? [] : readAddresses()
-        }
+        addresses={sheetScene.is('address') && sheetScene.state === 'empty' ? [] : readAddresses()}
         selectedId={address?.id ?? null}
         title="选择寄件地址"
         onSelect={(item) => {

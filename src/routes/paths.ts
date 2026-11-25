@@ -51,6 +51,8 @@ export const paths = {
   me: routePath('me'),
   meProfile: routePath('me.profile'),
   meAbout: routePath('me.about'),
+  meMemberLevel: routePath('me.memberLevel'),
+  meHoldings: routePath('me.holdings'),
   meAuth: routePath('me.auth'),
   meAuthFace: routePath('me.authFace'),
   meEnterpriseAuth: routePath('me.enterprise'),

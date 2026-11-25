@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { X } from 'lucide-react'
+import { ChevronLeft, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useDialogGuard } from '@/lib/useDialogGuard'
 
@@ -17,6 +17,7 @@ export function BottomSheet({
   onClose,
   title,
   subtitle,
+  onBack,
   children,
   footer,
   className,
@@ -29,6 +30,8 @@ export function BottomSheet({
   title: string
   /** 标题下方的小字注脚，比如"数据根据实时行情动态更新" */
   subtitle?: ReactNode
+  /** 传入后标题栏左侧出现返回按钮，标题与注脚居中排版（多步骤弹层的子步骤） */
+  onBack?: () => void
   children: ReactNode
   footer?: ReactNode
   className?: string
@@ -131,23 +134,57 @@ export function BottomSheet({
             dragStart.current = null
           }}
         >
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-card-title text-foreground">{title}</div>
-            {subtitle ? (
-              <div className="mt-0.5 text-caption text-subtle-foreground">{subtitle}</div>
-            ) : null}
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="关闭"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition active:bg-surface-2"
-          >
-            <X size={20} />
-          </button>
+          {onBack ? (
+            <div className="grid w-full grid-cols-[2.75rem_1fr_2.75rem] items-center">
+              <button
+                type="button"
+                onClick={onBack}
+                aria-label="返回"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-foreground transition active:bg-surface-2"
+              >
+                <ChevronLeft size={22} />
+              </button>
+              <div className="min-w-0 text-center">
+                <div className="truncate text-card-title text-foreground">{title}</div>
+                {subtitle ? (
+                  <div className="mt-0.5 truncate text-caption text-subtle-foreground">
+                    {subtitle}
+                  </div>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="关闭"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition active:bg-surface-2"
+              >
+                <X size={20} />
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-card-title text-foreground">{title}</div>
+                {subtitle ? (
+                  <div className="mt-0.5 text-caption text-subtle-foreground">{subtitle}</div>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="关闭"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition active:bg-surface-2"
+              >
+                <X size={20} />
+              </button>
+            </>
+          )}
         </div>
 
-        <div ref={scrollRef} className="hide-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3">
+        <div
+          ref={scrollRef}
+          className="hide-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3"
+        >
           {children}
         </div>
 

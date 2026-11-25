@@ -1,5 +1,4 @@
 import {
-  Badge,
   Button,
   Card,
   Chip,
@@ -12,12 +11,12 @@ import {
   TabPage,
   Toast,
 } from '@/components'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ShoppingCart, TrendingUp } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
-import { images } from '@/assets/images'
 
 import { addToCart } from '@/mocks/cart'
+import { quoteByCode, quoteChange, simulateMarketTick } from '@/mocks/market'
 import { GOLD_PRODUCTS, SALE_RATE, SHOP_CATEGORIES, variantsOf } from '@/mocks/goldShop'
 import type { GoldCategory, GoldProduct } from '@/mocks/goldShop'
 import { buyDetailPath, paths } from '@/routes/paths'
@@ -31,28 +30,45 @@ export function BuyPage() {
   const [variantId, setVariantId] = useState('')
   const [quantity, setQuantity] = useState(1)
   const [toast, setToast] = useState<string | null>(null)
+  /** 上金所 Au99.99 基准价：5 秒刷新一次，与行情页同源 */
+  const [liveAu, setLiveAu] = useState(() => quoteChange(quoteByCode('au9999')!))
+  const [updatedAt, setUpdatedAt] = useState(() => formatClock(new Date()))
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      simulateMarketTick()
+      setLiveAu(quoteChange(quoteByCode('au9999')!))
+      setUpdatedAt(formatClock(new Date()))
+    }, 5000)
+    return () => window.clearInterval(timer)
+  }, [])
+
   const products = GOLD_PRODUCTS.filter(
     (product) => category === 'all' || product.category === category,
   )
 
   return (
     <TabPage>
-      <div className="relative -mx-4 -mt-4 overflow-hidden">
-        <MediaVisual
-          src={images.buyHero}
-          alt="丁未羊年贺岁金条"
-          ratio="wide"
-          priority
-          className="h-44 w-full"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-gold-900/90 via-gold-900/50 to-transparent" />
-        <div className="absolute inset-0 flex flex-col justify-center px-5">
-          <p className="text-caption text-gold-200">安盛华投资金</p>
-          <p className="mt-1 font-serif text-title text-paper">丁未羊年 · 贺岁金条</p>
-          <p className="mt-1 text-caption text-gold-100/80">足金 999.9 · 一物一证 · 支持回收变现</p>
-          <div className="mt-3">
-            <Badge tone="gold">新品发售</Badge>
+      {/* 上金所实时金价横幅：标题与涨跌胶囊一行，价格与更新时间一行 */}
+      <div className="-mx-4 -mt-4 bg-gradient-to-br from-gold-700 via-gold-600 to-gold-800 px-4 py-3.5 text-gold-50">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-caption text-gold-50/75">上金所实时金价</p>
+          <span className="shrink-0 rounded-full bg-white/10 px-1.5 py-0.5 text-micro tabular text-gold-100">
+            {liveAu.change >= 0 ? '+' : '-'}
+            {Math.abs(liveAu.change).toFixed(2)}（{liveAu.changePct >= 0 ? '+' : '-'}
+            {Math.abs(liveAu.changePct).toFixed(2)}%）
+          </span>
+        </div>
+        <div className="mt-1.5 flex items-end justify-between gap-2">
+          <div className="flex items-baseline gap-1">
+            <span className="text-[34px] leading-none font-semibold tabular tracking-tight">
+              {liveAu.price.toFixed(2)}
+            </span>
+            <span className="text-caption text-gold-50/70">元/克</span>
           </div>
+          <p className="shrink-0 whitespace-nowrap text-micro tabular text-gold-50/55">
+            更新于 {updatedAt}
+          </p>
         </div>
       </div>
 
@@ -171,8 +187,14 @@ export function BuyPage() {
   )
 }
 
-/** 商品卡的规格行：从 caption 提取克重选项，统一成竞品「5g | 10g | …」的写法。 */
-function cardSpec(caption: string) {
+/** 更新时间：北京时间，精确到秒 */
+function formatClock(date: Date) {
+  return date.toLocaleString('sv-SE', { timeZone: 'Asia/Shanghai', hour12: false })
+}
+
+/** 商品卡的规格行：从 caption 提取克重选项，统一成竞品「5g | 10g | …」的写法。 */ function cardSpec(
+  caption: string,
+) {
   const options = caption
     .replace(/^.*规格：/, '')
     .replace(/、/g, ' | ')

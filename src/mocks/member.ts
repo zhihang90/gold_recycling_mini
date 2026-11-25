@@ -451,3 +451,53 @@ export function withEnterpriseMock(current: EnterpriseKyc | null): EnterpriseKyc
     agreements: current.agreements ?? mock.agreements,
   }
 }
+
+// ============ 会员等级 ============
+
+export type MemberLevelId = 'L1' | 'L2' | 'L3' | 'L4'
+
+export interface MemberLevel {
+  id: MemberLevelId
+  name: string
+  /** 单日累计买入限额（元） */
+  dailyLimit: number
+  /** 升级条件 */
+  condition: string
+  /** 升级所需累计买入金额（元） */
+  threshold: number
+}
+
+export const MEMBER_LEVELS: MemberLevel[] = [
+  { id: 'L1', name: '普通会员', dailyLimit: 50000, condition: '注册登录即达成', threshold: 0 },
+  {
+    id: 'L2',
+    name: '白银会员',
+    dailyLimit: 200000,
+    condition: '累计买入满 10 万',
+    threshold: 100000,
+  },
+  {
+    id: 'L3',
+    name: '黄金会员',
+    dailyLimit: 1000000,
+    condition: '累计买入满 50 万',
+    threshold: 500000,
+  },
+  {
+    id: 'L4',
+    name: '铂金会员',
+    dailyLimit: 5000000,
+    condition: '累计买入满 200 万',
+    threshold: 2000000,
+  },
+]
+
+/** 注册登录即普通会员；等级由平台按累计买入金额评定，原型固定展示 L1 */
+export function readMemberLevel(): MemberLevel {
+  return MEMBER_LEVELS[0]
+}
+
+/** 下一档等级，用于提示升级门槛 */
+export function nextMemberLevel(current: MemberLevel): MemberLevel | null {
+  return MEMBER_LEVELS.find((level) => level.threshold > current.threshold) ?? null
+}

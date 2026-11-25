@@ -1,5 +1,14 @@
-import { TabPage, Card, BottomSheet, Button, ProfileCard, QuickActionGrid } from '@/components'
+import {
+  TabPage,
+  Badge,
+  Card,
+  BottomSheet,
+  Button,
+  ProfileCard,
+  QuickActionGrid,
+} from '@/components'
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BadgeCheck,
@@ -15,9 +24,16 @@ import {
   Wallet,
 } from 'lucide-react'
 
-import { getEnterpriseAuthStatus, maskPhone, readMember, readNickname } from '@/mocks/member'
-import { DEMO_RECYCLE_ORDERS, type RecycleStatus } from '@/mocks/recycleOrders'
-import { readSalesOrders, type SalesStatus } from '@/mocks/salesOrders'
+import {
+  getEnterpriseAuthStatus,
+  maskPhone,
+  readMember,
+  readMemberLevel,
+  readNickname,
+  type EnterpriseAuthStatus,
+  type Member,
+} from '@/mocks/member'
+import { useReviewState } from '@/lib/useReviewState'
 import { messageUnreadCount, useMessageReadState } from '@/mocks/messages'
 import { ordersFilterPath, paths, routePath } from '@/routes/paths'
 
@@ -27,6 +43,14 @@ const SHEET_TITLES: Record<Exclude<InfoSheet, null>, string> = {
   faq: '常见问题',
 }
 
+/** 评审「已登录」但本地没有登录态时使用的演示账户 */
+const REVIEW_MEMBER: Member = {
+  phone: '13800138000',
+  loginAt: 1,
+  realNameAuth: { name: '张三', idNo: '440300199001011234', verifiedAt: 1 },
+  customerType: 'individual',
+}
+
 /**
  * 我的页面：头部账户卡 + 消息卡 + 业务与服务合并卡 + 关于我们入口。
  * 订单不再在卡片里展示每个状态，只给「买金订单」「回收订单」两个入口行，
@@ -34,24 +58,32 @@ const SHEET_TITLES: Record<Exclude<InfoSheet, null>, string> = {
  */
 export function MePage() {
   const navigate = useNavigate()
-  const [member] = useState(() => readMember())
+  const [storedMember] = useState(() => readMember())
   const [infoSheet, setInfoSheet] = useState<InfoSheet>(null)
+  const review = useReviewState('me')
+  const accountMode = review.values.account ?? 'auto'
+  const verifyMode = review.values.verify ?? 'auto'
+
+  /** 评审开关只覆盖展示分支，不改写本地登录数据 */
+  const member =
+    accountMode === 'guest'
+      ? null
+      : accountMode === 'member'
+        ? (storedMember ?? REVIEW_MEMBER)
+        : storedMember
+
   const state = useMessageReadState()
   const unread = messageUnreadCount(state)
-  const salesOrders = member ? readSalesOrders() : []
-  const recycleOrders = member ? DEMO_RECYCLE_ORDERS : []
   const goLogin = () => navigate(paths.login)
-  const personalVerified = Boolean(member?.realNameAuth?.verifiedAt)
-  const enterpriseStatus = getEnterpriseAuthStatus(member)
-
-  const salesPending = member
-    ? salesOrders.filter((o) => o.status === 'pending-payment' || o.status === 'pending-receipt').length
-    : 0
-  const recyclePending = member
-    ? recycleOrders.filter(
-        (o) => o.status === 'pending-confirm' || o.status === 'pending-payment',
-      ).length
-    : 0
+  const level = readMemberLevel()
+  const personalVerified =
+    verifyMode === 'auto' ? Boolean(member?.realNameAuth?.verifiedAt) : verifyMode === 'personal'
+  const enterpriseStatus: EnterpriseAuthStatus =
+    verifyMode === 'auto'
+      ? getEnterpriseAuthStatus(member)
+      : verifyMode === 'enterprise'
+        ? 'passed'
+        : 'unstarted'
 
   return (
     <TabPage contentClassName={member ? 'pt-0' : undefined}>
@@ -60,34 +92,28 @@ export function MePage() {
           padding="md"
           className="-mx-4 rounded-none bg-gradient-to-br from-gold-800 to-gold-900 text-gold-50 shadow-none ring-0 transition active:brightness-95"
         >
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-3">
             <button
               type="button"
               onClick={() => navigate(paths.meProfile)}
-              className="flex w-full items-center gap-3 text-left"
+              className="flex min-w-0 items-center gap-3 text-left"
             >
               <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gold-50 text-gold-800">
                 <UserRound size={30} aria-hidden="true" />
               </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-section text-gold-50">{readNickname(member)}</p>
-                  {enterpriseStatus === 'passed' ? (
-                    <span className="rounded-full bg-gold-50 px-2.5 py-0.5 text-tiny font-medium text-gold-800">
-                      企业已认证
-                    </span>
-                  ) : personalVerified ? (
-                    <span className="rounded-full bg-gold-50 px-2.5 py-0.5 text-tiny font-medium text-gold-800">
-                      个人已实名
-                    </span>
-                  ) : (
-                    <span className="rounded-full bg-destructive px-2.5 py-0.5 text-tiny font-medium text-destructive-foreground">
-                      未实名
-                    </span>
-                  )}
-                </div>
+              <div className="min-w-0">
+                <p className="truncate text-section text-gold-50">{readNickname(member)}</p>
                 <p className="mt-1 text-body text-gold-50/80 tabular">{maskPhone(member.phone)}</p>
               </div>
+            </button>
+
+            {/* 会员等级标签：注册登录即普通会员，点击查看等级说明 */}
+            <button
+              type="button"
+              onClick={() => navigate(paths.meMemberLevel)}
+              className="mt-1 shrink-0 rounded-full bg-gold-50/10 px-2.5 py-1 text-caption text-gold-50 ring-1 ring-gold-50/25 transition active:bg-gold-50/20"
+            >
+              {level.name}
             </button>
           </div>
         </Card>
@@ -131,7 +157,6 @@ export function MePage() {
           icon={Wallet}
           iconTone="primary"
           title="我的订单"
-          badge={salesPending + recyclePending > 0 ? salesPending + recyclePending : undefined}
           onClick={member ? () => navigate(paths.orders) : goLogin}
         />
         <div className="border-t border-border-subtle" />
@@ -139,6 +164,15 @@ export function MePage() {
           icon={ShieldCheck}
           iconTone="primary"
           title="实名认证"
+          trailing={
+            enterpriseStatus === 'passed' || personalVerified ? (
+              <Badge tone="gold">
+                {enterpriseStatus === 'passed' ? '企业已认证' : '个人已实名'}
+              </Badge>
+            ) : (
+              <Badge tone="danger">未实名</Badge>
+            )
+          }
           onClick={member ? () => navigate(paths.meProfile) : goLogin}
         />
         <div className="border-t border-border-subtle" />
@@ -223,7 +257,7 @@ export function MePage() {
   )
 }
 
-/** 卡片内统一的「图标 + 标题 + 角标 / 右箭头」入口行；图标直接用语义色前景，无圆圈背景。 */
+/** 卡片内统一的「图标 + 标题 + 右侧附加信息 + 右箭头」入口行；图标直接用语义色前景，无圆圈背景。 */
 type Tone = 'primary' | 'price' | 'success' | 'gold'
 const TONE_FG: Record<Tone, string> = {
   primary: 'text-primary',
@@ -236,13 +270,13 @@ function EntryRow({
   icon: Icon,
   iconTone,
   title,
-  badge,
+  trailing,
   onClick,
 }: {
   icon: typeof Wallet
   iconTone: Tone
   title: string
-  badge?: number
+  trailing?: ReactNode
   onClick: () => void
 }) {
   return (
@@ -255,11 +289,7 @@ function EntryRow({
       <div className="min-w-0 flex-1">
         <p className="text-body text-foreground">{title}</p>
       </div>
-      {badge != null ? (
-        <span className="shrink-0 rounded-full bg-destructive px-2 py-0.5 text-tiny text-destructive-foreground tabular">
-          {badge}
-        </span>
-      ) : null}
+      {trailing}
       <CircleChevronRight size={16} className="shrink-0 text-icon-muted" />
     </button>
   )

@@ -6,6 +6,7 @@ export const MARKET_STORAGE = {
   alerts: 'gold_market_alerts',
   riskAck: 'gold_market_risk_ack',
   alertSettings: 'gold_market_alert_settings',
+  subscription: 'gold_price_subscription',
 } as const
 
 // ============ 行情标的 ============
@@ -231,10 +232,42 @@ export interface DomesticContract {
 
 /** 上金所合约行情：黄金9999 / 白银T+D / 铂金9995 / 黄金T+D */
 export const DOMESTIC_CONTRACTS: DomesticContract[] = [
-  { code: 'Au99.99', name: '黄金9999', sell: 780.5, buy: 781.4, high: 783.0, low: 755.01, precision: 2 },
-  { code: 'Ag(T+D)', name: '白银T+D', sell: 10148.0, buy: 10155.0, high: 10178.0, low: 9637.0, precision: 1 },
-  { code: 'Pt99.95', name: '铂金9995', sell: null, buy: 328.35, high: 327.29, low: 323.51, precision: 2 },
-  { code: 'Au(T+D)', name: '黄金T+D', sell: 779.2, buy: 781.0, high: 781.3, low: 756.0, precision: 1 },
+  {
+    code: 'Au99.99',
+    name: '黄金9999',
+    sell: 780.5,
+    buy: 781.4,
+    high: 783.0,
+    low: 755.01,
+    precision: 2,
+  },
+  {
+    code: 'Ag(T+D)',
+    name: '白银T+D',
+    sell: 10148.0,
+    buy: 10155.0,
+    high: 10178.0,
+    low: 9637.0,
+    precision: 1,
+  },
+  {
+    code: 'Pt99.95',
+    name: '铂金9995',
+    sell: null,
+    buy: 328.35,
+    high: 327.29,
+    low: 323.51,
+    precision: 2,
+  },
+  {
+    code: 'Au(T+D)',
+    name: '黄金T+D',
+    sell: 779.2,
+    buy: 781.0,
+    high: 781.3,
+    low: 756.0,
+    precision: 1,
+  },
 ]
 
 // ============ 国际现货（卡片 1 tab 3） ============
@@ -256,10 +289,25 @@ export interface InternationalContract {
 /** 国际现货行情：港金 / 伦敦金 / 伦敦银 / 美元指数 / 美元汇率 */
 export const INTERNATIONAL_CONTRACTS: InternationalContract[] = [
   { code: 'HKGOLD', name: '港金', high: 33759, low: 33756, precision: 0, unitLabel: '港币/两' },
-  { code: 'XAU', name: '伦敦金', high: 3622.7, low: 3622, precision: 1, unitLabel: '美元/盎司', quoteCode: 'xau' },
+  {
+    code: 'XAU',
+    name: '伦敦金',
+    high: 3622.7,
+    low: 3622,
+    precision: 1,
+    unitLabel: '美元/盎司',
+    quoteCode: 'xau',
+  },
   { code: 'XAG', name: '伦敦银', high: 42.65, low: 42.61, precision: 2, unitLabel: '美元/盎司' },
   { code: 'DXY', name: '美元指数', high: 103.62, low: 103.62, precision: 2, unitLabel: '指数' },
-  { code: 'USDCNH', name: '美元汇率', high: 6.6662, low: 6.6662, precision: 4, unitLabel: '人民币/美元' },
+  {
+    code: 'USDCNH',
+    name: '美元汇率',
+    high: 6.6662,
+    low: 6.6662,
+    precision: 4,
+    unitLabel: '人民币/美元',
+  },
 ]
 
 // ============ 实物行情（公司贵金属回购/销售挂牌价） ============
@@ -286,11 +334,127 @@ export interface PhysicalMetal {
  * 数据为演示值，涨跌颜色由前端根据 high vs low 对比当前价决定
  */
 export const PHYSICAL_METALS: PhysicalMetal[] = [
-  { name: '黄金', unit: '元/克', precision: 2, buyback: 775.8, sale: 778.8, high: 784.0, low: 761.51 },
-  { name: '白银', unit: '元/克', precision: 3, buyback: 9.524, sale: 9.624, high: 9.679, low: 9.339 },
-  { name: '铂金', unit: '元/克', precision: 2, buyback: 280.7, sale: 282.2, high: 284.9, low: 278.9 },
-  { name: '钯金', unit: '元/克', precision: 2, buyback: 193.6, sale: 195.1, high: 196.8, low: 192.2 },
+  {
+    name: '黄金',
+    unit: '元/克',
+    precision: 2,
+    buyback: 775.8,
+    sale: 778.8,
+    high: 784.0,
+    low: 761.51,
+  },
+  {
+    name: '白银',
+    unit: '元/克',
+    precision: 3,
+    buyback: 9.524,
+    sale: 9.624,
+    high: 9.679,
+    low: 9.339,
+  },
+  {
+    name: '铂金',
+    unit: '元/克',
+    precision: 2,
+    buyback: 280.7,
+    sale: 282.2,
+    high: 284.9,
+    low: 278.9,
+  },
+  {
+    name: '钯金',
+    unit: '元/克',
+    precision: 2,
+    buyback: 193.6,
+    sale: 195.1,
+    high: 196.8,
+    low: 192.2,
+  },
 ]
+
+/** 投资金条报价：黄金实物 = 国内实时金价 + 加价，按克重档位收不同工费 */
+export const RETAIL_GOLD = {
+  brand: '安盛华',
+  /** 实物金价在国内实时金价基础上的加价（元/克） */
+  premium: 41,
+}
+
+/** 投资金条克重档位与对应工费（元/克），销售价 =（实物金价 + 工费）× 克重 */
+export const BAR_PRICE_TIERS = [
+  { grams: 1, fee: 41 },
+  { grams: 2, fee: 25 },
+  { grams: 5, fee: 19 },
+  { grams: 10, fee: 13 },
+  { grams: 20, fee: 12 },
+  { grams: 30, fee: 12 },
+  { grams: 50, fee: 11 },
+  { grams: 100, fee: 11 },
+  { grams: 200, fee: 11 },
+  { grams: 500, fee: 10.5 },
+  { grams: 1000, fee: 8 },
+] as const
+
+/** 金价走势卡展开面板的时间档位 */
+export const TREND_RANGES = ['分时', '近1月', '近3月', '近6月', '近1年'] as const
+export type TrendRange = (typeof TREND_RANGES)[number]
+
+const TREND_SPAN_DAYS: Record<TrendRange, number> = {
+  分时: 0,
+  近1月: 30,
+  近3月: 90,
+  近6月: 180,
+  近1年: 365,
+}
+
+function trendLabel(index: number, count: number, range: TrendRange) {
+  const days = TREND_SPAN_DAYS[range]
+  if (days === 0) {
+    const total = 9 * 60 + 30 + Math.round((index / Math.max(1, count - 1)) * 390)
+    return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
+  }
+  const base = new Date(2026, 10, 25)
+  const date = new Date(
+    base.getTime() - ((count - 1 - index) / Math.max(1, count - 1)) * days * 864e5,
+  )
+  return `${date.getMonth() + 1}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+/** 走势面板折线：末点对齐当前价，周期越长波动越大 */
+export function buildTrendSeries(
+  code: string,
+  range: TrendRange,
+  price: number,
+  count = 40,
+): ChartPoint[] {
+  const rng = makeRng(seedOf(`${code}:${range}:trend`))
+  const volatility =
+    range === '分时'
+      ? 0.0026
+      : range === '近1月'
+        ? 0.009
+        : range === '近3月'
+          ? 0.016
+          : range === '近6月'
+            ? 0.022
+            : 0.03
+  const values: number[] = []
+  let value = price * (1 - volatility * 0.8 - rng() * volatility)
+  for (let index = 0; index < count; index += 1) {
+    value += (rng() - 0.47) * price * volatility
+    values.push(value)
+  }
+  const delta = price - values[count - 1]
+  return values.map((item, index) => ({
+    label: trendLabel(index, count, range),
+    price: round2(item + delta * (index / (count - 1))),
+  }))
+}
+
+/** 金价走势面板的词条解释 */
+export const QUOTE_GLOSSARY: Record<string, string> = {
+  au9999: 'Au9999又名万足金，是含金量为99.99%的黄金，国内最主要的金价参考值。',
+  xau: '伦敦金（XAU/USD）是以美元/盎司计价的国际现货黄金，反映全球黄金市场的即时价格。',
+}
 
 /** 实物行情声明与免责 */
 export const PHYSICAL_QUOTE_DISCLAIMER = [
@@ -401,6 +565,64 @@ export function removeWatch(code: string) {
 
 export function clearWatchlist() {
   writeJson(MARKET_STORAGE.watchlist, [])
+}
+
+// ---- 金价订阅提醒 ----
+
+export interface PriceSubscription {
+  enabled: boolean
+  /** 目标金价（元/克） */
+  targetPrice: number
+  /** 订阅标的，固定 Au99.99 */
+  productCode: string
+  updatedAt: number
+}
+
+export const SUBSCRIBE_FLUCTUATION_HELP =
+  '金价在短时间内出现明显涨跌时提醒你，每个交易日最多 3 次。'
+export const SUBSCRIBE_NOTE = '开启提醒后，将通过服务通知发送消息'
+
+/** 目标价快捷档：当前价向下取整到 50，给出偏低 / 接近 / 偏高 三档 */
+export function targetPricePresets(price: number): number[] {
+  const base = Math.max(50, Math.floor(price / 50) * 50)
+  return [base - 50, base, base + 50]
+}
+
+export function defaultTargetPrice(price: number) {
+  return targetPricePresets(price)[1]
+}
+
+export function readPriceSubscription(): PriceSubscription | null {
+  const data = readJson<Partial<PriceSubscription> | null>(MARKET_STORAGE.subscription, null)
+  if (!data || data.enabled !== true || typeof data.targetPrice !== 'number') return null
+  return {
+    enabled: true,
+    targetPrice: data.targetPrice,
+    productCode: data.productCode ?? 'au9999',
+    updatedAt: data.updatedAt ?? Date.now(),
+  }
+}
+
+export function writePriceSubscription(input: {
+  targetPrice: number
+  productCode: string
+}): PriceSubscription {
+  const record: PriceSubscription = {
+    enabled: true,
+    targetPrice: input.targetPrice,
+    productCode: input.productCode,
+    updatedAt: Date.now(),
+  }
+  writeJson(MARKET_STORAGE.subscription, record)
+  return record
+}
+
+export function clearPriceSubscription() {
+  try {
+    window.localStorage.removeItem(MARKET_STORAGE.subscription)
+  } catch {
+    // 同存储降级
+  }
 }
 
 // ---- 到价提醒 ----
@@ -809,4 +1031,5 @@ export const RISK_TEXT =
   '黄金价格受国际形势影响波动较大，投资有风险，盈亏由用户自行承担。行情与资讯数据仅供信息参考，不构成投资建议。'
 export const RISK_NOTE = '黄金价格波动，盈亏由用户自行承担'
 export const NEWS_DISCLAIMER = '资讯仅作信息参考，不构成投资建议，不承诺收益'
-export const LOCK_NOTE = '下单后成交价以订单确认时的系统报价为准，锁价时效 60 秒，超时自动取消并重新报价'
+export const LOCK_NOTE =
+  '下单后成交价以订单确认时的系统报价为准，锁价时效 60 秒，超时自动取消并重新报价'

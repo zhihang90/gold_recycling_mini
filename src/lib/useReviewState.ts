@@ -36,7 +36,9 @@ export function useIsDesktop() {
 }
 
 function optionValues(group: ReviewStateGroup) {
-  return group.options.map((option) => option.value)
+  const sectionValues =
+    group.sections?.flatMap((section) => section.options.map((option) => option.value)) ?? []
+  return [...group.options.map((option) => option.value), ...sectionValues]
 }
 
 function readStored(routeId: string): Record<string, string> {
