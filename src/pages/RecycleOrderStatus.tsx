@@ -4,9 +4,9 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
 import {
   Badge,
-  BottomSheet,
   Button,
   Card,
+  ConfirmDialog,
   DetailPage,
   EmptyState,
   IconButton,
@@ -31,8 +31,22 @@ import {
   type RecycleStatus,
 } from '@/mocks/recycleOrders'
 import { paths, routePath } from '@/routes/paths'
+import { useReviewState } from '@/lib/useReviewState'
 
 const DEFAULT_CENTER = '安盛华集团检测中心'
+
+/** 路由末段 → 评审注册表 id：桌面评审面板可原地切换状态 */
+const REVIEW_ROUTE_BY_STATUS: Record<RecycleStatus, string> = {
+  review: 'orders.recycle.review',
+  'pending-ship': 'orders.recycle.pendingShip',
+  'pending-receipt': 'orders.recycle.pendingReceipt',
+  testing: 'orders.recycle.testing',
+  'pending-confirm': 'orders.recycle.pendingConfirm',
+  'pending-payment': 'orders.recycle.pendingPayment',
+  completed: 'orders.recycle.completed',
+  cancelled: 'orders.recycle.cancelled',
+  closed: 'orders.recycle.closed',
+}
 
 /** 每个状态的补充说明，补齐「为什么停在这一步」；待确认的倒计时在页面内动态拼接 */
 const STATUS_REASON: Partial<Record<RecycleStatus, string>> = {
@@ -220,7 +234,7 @@ function InspectionCard({ order, onToast }: DetailCardProps) {
       label: '克重',
       estimate: order.weight,
       actual: inspection.weight,
-      diff: `${weightDiff > 0 ? '+' : ''}${weightDiff.toFixed(2)}g`,
+      diff: `${weightDiff > 0 ? '+' : ''}${weightDiff.toFixed(2)}克`,
       tone: toneFor(weightDiff),
     },
     {
@@ -456,11 +470,16 @@ const DETAIL_CARDS: Record<RecycleDetailCard, ComponentType<DetailCardProps>> = 
 export function RecycleOrderStatusPage() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
-  const status = pathname.split('/').pop() as RecycleStatus
+  const pathStatus = pathname.split('/').pop() as RecycleStatus
+  // 桌面评审面板：不改路由，原地切换展示状态
+  const review = useReviewState(REVIEW_ROUTE_BY_STATUS[pathStatus] ?? REVIEW_ROUTE_BY_STATUS.review)
+  const status =
+    review.values.status !== 'auto' ? (review.values.status as RecycleStatus) : pathStatus
   const [order, setOrder] = useState<RecycleOrder | undefined>(() =>
     DEMO_RECYCLE_ORDERS.find((item) => item.status === status),
   )
   const [rejectOpen, setRejectOpen] = useState(false)
+  const [cancelOpen, setCancelOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   // 终价确认倒计时：进入页面即开始，剩余时间并入状态说明
   const [confirmDeadline] = useState(() => Date.now() + (order?.confirmRemainMin ?? 30) * 60_000)
@@ -546,7 +565,7 @@ export function RecycleOrderStatusPage() {
     cancel: {
       label: '取消订单',
       variant: 'secondary',
-      onClick: () => setToast('已提交取消申请，客服将与您联系'),
+      onClick: () => setCancelOpen(true),
     },
     changePickup: {
       label: '修改取件时间',
@@ -713,7 +732,7 @@ export function RecycleOrderStatusPage() {
 
         <div className="border-t border-border-subtle pt-3">
           <p className="mb-1 text-body-strong text-foreground">订单信息</p>
-          <KeyValueRow label="订单编号" value={<span className="tabular">{order.id}</span>} />
+          <KeyValueRow label="订单号" value={<span className="tabular">{order.id}</span>} />
           <KeyValueRow label="订单类型" value="邮寄回收" />
           <KeyValueRow label="回收方式" value={order.method} />
           <KeyValueRow label="实名信息" value="陈*航（已实名）" />
@@ -732,32 +751,33 @@ export function RecycleOrderStatusPage() {
         </div>
       </Card>
 
-      <BottomSheet
+      <ConfirmDialog
+        open={cancelOpen}
+        title="取消回收订单"
+        description="取消后本次回收流程将终止，不会产生任何费用；需要时可重新预约回收。"
+        cancelText="再想想"
+        confirmText="确认取消"
+        tone="danger"
+        onConfirm={() => {
+          setCancelOpen(false)
+          setToast('已提交取消申请，客服将与您联系')
+        }}
+        onClose={() => setCancelOpen(false)}
+      />
+
+      <ConfirmDialog
         open={rejectOpen}
-        onClose={() => setRejectOpen(false)}
         title="不接受报价"
-        footer={
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="secondary" block onClick={() => setRejectOpen(false)}>
-              再想想
-            </Button>
-            <Button
-              variant="danger"
-              block
-              onClick={() => {
-                setRejectOpen(false)
-                setToast('已提交退回申请，客服将与您确认退回方式')
-              }}
-            >
-              确认退回
-            </Button>
-          </div>
-        }
-      >
-        <p className="text-body text-muted-foreground">
-          退回物品将按原地址寄回，运费由平台承担；如需重新检测，可联系客服重新预约。
-        </p>
-      </BottomSheet>
+        description="退回物品将按原地址寄回，运费由平台承担；如需重新检测，可联系客服重新预约。"
+        cancelText="再想想"
+        confirmText="确认退回"
+        tone="danger"
+        onConfirm={() => {
+          setRejectOpen(false)
+          setToast('已提交退回申请，客服将与您确认退回方式')
+        }}
+        onClose={() => setRejectOpen(false)}
+      />
 
       <Toast open={Boolean(toast)} message={toast ?? ''} onClose={() => setToast(null)} />
     </DetailPage>

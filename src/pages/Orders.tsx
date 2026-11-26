@@ -1,11 +1,12 @@
 import {
   Badge,
-  BottomSheet,
   Button,
   Card,
+  ConfirmDialog,
   CountdownBar,
   EmptyState,
   ListPage,
+  LogisticsSheet,
   MediaVisual,
   PaymentPasswordSheet,
   PriceText,
@@ -19,6 +20,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { addToCart } from '@/mocks/cart'
 import { writeCheckoutResult } from '@/mocks/checkout'
 import { findProduct } from '@/mocks/goldShop'
+import { DEMO_LOGISTICS_GROUPS, formatShippingAddress, type LogisticsInfo } from '@/mocks/logistics'
 import {
   RECYCLE_TABS,
   RECYCLE_STATUS_LABEL,
@@ -56,18 +58,6 @@ type OrderTab = 'sales' | 'recycle'
  * 记下上一次的业务页签，让指示条在新视图挂载后仍从旧位置滑过去。
  */
 let lastOrderTab: OrderTab | null = null
-
-type TimelineSheet = {
-  title: string
-  current: number
-  steps: { label: string; description?: string }[]
-}
-
-const LOGISTICS_STEPS = [
-  { label: '顺丰已揽收', description: '深圳南山集散中心' },
-  { label: '运输中', description: '预计 1 天后到达' },
-  { label: '派送中', description: '快递员将电话联系您' },
-]
 
 /** 回收卡片主操作文案：按用户下一步要做的事命名，而非后台状态名 */
 const RECYCLE_CARD_ACTION: Record<RecycleStatus, string> = {
@@ -167,8 +157,9 @@ export function OrdersPage() {
   })
   const [salesOrders, setSalesOrders] = useState(readSalesOrders)
   const [cancelId, setCancelId] = useState<string | null>(null)
+  const [receiptId, setReceiptId] = useState<string | null>(null)
   const [payId, setPayId] = useState<string | null>(null)
-  const [timeline, setTimeline] = useState<TimelineSheet | null>(null)
+  const [logistics, setLogistics] = useState<LogisticsInfo | null>(null)
   const [toast, setToast] = useState<string | null>(null)
 
   const typeParam = params.get('type')
@@ -257,8 +248,19 @@ export function OrdersPage() {
     setToast('支付超时，订单已取消')
   }
 
+  /** 物流弹层：复制运单号 */
+  const copyTracking = async (trackingNo: string) => {
+    await navigator.clipboard?.writeText(trackingNo)
+    setToast('运单号已复制')
+  }
+
   return (
-    <ListPage title="订单" showBack onBack={() => navigate(paths.me)} contentClassName="space-y-3">
+    <ListPage
+      title="我的订单"
+      showBack
+      onBack={() => navigate(paths.me)}
+      contentClassName="space-y-3"
+    >
       <div className="-mx-4 flex items-center justify-between gap-3 px-4 pb-1">
         <div
           role="tablist"
@@ -461,10 +463,11 @@ export function OrdersPage() {
                       size="sm"
                       variant="secondary"
                       onClick={() =>
-                        setTimeline({
-                          title: '物流进度',
-                          current: 1,
-                          steps: LOGISTICS_STEPS,
+                        setLogistics({
+                          carrier: order.express?.company ?? '顺丰速运',
+                          trackingNo: order.express?.no ?? 'SF1234567890123',
+                          address: formatShippingAddress(order.address),
+                          groups: DEMO_LOGISTICS_GROUPS,
                         })
                       }
                     >
@@ -472,9 +475,9 @@ export function OrdersPage() {
                     </Button>
                     <Button
                       size="sm"
-                      onClick={() => {
-                        moveOrder(order.id, 'completed')
-                        setToast('已确认收货')
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        setReceiptId(order.id)
                       }}
                     >
                       确认收货
@@ -598,74 +601,41 @@ export function OrdersPage() {
         ))
       )}
 
-      <BottomSheet
+      <ConfirmDialog
         open={cancelId !== null}
-        onClose={() => setCancelId(null)}
         title="取消订单"
-        footer={
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="secondary" block onClick={() => setCancelId(null)}>
-              再想想
-            </Button>
-            <Button
-              variant="danger"
-              block
-              onClick={() => {
-                if (cancelId) moveOrder(cancelId, 'cancelled')
-                setCancelId(null)
-                setToast('订单已取消')
-              }}
-            >
-              确认取消
-            </Button>
-          </div>
-        }
-      >
-        <p className="text-body text-muted-foreground">
-          待付款订单取消后立即关闭，不会扣款；需要时可在订单中再次购买。
-        </p>
-      </BottomSheet>
+        description="待付款订单取消后立即关闭，不会扣款；需要时可在订单中再次购买。"
+        cancelText="再想想"
+        confirmText="确认取消"
+        tone="danger"
+        onConfirm={() => {
+          if (cancelId) moveOrder(cancelId, 'cancelled')
+          setCancelId(null)
+          setToast('订单已取消')
+        }}
+        onClose={() => setCancelId(null)}
+      />
 
-      <BottomSheet
-        open={timeline !== null}
-        onClose={() => setTimeline(null)}
-        title={timeline?.title ?? ''}
-        footer={
-          <Button block onClick={() => setTimeline(null)}>
-            知道了
-          </Button>
-        }
-      >
-        <ol className="space-y-4">
-          {(timeline?.steps ?? []).map((step, index) => {
-            const reached = index <= (timeline?.current ?? 0)
-            return (
-              <li key={step.label} className="flex gap-3">
-                <span
-                  className={cn(
-                    'mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full',
-                    reached ? 'bg-gold-700' : 'bg-line',
-                  )}
-                  aria-hidden="true"
-                />
-                <div className="min-w-0">
-                  <p
-                    className={cn(
-                      'text-body',
-                      reached ? 'text-foreground' : 'text-subtle-foreground',
-                    )}
-                  >
-                    {step.label}
-                  </p>
-                  {step.description ? (
-                    <p className="mt-0.5 text-caption text-subtle-foreground">{step.description}</p>
-                  ) : null}
-                </div>
-              </li>
-            )
-          })}
-        </ol>
-      </BottomSheet>
+      <ConfirmDialog
+        open={receiptId !== null}
+        title="确认收货"
+        description="请确认已收到商品并检查无误。确认收货后订单将完成，该操作不可撤销。"
+        cancelText="再想想"
+        confirmText="确认收货"
+        onConfirm={() => {
+          if (receiptId) moveOrder(receiptId, 'completed')
+          setReceiptId(null)
+          setToast('已确认收货')
+        }}
+        onClose={() => setReceiptId(null)}
+      />
+
+      <LogisticsSheet
+        open={logistics !== null}
+        info={logistics}
+        onCopy={copyTracking}
+        onClose={() => setLogistics(null)}
+      />
 
       <PaymentPasswordSheet
         open={Boolean(payOrder)}

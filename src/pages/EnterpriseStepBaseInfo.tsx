@@ -17,7 +17,7 @@ import {
   Toast,
 } from '@/components'
 import { useEnterpriseKyc } from '@/hooks/useEnterpriseKyc'
-import { paths } from '@/routes/paths'
+import { loginRedirectState, paths } from '@/routes/paths'
 
 /** 营业执照 OCR 模拟结果：企业信息 + 法人信息自动带出 */
 const MOCK_OCR_RESULT = {
@@ -47,7 +47,11 @@ export function EnterpriseStepBaseInfoPage() {
             icon={ShieldCheck}
             title="请先登录"
             description="登录后可直接进行企业实名认证，无需先完成个人实名。"
-            action={<Button onClick={() => navigate(paths.login)}>去登录</Button>}
+            action={
+              <Button onClick={() => navigate(paths.login, { state: loginRedirectState() })}>
+                去登录
+              </Button>
+            }
           />
         </div>
       </DetailPage>

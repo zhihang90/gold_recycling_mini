@@ -50,6 +50,29 @@ export const REVIEW_STATES: Record<string, ReviewStateGroup[]> = {
       ],
     },
   ],
+  'me.holdings': [
+    {
+      id: 'tab',
+      label: '页签',
+      hint: '切换购金记录与资金流水',
+      defaultValue: 'auto',
+      options: [
+        { value: 'auto', label: '跟随页面' },
+        { value: 'purchase', label: '购金记录' },
+        { value: 'flow', label: '资金流水' },
+      ],
+    },
+    {
+      id: 'data',
+      label: '数据量',
+      hint: '用于演示购金记录与资金流水的空态',
+      defaultValue: 'auto',
+      options: [
+        { value: 'auto', label: '跟随真实' },
+        { value: 'empty', label: '空态' },
+      ],
+    },
+  ],
   orders: [
     {
       id: 'scope',
@@ -66,7 +89,7 @@ export const REVIEW_STATES: Record<string, ReviewStateGroup[]> = {
             { value: 'sales:pending-shipment', label: '待发货' },
             { value: 'sales:pending-receipt', label: '待收货' },
             { value: 'sales:completed', label: '已完成' },
-            { value: 'sales:after-sale', label: '售后' },
+            { value: 'sales:after-sale', label: '售后中' },
           ],
         },
         {
@@ -76,7 +99,7 @@ export const REVIEW_STATES: Record<string, ReviewStateGroup[]> = {
             { value: 'recycle:pending-ship', label: '待寄出' },
             { value: 'recycle:pending-confirm', label: '待确认' },
             { value: 'recycle:completed', label: '已完成' },
-            { value: 'recycle:after-sale', label: '售后' },
+            { value: 'recycle:after-sale', label: '已取消' },
           ],
         },
       ],
@@ -276,4 +299,68 @@ export const REVIEW_STATES: Record<string, ReviewStateGroup[]> = {
       ],
     },
   ],
+  'orders.detail': [
+    {
+      id: 'status',
+      label: '订单状态',
+      hint: '影响状态头、物流卡与底部操作',
+      defaultValue: 'auto',
+      options: [
+        { value: 'auto', label: '跟随真实' },
+        { value: 'pending-payment', label: '待付款' },
+        { value: 'pending-shipment', label: '待发货' },
+        { value: 'pending-receipt', label: '待收货' },
+        { value: 'completed', label: '已完成' },
+        { value: 'after-sale', label: '售后中' },
+        { value: 'cancelled', label: '已取消' },
+      ],
+    },
+    {
+      id: 'data',
+      label: '数据状态',
+      hint: '订单不存在时的兜底页',
+      defaultValue: 'auto',
+      options: [
+        { value: 'auto', label: '跟随真实' },
+        { value: 'missing', label: '订单不存在' },
+      ],
+    },
+  ],
+}
+
+/** 回收订单详情：各状态是独立路由，面板里可原地切换状态评审 */
+const RECYCLE_DETAIL_STATUS: ReviewStateOption[] = [
+  { value: 'review', label: '审核中' },
+  { value: 'pending-ship', label: '待寄出' },
+  { value: 'pending-receipt', label: '待签收' },
+  { value: 'testing', label: '检测中' },
+  { value: 'pending-confirm', label: '待确认' },
+  { value: 'pending-payment', label: '待打款' },
+  { value: 'completed', label: '已完成' },
+  { value: 'cancelled', label: '已取消' },
+  { value: 'closed', label: '已关闭' },
+]
+
+const RECYCLE_DETAIL_ROUTES = [
+  'orders.recycle.review',
+  'orders.recycle.pendingShip',
+  'orders.recycle.pendingReceipt',
+  'orders.recycle.testing',
+  'orders.recycle.pendingConfirm',
+  'orders.recycle.pendingPayment',
+  'orders.recycle.completed',
+  'orders.recycle.cancelled',
+  'orders.recycle.closed',
+]
+
+for (const routeId of RECYCLE_DETAIL_ROUTES) {
+  REVIEW_STATES[routeId] = [
+    {
+      id: 'status',
+      label: '订单状态',
+      hint: '不改路由，原地切换状态头、详情卡与底部操作',
+      defaultValue: 'auto',
+      options: [{ value: 'auto', label: '跟随路由' }, ...RECYCLE_DETAIL_STATUS],
+    },
+  ]
 }

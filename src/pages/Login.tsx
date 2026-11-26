@@ -1,6 +1,14 @@
-import { DetailPage, AgreementCheck, Button, FormField, BrandMark, TextLink, Toast } from '@/components'
+import {
+  DetailPage,
+  AgreementCheck,
+  Button,
+  FormField,
+  BrandMark,
+  TextLink,
+  Toast,
+} from '@/components'
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Scale } from 'lucide-react'
 
 import { isPhoneNumber, isSmsCode } from '@/lib/validation'
@@ -9,10 +17,12 @@ import { paths } from '@/routes/paths'
 
 /**
  * 登录：手机号 + 验证码单列表单，不使用微信授权。
- * 协议不默认勾选；登录成功后进入买金，不立刻要求实名。
+ * 协议不默认勾选；登录成功后回到进入登录前的页面，直接进来的则进买金。
  */
 export function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const from = (location.state as { from?: string } | null)?.from
   const [phone, setPhone] = useState('13800138000')
   const [phoneError, setPhoneError] = useState('')
   const [code, setCode] = useState('123456')
@@ -60,7 +70,9 @@ export function LoginPage() {
     // 登录中：按钮转圈并禁用，避免重复提交
     setSubmitting(true)
     saveMember(phone)
-    window.setTimeout(() => navigate(paths.buy, { replace: true }), 600)
+    // 回到进入登录前的页面；没有来源（如直接打开登录页）则进买金
+    const target = from && from.startsWith('/') && !from.startsWith('/login') ? from : paths.buy
+    window.setTimeout(() => navigate(target, { replace: true }), 600)
   }
 
   return (

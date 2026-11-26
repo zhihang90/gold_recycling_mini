@@ -3,49 +3,45 @@ import {
   Card,
   Chip,
   ChipRow,
-  IconButton,
   MediaVisual,
   PriceText,
-  ProductSkuSheet,
   SupportFab,
   TabPage,
   Toast,
 } from '@/components'
-import { useEffect, useState } from 'react'
-import { ShoppingCart, TrendingUp } from 'lucide-react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
+import { useLiveGoldPrice } from '@/hooks/useLiveGoldPrice'
 import { addToCart } from '@/mocks/cart'
-import { quoteByCode, quoteChange, simulateMarketTick } from '@/mocks/market'
-import { GOLD_PRODUCTS, SALE_RATE, SHOP_CATEGORIES, variantsOf } from '@/mocks/goldShop'
-import type { GoldCategory, GoldProduct } from '@/mocks/goldShop'
-import { buyDetailPath, paths } from '@/routes/paths'
+import { writeCheckout } from '@/mocks/checkout'
+import { GOLD_PRODUCTS, SHOP_CATEGORIES, variantsOf } from '@/mocks/goldShop'
+import type { GoldWeight } from '@/mocks/goldShop'
+import { readMember } from '@/mocks/member'
+import { quoteByCode, quoteChange } from '@/mocks/market'
+import { feePerGram, goldPriceUpdatedAt } from '@/mocks/pricing'
+import { buyDetailPath, loginRedirectState, paths } from '@/routes/paths'
 
-/** 买金：投资金销售入口，与回收共用同一账号与订单体系。 */
+/** 买金：投资金条按克重售卖，五档各一个商品，无规格选择。 */
 export function BuyPage() {
   const navigate = useNavigate()
-  const [category, setCategory] = useState<'all' | GoldCategory>('all')
-  const [sheetOpen, setSheetOpen] = useState(false)
-  const [selectedProduct, setSelectedProduct] = useState<GoldProduct>()
-  const [variantId, setVariantId] = useState('')
-  const [quantity, setQuantity] = useState(1)
+  const [category, setCategory] = useState<0 | GoldWeight>(0)
   const [toast, setToast] = useState<string | null>(null)
-  /** 上金所 Au99.99 基准价：5 秒刷新一次，与行情页同源 */
-  const [liveAu, setLiveAu] = useState(() => quoteChange(quoteByCode('au9999')!))
-  const [updatedAt, setUpdatedAt] = useState(() => formatClock(new Date()))
+  /** 上金所 Au99.99 实时价：与行情页、详情页共用同一金价模型 */
+  useLiveGoldPrice()
+  const liveAu = quoteChange(quoteByCode('au9999')!)
+  const updatedAt = formatClock(new Date(goldPriceUpdatedAt()))
 
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      simulateMarketTick()
-      setLiveAu(quoteChange(quoteByCode('au9999')!))
-      setUpdatedAt(formatClock(new Date()))
-    }, 5000)
-    return () => window.clearInterval(timer)
-  }, [])
+  const products = GOLD_PRODUCTS.filter((product) => category === 0 || product.grams === category)
 
-  const products = GOLD_PRODUCTS.filter(
-    (product) => category === 'all' || product.category === category,
-  )
+  /** 交易类操作需登录：未登录直接去登录页，登录后回跳当前页 */
+  const requireLogin = (action: () => void) => {
+    if (!readMember()) {
+      navigate(paths.login, { state: loginRedirectState() })
+      return
+    }
+    action()
+  }
 
   return (
     <TabPage>
@@ -72,28 +68,13 @@ export function BuyPage() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-3 rounded-lg bg-gold-50 p-4 ring-1 ring-gold-200">
-        <div className="min-w-0">
-          <p className="flex items-center gap-1 text-caption text-gold-700">
-            <TrendingUp size={14} strokeWidth={2} />
-            实时金价
-          </p>
-          <div className="mt-1 flex items-baseline gap-1">
-            <PriceText value={SALE_RATE.price} size="title" tone="gold" />
-            <span className="text-caption text-gold-700">元/克</span>
-          </div>
-        </div>
-        <Button variant="secondary" size="sm" onClick={() => navigate(paths.home)}>
-          我要卖金
-        </Button>
-      </div>
-
       <div className="space-y-2.5">
-        <ChipRow>
+        <ChipRow className="gap-1.5">
           {SHOP_CATEGORIES.map((item) => (
             <Chip
               key={item.value}
               active={category === item.value}
+              className="px-2.5"
               onClick={() => setCategory(item.value)}
             >
               {item.label}
@@ -102,55 +83,79 @@ export function BuyPage() {
         </ChipRow>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="space-y-3">
         {products.map((product) => {
-          const variants = variantsOf(product)
+          const variant = variantsOf(product)[0]
           return (
-            <Card key={product.id} padding="none" className="flex h-full flex-col overflow-hidden">
-              <Link to={buyDetailPath(product.id)} className="block">
-                <div className="relative">
-                  <MediaVisual src={product.image} alt={product.name} className="bg-gold-50" />
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute left-2 top-2 flex items-center gap-1"
+            <Card key={product.id} padding="none" className="overflow-hidden">
+              <div className="p-3">
+                <Link
+                  to={buyDetailPath(product.id)}
+                  className="-m-1 flex min-w-0 items-start gap-3 rounded-md p-1 active:bg-surface-2"
+                >
+                  <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md">
+                    <MediaVisual
+                      src={product.image}
+                      alt={product.name}
+                      className="h-full w-full bg-gold-50"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <h2 className="line-clamp-2 text-label font-semibold text-ink-900">
+                        {product.name}
+                      </h2>
+                      <span className="flex shrink-0 items-center gap-1">
+                        {['质检证书', '可溯源'].map((tag) => (
+                          <span
+                            key={tag}
+                            className="rounded-full bg-gold-50 px-1.5 py-0.5 text-micro text-gold-700 ring-1 ring-gold-200"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-caption text-subtle-foreground">{product.caption}</p>
+                    <p className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                      <span className="flex items-baseline">
+                        <PriceText value={variant.price} size="body" tone="price" />
+                        <span className="ml-0.5 text-micro text-subtle-foreground">/ 件</span>
+                      </span>
+                      <span className="text-micro text-subtle-foreground">
+                        工费 {feePerGram(product.grams)} 元/克
+                      </span>
+                    </p>
+                  </div>
+                </Link>
+
+                <div className="mt-2.5 flex items-center justify-end gap-2 border-t border-border-subtle pt-2.5">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() =>
+                      requireLogin(() => {
+                        addToCart(product.id, variant.id, 1)
+                        setToast(`已加入购物车 · ${product.grams}克`)
+                      })
+                    }
                   >
-                    <span className="h-1 w-1 rotate-45 bg-gold-500/70" />
-                    <span className="font-serif text-caption-strong text-gold-800/55">
-                      安盛华黄金
-                    </span>
-                  </span>
-                  {product.isNew ? (
-                    <span className="absolute right-2 top-2 inline-flex h-5 items-center gap-1 rounded-pill bg-ink-900/90 px-2 text-caption-strong text-gold-100 shadow-xs ring-1 ring-gold-400/25">
-                      <span aria-hidden="true" className="h-1 w-1 rounded-pill bg-gold-400" />
-                      焕新升级
-                    </span>
-                  ) : null}
+                    加入购物车
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      requireLogin(() => {
+                        writeCheckout([
+                          { productId: product.id, variantId: variant.id, quantity: 1 },
+                        ])
+                        navigate(paths.checkout)
+                      })
+                    }
+                  >
+                    立即购买
+                  </Button>
                 </div>
-
-                <div className="px-3 pt-2">
-                  <h2 className="line-clamp-2 text-label font-semibold text-ink-900">
-                    {product.name}
-                  </h2>
-                  <p className="mt-1 line-clamp-2 text-caption text-subtle-foreground">
-                    {cardSpec(product.caption)}
-                  </p>
-                </div>
-              </Link>
-
-              <div className="mt-auto flex items-end justify-between gap-1 px-3 pb-3 pt-1.5">
-                <PriceText value={variants[0].price} size="body" tone="gold" />
-                <IconButton
-                  icon={ShoppingCart}
-                  label={`选择${product.name}规格`}
-                  variant="outline"
-                  className="h-9 w-9 text-gold-700 ring-gold-300"
-                  onClick={() => {
-                    setSelectedProduct(product)
-                    setVariantId(variants[0].id)
-                    setQuantity(1)
-                    setSheetOpen(true)
-                  }}
-                />
               </div>
             </Card>
           )
@@ -163,23 +168,6 @@ export function BuyPage() {
         <span className="h-px w-5 bg-line" aria-hidden="true" />
       </div>
 
-      <ProductSkuSheet
-        open={sheetOpen}
-        product={selectedProduct}
-        variantId={variantId}
-        quantity={quantity}
-        confirmLabel="加入购物车"
-        onVariantChange={setVariantId}
-        onQuantityChange={setQuantity}
-        onClose={() => setSheetOpen(false)}
-        onConfirm={() => {
-          if (!selectedProduct) return
-          addToCart(selectedProduct.id, variantId, quantity)
-          setSheetOpen(false)
-          setToast(`已加入购物车 · ${selectedProduct.name}`)
-        }}
-      />
-
       <Toast open={Boolean(toast)} message={toast ?? ''} onClose={() => setToast(null)} />
 
       <SupportFab />
@@ -190,14 +178,4 @@ export function BuyPage() {
 /** 更新时间：北京时间，精确到秒 */
 function formatClock(date: Date) {
   return date.toLocaleString('sv-SE', { timeZone: 'Asia/Shanghai', hour12: false })
-}
-
-/** 商品卡的规格行：从 caption 提取克重选项，统一成竞品「5g | 10g | …」的写法。 */ function cardSpec(
-  caption: string,
-) {
-  const options = caption
-    .replace(/^.*规格：/, '')
-    .replace(/、/g, ' | ')
-    .replace(/克/g, 'g')
-  return options
 }

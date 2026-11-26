@@ -14,7 +14,7 @@ import {
 } from '@/components'
 import { useEnterpriseKyc } from '@/hooks/useEnterpriseKyc'
 import { submitEnterpriseKyc, type EnterpriseKyc } from '@/mocks/member'
-import { paths } from '@/routes/paths'
+import { loginRedirectState, paths } from '@/routes/paths'
 
 /** 打款金额区间（运营在管理平台发起，用户端仅确认收到金额） */
 const MIN_AMOUNT = 0.01
@@ -66,7 +66,11 @@ export function EnterpriseStepBankVerifyPage() {
             icon={ShieldCheck}
             title="请先登录"
             description="登录后可直接进行企业实名认证，无需先完成个人实名。"
-            action={<Button onClick={() => navigate(paths.login)}>去登录</Button>}
+            action={
+              <Button onClick={() => navigate(paths.login, { state: loginRedirectState() })}>
+                去登录
+              </Button>
+            }
           />
         </div>
       </DetailPage>

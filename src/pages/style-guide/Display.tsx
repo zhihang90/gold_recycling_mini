@@ -1,4 +1,12 @@
-import { BottomSheet, Button, Gallery, KeyValueRow, ListItem, MediaVisual, PriceText } from '@/components'
+import {
+  BottomSheet,
+  Button,
+  Gallery,
+  KeyValueRow,
+  ListItem,
+  MediaVisual,
+  PriceText,
+} from '@/components'
 import { useState } from 'react'
 import { CreditCard, MessageSquare, ShieldCheck } from 'lucide-react'
 
@@ -13,17 +21,34 @@ export function DisplayGuidePage() {
     <GuidePage title="展示组件">
       <Section title="列表项 ListItem">
         <div className="overflow-hidden rounded-md ring-1 ring-border">
-          <ListItem title="实名认证" description="已实名，信息变更需审核" icon={ShieldCheck} showArrow divider />
-          <ListItem title="收款银行卡" description="尾号 0000" icon={CreditCard} right="已绑定" showArrow divider />
+          <ListItem
+            title="实名认证"
+            description="已实名，信息变更需审核"
+            icon={ShieldCheck}
+            showArrow
+            divider
+          />
+          <ListItem
+            title="收款银行卡"
+            description="尾号 0000"
+            icon={CreditCard}
+            right="已绑定"
+            showArrow
+            divider
+          />
           <ListItem title="客服与投诉" icon={MessageSquare} showArrow />
         </div>
       </Section>
 
       <Section title="键值行 KeyValueRow">
         <div className="divide-y divide-line-soft">
-          <KeyValueRow label="订单编号" value="示例 0000 0000" />
+          <KeyValueRow label="订单号" value="示例 0000 0000" />
           <KeyValueRow label="预估克重" value="12.68 克" />
-          <KeyValueRow label="预估金额" value={<PriceText value={7969.38} size="body" tone="ink" />} emphasis />
+          <KeyValueRow
+            label="预估金额"
+            value={<PriceText value={7969.38} size="body" tone="ink" />}
+            emphasis
+          />
           <KeyValueRow label="结算说明" value="确认后 1 个工作日内付款" hint="示例" />
         </div>
       </Section>

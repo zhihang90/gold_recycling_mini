@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 
 import { Button, DetailPage, EmptyState } from '@/components'
 import { ENTERPRISE_KYC_STEPS, findNextStep, useEnterpriseKyc } from '@/hooks/useEnterpriseKyc'
-import { paths } from '@/routes/paths'
+import { loginRedirectState, paths } from '@/routes/paths'
 
 /**
  * 企业认证 hub：仅做前置校验 + 自动路由到下一步。
@@ -29,7 +29,11 @@ export function EnterpriseAuthPage() {
             icon={ShieldCheck}
             title="请先登录"
             description="登录后可直接进行企业实名认证，无需先完成个人实名。"
-            action={<Button onClick={() => navigate(paths.login)}>去登录</Button>}
+            action={
+              <Button onClick={() => navigate(paths.login, { state: loginRedirectState() })}>
+                去登录
+              </Button>
+            }
           />
         </div>
       </DetailPage>

@@ -23,6 +23,8 @@ import { useNavigate } from 'react-router-dom'
 
 import { images } from '@/assets/images'
 
+import { useLiveGoldPrice } from '@/hooks/useLiveGoldPrice'
+
 import {
   maskPhone,
   readAddresses,
@@ -43,7 +45,13 @@ import {
 } from '@/mocks/checkout'
 import { isMemberVerified, readMember } from '@/mocks/member'
 import { DEMO_CART, readCart, writeCart } from '@/mocks/cart'
-import { findProduct, variantsOf, type GoldProduct, type GoldVariant } from '@/mocks/goldShop'
+import {
+  findProduct,
+  repairLine,
+  variantsOf,
+  type GoldProduct,
+  type GoldVariant,
+} from '@/mocks/goldShop'
 import { useDemoScene } from '@/lib/useDemoScene'
 import { useReviewState } from '@/lib/useReviewState'
 import {
@@ -220,6 +228,8 @@ export function BuyCheckoutPage() {
   const [payOpen, setPayOpen] = useState(false)
   /** 拉起支付前已落单，取消支付时用它进入订单详情 */
   const [payOrderId, setPayOrderId] = useState<string | null>(null)
+  /** 结算页金额随实时金价刷新，提交流程内再写入订单快照 */
+  useLiveGoldPrice()
 
   // 购买须知抽屉：打开后 5 秒倒计时，到 0 按钮自动可点
   useEffect(() => {
@@ -486,10 +496,10 @@ export function BuyCheckoutPage() {
 
           {/* 金额明细 */}
           <Card padding="md" className="mt-3">
-            <AmountRow label="订单总金额" value={total} />
+            <AmountRow label="商品总价" value={total} />
             <AmountRow label="运费" value={shipping} />
             <div className="mt-2 flex items-center justify-between border-t border-border-subtle pt-2">
-              <span className="text-body text-foreground">小计</span>
+              <span className="text-body text-foreground">应付金额</span>
               <PriceText value={total + shipping} size="section" tone="price" />
             </div>
           </Card>
@@ -654,7 +664,13 @@ export function BuyCheckoutPage() {
 /** 把轻量条目还原成完整商品对象，无法匹配的条目直接丢弃 */
 function toCheckoutItems(entries: CheckoutEntry[]): CheckoutItem[] {
   const result: CheckoutItem[] = []
-  for (const entry of entries) {
+  for (const raw of entries) {
+    const entry = repairLine({
+      productId: raw.productId,
+      variantId: raw.variantId,
+      spec: '',
+      quantity: raw.quantity,
+    })
     const product = findProduct(entry.productId)
     if (!product) continue
     const variant = variantsOf(product).find((v) => v.id === entry.variantId)

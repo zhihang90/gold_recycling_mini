@@ -1,4 +1,13 @@
-import { BottomSheet, Button, Card, DetailPage, FormField, ListItem, Toast } from '@/components'
+import {
+  BottomSheet,
+  Button,
+  Card,
+  ConfirmDialog,
+  DetailPage,
+  FormField,
+  ListItem,
+  Toast,
+} from '@/components'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Building2, ShieldCheck, ShieldX } from 'lucide-react'
@@ -11,7 +20,6 @@ import {
   readMember,
   readMemberLevel,
   readNickname,
-  revokeRealNameAuth,
   saveNickname,
   type EnterpriseAuthStatus,
 } from '@/mocks/member'
@@ -35,6 +43,7 @@ export function ProfileInfoPage() {
   const [nicknameOpen, setNicknameOpen] = useState(false)
   const [nicknameInput, setNicknameInput] = useState('')
   const [nicknameError, setNicknameError] = useState<string | undefined>()
+  const [logoutOpen, setLogoutOpen] = useState(false)
 
   const personalVerified = Boolean(member?.realNameAuth?.verifiedAt)
   const enterpriseStatus = getEnterpriseAuthStatus(member)
@@ -48,13 +57,8 @@ export function ProfileInfoPage() {
   const handleLogout = () => {
     clearMember()
     setMember(null)
+    setLogoutOpen(false)
     navigate(paths.login, { replace: true })
-  }
-
-  const handleRevokeAuth = () => {
-    revokeRealNameAuth()
-    setMember(readMember())
-    setToast('已撤销实名认证（演示）')
   }
 
   const openNicknameSheet = () => {
@@ -121,11 +125,7 @@ export function ProfileInfoPage() {
             }
             showArrow
             divider
-            onClick={() =>
-              personalVerified
-                ? handleRevokeAuth() // 演示用：点击已认证可撤销
-                : navigate(paths.meAuth)
-            }
+            onClick={() => navigate(paths.meAuth)}
           />
           <ListItem
             title="企业实名认证"
@@ -142,9 +142,20 @@ export function ProfileInfoPage() {
         </Card>
       </section>
 
-      <Button variant="secondary" block onClick={handleLogout} disabled={!member}>
+      <Button variant="secondary" block onClick={() => setLogoutOpen(true)} disabled={!member}>
         退出登录
       </Button>
+
+      <ConfirmDialog
+        open={logoutOpen}
+        title="退出登录"
+        description="退出后需重新登录，才能查看订单、资产等个人信息。确认要退出当前账号吗？"
+        cancelText="取消"
+        confirmText="退出登录"
+        tone="danger"
+        onConfirm={handleLogout}
+        onClose={() => setLogoutOpen(false)}
+      />
 
       <Toast open={toast !== null} message={toast ?? ''} onClose={() => setToast(null)} />
 

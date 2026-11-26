@@ -1,6 +1,8 @@
 import { STORAGE_KEYS } from './keys'
 import { readSession, writeSession } from './storage'
 import { DEFAULT_ADDRESSES, type ShippingAddress } from './addressBook'
+import { productForGrams, repairLine } from './goldShop'
+import { salePriceOf } from './pricing'
 import type { OrderStatusTone } from '@/lib/statusTone'
 /**
  * 买金（销售）订单：与回收订单并行的一类订单，共用登录态。
@@ -65,19 +67,29 @@ export const SALES_FILTERS: { value: 'all' | SalesStatus; label: string }[] = [
   { value: 'pending-shipment', label: '待发货' },
   { value: 'pending-receipt', label: '待收货' },
   { value: 'completed', label: '已完成' },
-  { value: 'after-sale', label: '售后' },
+  { value: 'after-sale', label: '售后中' },
 ]
 const DEMO_ADDRESS = DEFAULT_ADDRESSES[0]
 const DEMO_EXPRESS = { company: '顺丰速运', no: 'SF1234567890123' }
+
+/** 订单行统一按当前在售克重商品生成，避免商品 mock 调整后订单里出现失效商品。 */
+function demoLine(grams: number, quantity = 1): SalesOrderLine {
+  const product = productForGrams(grams)
+  return {
+    productId: product.id,
+    variantId: `${product.id}:${product.grams}g`,
+    spec: `${product.grams}克`,
+    quantity,
+    price: salePriceOf(product.grams),
+  }
+}
 
 export const DEMO_SALES_ORDERS: SalesOrder[] = [
   {
     id: 'SO20261115001',
     status: 'pending-payment',
     createdAt: '2026-11-15 10:24',
-    lines: [
-      { productId: 'zodiac-sheet', variantId: 'zodiac-sheet:1g', spec: '1g', quantity: 1, price: 728 },
-    ],
+    lines: [demoLine(5)],
     address: DEMO_ADDRESS,
     note: '工作日送达即可',
     payMethod: 'wechat',
@@ -87,9 +99,7 @@ export const DEMO_SALES_ORDERS: SalesOrder[] = [
     id: 'SO20261112002',
     status: 'pending-shipment',
     createdAt: '2026-11-12 16:08',
-    lines: [
-      { productId: 'zodiac-bar', variantId: 'zodiac-bar:20g', spec: '20g', quantity: 1, price: 12760 },
-    ],
+    lines: [demoLine(20)],
     address: DEMO_ADDRESS,
     payMethod: 'wechat',
     paidAt: '2026-11-12 16:09',
@@ -98,7 +108,7 @@ export const DEMO_SALES_ORDERS: SalesOrder[] = [
     id: 'SO20261105003',
     status: 'pending-receipt',
     createdAt: '2026-11-05 09:41',
-    lines: [{ productId: 'bean', variantId: 'bean:1g', spec: '1g', quantity: 2, price: 668 }],
+    lines: [demoLine(10, 2)],
     address: DEMO_ADDRESS,
     note: '请放快递柜',
     payMethod: 'alipay',
@@ -109,9 +119,7 @@ export const DEMO_SALES_ORDERS: SalesOrder[] = [
     id: 'SO20261028004',
     status: 'completed',
     createdAt: '2026-10-28 14:02',
-    lines: [
-      { productId: 'bar-sheet', variantId: 'bar-sheet:10g', spec: '10g', quantity: 1, price: 6380 },
-    ],
+    lines: [demoLine(10)],
     address: DEMO_ADDRESS,
     payMethod: 'wechat',
     paidAt: '2026-10-28 14:03',
@@ -121,7 +129,7 @@ export const DEMO_SALES_ORDERS: SalesOrder[] = [
     id: 'SO20261020005',
     status: 'after-sale',
     createdAt: '2026-10-20 11:30',
-    lines: [{ productId: 'coin', variantId: 'coin:2g', spec: '2g', quantity: 1, price: 1356 }],
+    lines: [demoLine(20)],
     address: DEMO_ADDRESS,
     payMethod: 'unionpay',
     paidAt: '2026-10-20 11:31',
@@ -131,21 +139,22 @@ export const DEMO_SALES_ORDERS: SalesOrder[] = [
     id: 'SO20261015006',
     status: 'cancelled',
     createdAt: '2026-10-15 20:12',
-    lines: [
-      { productId: 'bar-sheet', variantId: 'bar-sheet:10g', spec: '10g', quantity: 1, price: 6380 },
-    ],
+    lines: [demoLine(5)],
     address: DEMO_ADDRESS,
     payMethod: 'wechat',
   },
 ]
-/** 兼容早期写入的会话订单：补齐收货地址、待收货运单与待付款支付截止时间 */
+/** 兼容早期写入的会话订单：补齐收货地址、待收货运单与待付款支付截止时间，并修复失效商品 */
 function normalizeOrder(order: SalesOrder): SalesOrder {
   const needsAddress = !order.address
   const needsExpress = !order.express && order.status === 'pending-receipt'
   const needsDeadline = order.status === 'pending-payment' && !order.payDeadline
-  if (!needsAddress && !needsExpress && !needsDeadline) return order
+  const lines = order.lines.map(repairLine)
+  const linesChanged = lines.some((line, index) => line !== order.lines[index])
+  if (!needsAddress && !needsExpress && !needsDeadline && !linesChanged) return order
   return {
     ...order,
+    lines,
     address: order.address ?? DEMO_ADDRESS,
     express: order.express ?? (order.status === 'pending-receipt' ? DEMO_EXPRESS : undefined),
     payDeadline: needsDeadline ? Date.now() + PAY_WINDOW_MS : order.payDeadline,
@@ -173,7 +182,11 @@ export function salesCount(order: SalesOrder) {
 }
 
 export function findSalesOrder(id: string) {
-  return readSalesOrders().find((order) => order.id === id)
+  // 会话里已有订单时仍可从菜单直达演示订单，避免演示入口变成「订单不存在」
+  return (
+    readSalesOrders().find((order) => order.id === id) ??
+    DEMO_SALES_ORDERS.find((order) => order.id === id)
+  )
 }
 
 /** 更新单笔订单并落盘，返回更新后的订单 */

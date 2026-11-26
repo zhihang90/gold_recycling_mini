@@ -53,6 +53,8 @@ export const paths = {
   meAbout: routePath('me.about'),
   meMemberLevel: routePath('me.memberLevel'),
   meHoldings: routePath('me.holdings'),
+  meRecharge: routePath('me.recharge'),
+  meWithdraw: routePath('me.withdraw'),
   meAuth: routePath('me.auth'),
   meAuthFace: routePath('me.authFace'),
   meEnterpriseAuth: routePath('me.enterprise'),
@@ -102,6 +104,12 @@ export function marketNewsDetailPath(newsId: string) {
 /** 商品详情：购物车、商品卡共用同一条跳转规则。 */
 export function buyDetailPath(productId: string) {
   return routePath('buy.detail').replace(':productId', productId)
+}
+
+/** 登录回跳：记录进入登录页前的 hash 路径，登录成功后原路返回。 */
+export function loginRedirectState(): { from: string } {
+  const from = window.location.hash.replace(/^#/, '')
+  return { from: from || '/' }
 }
 
 /** 买金订单详情：订单列表唯一入口。 */

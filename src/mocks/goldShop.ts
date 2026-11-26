@@ -1,29 +1,25 @@
 import { images } from '@/assets/images'
 
-/** 投资金销售页的静态数据：金价与商品。真实售价以提交订单时为准。 */
-export const SALE_RATE = {
-  price: 608,
-  source: '上海金交所 Au99.99',
-  updatedAt: '今天 10:30',
-}
+import { salePriceOf } from './pricing'
 
-export type GoldCategory = 'bar' | 'coin' | 'zodiac'
+/** 投资金条按克重分为五档，每档一个商品，不存在多规格选择。 */
+export const GOLD_WEIGHTS = [5, 10, 20, 50, 100] as const
+export type GoldWeight = (typeof GOLD_WEIGHTS)[number]
 
 export interface GoldProduct {
   id: string
   name: string
-  category: GoldCategory
-  /** 图片下方的系列与规格说明，克重档位从这里解析 */
+  /** 该商品的唯一克重，页面不提供规格切换 */
+  grams: GoldWeight
+  /** 规格说明：克重 + 纯度，如「规格：5克 AU9999」 */
   caption: string
-  /** 首档规格的售价，其余档位按克重同比折算 */
-  price: number
   image: string
   /** 详情页轮播图；缺省时只展示 image 主图 */
   gallery?: string[]
   isNew?: boolean
 }
 
-/** 规格：同一商品的克重档位，价格按克重折算，购物车与详情页都以 variant 为最小单位。 */
+/** 购物车、订单仍以 variant 为最小单位，单规格商品固定返回一个 variant。 */
 export interface GoldVariant {
   id: string
   label: string
@@ -32,19 +28,16 @@ export interface GoldVariant {
   stock: number
 }
 
-/** 从 caption 中提取克重档位，如「规格：20克、50克、100克」→ [20, 50, 100]。 */
 export function variantsOf(product: GoldProduct): GoldVariant[] {
-  const grams = (product.caption.match(/\d+(?:\.\d+)?(?=\s*克)/g) ?? []).map(Number)
-  const weights = grams.length > 0 ? grams : [1]
-  const unitPrice = product.price / weights[0]
-
-  return weights.map((weight, index) => ({
-    id: `${product.id}:${weight}g`,
-    label: `${weight}g`,
-    grams: weight,
-    price: Math.round(unitPrice * weight),
-    stock: [26, 18, 9, 5][index] ?? 3,
-  }))
+  return [
+    {
+      id: `${product.id}:${product.grams}g`,
+      label: `${product.grams}克`,
+      grams: product.grams,
+      price: salePriceOf(product.grams),
+      stock: 26,
+    },
+  ]
 }
 
 export function findProduct(id: string) {
@@ -55,12 +48,37 @@ export function findVariant(product: GoldProduct, variantId: string) {
   return variantsOf(product).find((variant) => variant.id === variantId)
 }
 
-/** 商品卖点：按品类给一句与场景相关的短句。 */
-export function taglineOf(product: GoldProduct) {
-  if (product.category === 'coin') return '收藏送礼 · 攒金压岁'
-  if (product.category === 'zodiac') return '生肖贺岁 · 收藏送礼'
-  return '投资储值 · 支持随时回售'
+/** 按克重取商品：无完全匹配时取最接近的一档，用于行情页与历史数据的兜底。 */
+export function productForGrams(grams: number): GoldProduct {
+  const exact = GOLD_PRODUCTS.find((product) => product.grams === grams)
+  if (exact) return exact
+  return GOLD_PRODUCTS.reduce((best, product) =>
+    Math.abs(product.grams - grams) < Math.abs(best.grams - grams) ? product : best,
+  )
 }
+
+/**
+ * 修复历史数据里的商品标识：早期 mock 商品已下线，
+ * 按规格克重映射到当前五档商品，保证详情与订单正常展示。
+ */
+export function repairLine<T extends { productId: string; variantId: string; spec: string }>(
+  line: T,
+): T {
+  const product = findProduct(line.productId)
+  if (product) return line
+  const grams =
+    Number.parseInt(line.spec, 10) || Number.parseInt(line.variantId.split(':')[1] ?? '', 10) || 5
+  const target = productForGrams(grams)
+  return {
+    ...line,
+    productId: target.id,
+    variantId: `${target.id}:${target.grams}g`,
+    spec: `${target.grams}克`,
+  }
+}
+
+/** 金条纯度，作为规格的一部分展示（如「5克 AU9999」）。 */
+export const PRODUCT_PURITY = 'AU9999'
 
 /** 演示销量：按商品 id 生成稳定数值，刷新页面不会变化。 */
 export function soldOf(product: GoldProduct) {
@@ -68,88 +86,19 @@ export function soldOf(product: GoldProduct) {
   return (seed % 60) + 3
 }
 
-/** 一行商品对应一个系列，不同克重收进 variants，列表与详情共用同一份数据。 */
-export const GOLD_PRODUCTS: GoldProduct[] = [
-  {
-    id: 'zodiac-sheet',
-    name: '丁未羊年金片',
-    category: 'zodiac',
-    caption: '丁未羊年 · 规格：1克',
-    price: 728,
-    image: images.productZodiac,
-    gallery: [images.productZodiac, images.productZodiacDetail, images.buyHero],
-    isNew: true,
-  },
-  {
-    id: 'zodiac-bar',
-    name: '丁未羊年贺岁金条',
-    category: 'zodiac',
-    caption: '规格：20克、50克、100克、200克',
-    price: 12760,
-    image: images.productZodiac,
-    isNew: true,
-  },
-  {
-    id: 'zodiac-legacy',
-    name: '丁未羊年传世金条',
-    category: 'zodiac',
-    caption: '规格：30克、50克、100克',
-    price: 19150,
-    image: images.productZodiac,
-  },
-  {
-    id: 'bar-sheet',
-    name: '足金金条 AU9999 薄片款',
-    category: 'bar',
-    caption: '薄片款 · 规格：10克、20克',
-    price: 6380,
-    image: images.productBar10g,
-  },
-  {
-    id: 'bar-cf',
-    name: '足金金条 AU9999 CF款',
-    category: 'bar',
-    caption: 'CF款 · 规格：10克、100克',
-    price: 6380,
-    image: images.productBar5g,
-  },
-  {
-    id: 'bar-trapezoid',
-    name: '足金金条 AU9999 梯形款',
-    category: 'bar',
-    caption: '梯形款 · 规格：20克、50克、100克、200克',
-    price: 12760,
-    image: images.productBar10g,
-  },
-  {
-    id: 'coin',
-    name: '足金投资金币',
-    category: 'coin',
-    caption: '规格：2克',
-    price: 1356,
-    image: images.productCoin,
-  },
-  {
-    id: 'bean',
-    name: '足金金豆',
-    category: 'bar',
-    caption: '规格：1克',
-    price: 668,
-    image: images.productBean,
-  },
-  {
-    id: 'knot',
-    name: '福运中国结金章',
-    category: 'zodiac',
-    caption: '规格：1克',
-    price: 768,
-    image: images.productZodiac,
-  },
-]
+/** 五个克重各一个商品，列表页按克重页签筛选，详情页直接按该克重售卖。 */
+export const GOLD_PRODUCTS: GoldProduct[] = GOLD_WEIGHTS.map((grams) => ({
+  id: `bar-${grams}g`,
+  name: '足金投资金条',
+  grams,
+  caption: `规格：${grams}克 ${PRODUCT_PURITY}`,
+  image: grams <= 10 ? images.productBar5g : images.productBar10g,
+  gallery: [images.productBar5g, images.productBar10g, images.buyHero],
+  isNew: grams === 5,
+}))
 
-export const SHOP_CATEGORIES: { value: 'all' | GoldCategory; label: string }[] = [
-  { value: 'all', label: '全部' },
-  { value: 'bar', label: '金条' },
-  { value: 'zodiac', label: '生肖金条' },
-  { value: 'coin', label: '金币' },
+/** 分类页签：0 表示「全部」，其余为具体克重。 */
+export const SHOP_CATEGORIES: { value: 0 | GoldWeight; label: string }[] = [
+  { value: 0, label: '全部' },
+  ...GOLD_WEIGHTS.map((grams) => ({ value: grams, label: `${grams}克` })),
 ]

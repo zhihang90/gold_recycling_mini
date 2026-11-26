@@ -28,8 +28,8 @@ export default function App() {
       <PrototypeNav />
       <Layout showTab={isTabPath(pathname)}>
         <Routes>
-          {/* 默认入口先进登录页，登录成功后再进入买金 */}
-          <Route path="/" element={<Navigate to={paths.login} replace />} />
+          {/* 默认入口进首页，未登录也能浏览行情与买金 */}
+          <Route path="/" element={<Navigate to={paths.home} replace />} />
           {APP_ROUTES.map((route) => {
             const Component = route.component
             // 查询串变化（弹层状态 / demo 参数）视为一次新视图，重新挂载页面，

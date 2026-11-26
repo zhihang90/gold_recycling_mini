@@ -470,7 +470,7 @@ export function quoteName(code: string): string {
   return quoteByCode(code)?.name ?? code
 }
 
-// ============ 运行时价格（5 秒模拟刷新） ============
+// ============ 运行时价格（3 秒模拟刷新） ============
 
 interface MarketRuntime {
   prices: Record<string, number>

@@ -33,9 +33,10 @@ import {
   type EnterpriseAuthStatus,
   type Member,
 } from '@/mocks/member'
+import { readPriceSubscription } from '@/mocks/market'
 import { useReviewState } from '@/lib/useReviewState'
 import { messageUnreadCount, useMessageReadState } from '@/mocks/messages'
-import { ordersFilterPath, paths, routePath } from '@/routes/paths'
+import { loginRedirectState, ordersFilterPath, paths, routePath } from '@/routes/paths'
 
 type InfoSheet = 'faq' | null
 
@@ -59,6 +60,8 @@ const REVIEW_MEMBER: Member = {
 export function MePage() {
   const navigate = useNavigate()
   const [storedMember] = useState(() => readMember())
+  /** 金价提醒订阅状态：从行情页订阅后回到本页时重新读取 */
+  const [subscription] = useState(() => readPriceSubscription())
   const [infoSheet, setInfoSheet] = useState<InfoSheet>(null)
   const review = useReviewState('me')
   const accountMode = review.values.account ?? 'auto'
@@ -74,7 +77,7 @@ export function MePage() {
 
   const state = useMessageReadState()
   const unread = messageUnreadCount(state)
-  const goLogin = () => navigate(paths.login)
+  const goLogin = () => navigate(paths.login, { state: loginRedirectState() })
   const level = readMemberLevel()
   const personalVerified =
     verifyMode === 'auto' ? Boolean(member?.realNameAuth?.verifiedAt) : verifyMode === 'personal'
@@ -125,7 +128,7 @@ export function MePage() {
       <Card padding="none" className="overflow-hidden">
         <button
           type="button"
-          onClick={() => navigate(paths.messages)}
+          onClick={member ? () => navigate(paths.messages) : goLogin}
           className="flex w-full items-center gap-3 px-4 py-3 text-left transition active:bg-surface-2"
         >
           <MessageSquare size={20} className="shrink-0 text-primary" aria-hidden="true" />
@@ -140,13 +143,21 @@ export function MePage() {
         <div className="border-t border-border-subtle" />
         <button
           type="button"
-          onClick={() => navigate(`${paths.marketAlertSettings}?tab=list`)}
+          onClick={member ? () => navigate(`${paths.marketAlertSettings}?tab=list`) : goLogin}
           className="flex w-full items-center gap-3 px-4 py-3 text-left transition active:bg-surface-2"
         >
           <Bell size={20} className="shrink-0 text-price" aria-hidden="true" />
           <div className="min-w-0 flex-1">
             <p className="text-body text-foreground">金价涨跌提醒</p>
+            {subscription ? (
+              <p className="mt-0.5 truncate text-caption text-subtle-foreground">
+                提醒价 {subscription.targetPrice.toFixed(2)} 元/克 · 波动时将推送提醒
+              </p>
+            ) : null}
           </div>
+          <Badge tone={subscription ? 'success' : 'muted'} className="shrink-0">
+            {subscription ? '已订阅' : '未订阅'}
+          </Badge>
           <CircleChevronRight size={16} className="shrink-0 text-icon-muted" />
         </button>
       </Card>

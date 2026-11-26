@@ -1,24 +1,35 @@
 import {
   Ban,
   ChevronRight,
+  ClipboardList,
   FileText,
   Landmark,
+  PackageCheck,
   ReceiptText,
   ShieldAlert,
+  ShieldCheck,
+  ShoppingBag,
+  Truck,
   Users,
 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 
-import { Button, Card, PlatformQualificationsCard, TabPage, RateBoard } from '@/components'
+import {
+  Button,
+  Card,
+  GoldRecycleCard,
+  GoldTrendCard,
+  PlatformQualificationsCard,
+  TabPage,
+} from '@/components'
 import { useDialogGuard } from '@/lib/useDialogGuard'
 import { cn } from '@/lib/utils'
-import { GOLD_RATE, RATE_SERIES } from '@/mocks/quote'
 import { holdingsOverview } from '@/mocks/holdings'
 import { readMember } from '@/mocks/member'
 import { RISK_TEXT } from '@/mocks/market'
-import { paths } from '@/routes/paths'
+import { loginRedirectState, paths } from '@/routes/paths'
 
 /** 顶部会员资质横幅：公示上金所综合类会员资质与 ICP 备案信息 */
 const MEMBER_LICENSE = {
@@ -38,10 +49,9 @@ const COMPLIANCE_ITEMS = [
 
 const FEE_ITEMS = [
   { label: '点差', desc: '买入价高于上金所报价的差额', value: '0.70 元/克' },
-  { label: '加工费', desc: '不同品牌金条加工溢价', value: '5.00~8.00 元/克' },
+  { label: '工费', desc: '工费按克重分档，克重越大单克工费越低', value: '11.00~19.00 元/克' },
   { label: '运费', desc: '顺丰保价 隔日达，全规格包邮', value: '免运费' },
   { label: '仓储费', desc: '平台提供免费保管', value: '免仓储费' },
-  { label: '手续费', desc: '买入、提货均不收手续费', value: '免手续费' },
 ]
 
 const DELIVERY_ITEMS = [
@@ -53,24 +63,15 @@ const DELIVERY_ITEMS = [
   },
 ]
 
-const BUYBACK_NOTICE = {
-  badge: '回购业务：暂未开放',
-  summary:
-    '本平台为上海黄金交易所综合类会员，仅提供实物金条买入交易，不提供回购业务。回购为金融机构业务，需另行申请资质。',
-  discount: '折价标准：若未来开放回购，折价将按回收时上金所报价 - 回购损耗 2 元/克计算',
-  loss: '损耗标准：回收损耗 2 元/克（含提纯、检测、物流保险费用）',
-}
-
 const PUBLICITY_TABS = [
   { key: 'compliance', label: '合规公示' },
   { key: 'fee', label: '费用标准' },
   { key: 'delivery', label: '物流发货' },
-  { key: 'buyback', label: '回收须知' },
 ] as const
 
 type PublicityTabKey = (typeof PUBLICITY_TABS)[number]['key']
 
-/** 首页公示区：四张卡片合并为页签，默认展示合规公示 */
+/** 首页公示区：三张卡片合并为页签，默认展示合规公示 */
 function PublicityCard() {
   const [tab, setTab] = useState<PublicityTabKey>('compliance')
 
@@ -79,7 +80,7 @@ function PublicityCard() {
       <div
         role="tablist"
         aria-label="平台公示"
-        className="grid grid-cols-4 border-b border-border-subtle"
+        className="grid grid-cols-3 border-b border-border-subtle"
       >
         {PUBLICITY_TABS.map((item) => {
           const active = item.key === tab
@@ -142,25 +143,6 @@ function PublicityCard() {
                 <p className="mt-1 text-caption leading-relaxed text-foreground/80">{item.desc}</p>
               </div>
             ))}
-          </div>
-        ) : null}
-
-        {tab === 'buyback' ? (
-          <div className="space-y-3">
-            <span className="inline-flex rounded-sm bg-price/8 px-2 py-1 text-caption text-price ring-1 ring-price/15">
-              {BUYBACK_NOTICE.badge}
-            </span>
-            <p className="text-caption leading-relaxed text-foreground/80">
-              {BUYBACK_NOTICE.summary}
-            </p>
-            <div className="space-y-2 border-t border-border-subtle pt-2.5">
-              <p className="text-caption leading-relaxed text-foreground/80">
-                {BUYBACK_NOTICE.discount}
-              </p>
-              <p className="text-caption leading-relaxed text-foreground/80">
-                {BUYBACK_NOTICE.loss}
-              </p>
-            </div>
           </div>
         ) : null}
       </div>
@@ -227,16 +209,13 @@ export function HomePage() {
         />
       </button>
 
-      <RateBoard
-        price={GOLD_RATE.price}
-        source={GOLD_RATE.source}
-        updatedAt={GOLD_RATE.updatedAt}
-        series={RATE_SERIES}
-        onRecover={() => navigate(paths.quote)}
-        onBuy={() => navigate(paths.buy)}
-      />
+      <GoldTrendCard />
+
+      <BuyFlowCard />
 
       <HoldingsSnapshotCard />
+
+      <GoldRecycleCard />
 
       <PublicityCard />
 
@@ -247,48 +226,97 @@ export function HomePage() {
   )
 }
 
-/** 持仓速览：未登录只留空值与登录引导，登录后展示汇总并可进入资产页 */
+/** 买金流程：首次购金从实名到签收的完整链路，降低理解成本 */
+const BUY_FLOW_STEPS = [
+  { icon: ShieldCheck, label: '实名认证' },
+  { icon: ShoppingBag, label: '选购商品' },
+  { icon: ClipboardList, label: '下单支付' },
+  { icon: Truck, label: '物流配送' },
+  { icon: PackageCheck, label: '签收完成' },
+]
+
+/** 买金流程指南：置于「我的购金」上方，横向五步展示 */
+function BuyFlowCard() {
+  return (
+    <Card padding="md" className="space-y-4">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+        <h2 className="text-card-title text-foreground">买金流程</h2>
+        <span className="text-caption text-subtle-foreground">
+          完成实名认证后选购金条，顺丰寄送到家
+        </span>
+      </div>
+      <ol className="relative flex items-start">
+        <span
+          aria-hidden="true"
+          className="absolute left-[10%] right-[10%] top-4 h-px bg-border-subtle"
+        />
+        {BUY_FLOW_STEPS.map((step) => {
+          const Icon = step.icon
+          return (
+            <li
+              key={step.label}
+              className="relative flex flex-1 flex-col items-center gap-1.5 text-center"
+            >
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gold-50 text-gold-700 ring-1 ring-gold-200">
+                <Icon size={16} aria-hidden="true" />
+              </span>
+              <span className="text-micro text-foreground/85">{step.label}</span>
+            </li>
+          )
+        })}
+      </ol>
+    </Card>
+  )
+}
+
+/** 我的购金：未登录只留空值与登录引导，登录后展示账面汇总并可进入资产页 */
 function HoldingsSnapshotCard() {
   const navigate = useNavigate()
   const member = readMember()
   const overview = member ? holdingsOverview() : null
   const metrics = overview
     ? [
-        { label: '总重量', value: `${overview.grams}g` },
-        { label: '当前市值', value: `¥${overview.marketValue}` },
+        { label: '总克重', value: `${overview.grams}克`, tone: 'text-foreground' },
+        { label: '购入总价(元)', value: overview.cost.toFixed(2), tone: 'text-foreground' },
+        { label: '预估总价(元)', value: overview.marketValue.toFixed(2), tone: 'text-success' },
         {
-          label: '持仓盈亏',
-          value: `${overview.profit >= 0 ? '+' : '-'}${Math.abs(overview.profit)}`,
+          label: '预估收益(元)',
+          value: `${overview.profit >= 0 ? '+' : '-'}${Math.abs(overview.profit).toFixed(2)}`,
+          tone: 'text-price',
         },
       ]
     : [
-        { label: '总重量', value: '--' },
-        { label: '当前市值', value: '--' },
-        { label: '持仓盈亏', value: '--' },
+        { label: '总克重', value: '--', tone: 'text-foreground' },
+        { label: '购入总价(元)', value: '--', tone: 'text-foreground' },
+        { label: '预估总价(元)', value: '--', tone: 'text-foreground' },
+        { label: '预估收益(元)', value: '--', tone: 'text-foreground' },
       ]
 
   return (
     <Card padding="md" className="space-y-3">
-      <h2 className="text-card-title text-foreground">持仓速览</h2>
-
-      <div className="grid grid-cols-3">
-        {metrics.map((item) => (
-          <div key={item.label} className="text-center">
-            <p className="text-caption text-subtle-foreground">{item.label}</p>
-            <p className="mt-1 text-body-strong tabular text-foreground">{item.value}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="border-t border-border-subtle pt-2.5">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-card-title text-foreground">我的购金</h2>
         <button
           type="button"
-          onClick={() => navigate(member ? paths.meHoldings : paths.login)}
-          className="flex w-full items-center justify-center gap-0.5 text-caption text-gold-700"
+          onClick={() =>
+            member
+              ? navigate(paths.meHoldings)
+              : navigate(paths.login, { state: loginRedirectState() })
+          }
+          className="flex shrink-0 items-center gap-0.5 text-caption text-gold-700"
         >
-          {member ? '查看持仓详情' : '登录后查看持仓详情'}
+          {member ? '我的资产' : '登录后查看我的资产'}
           <ChevronRight size={14} aria-hidden="true" />
         </button>
+      </div>
+
+      <div className="grid grid-cols-4 gap-1">
+        {metrics.map((item) => (
+          <div key={item.label} className="min-w-0 text-center">
+            <p className="whitespace-nowrap text-micro text-subtle-foreground">{item.label}</p>
+            <p className={`mt-1 text-body-strong tabular ${item.tone}`}>{item.value}</p>
+          </div>
+        ))}
       </div>
     </Card>
   )

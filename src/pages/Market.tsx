@@ -5,7 +5,6 @@ import {
   Button,
   Card,
   Chip,
-  ChipRow,
   ConfirmDialog,
   FormField,
   IconButton,
@@ -31,7 +30,6 @@ import {
   RELATED_PRODUCTS,
   RETAIL_GOLD,
   RISK_TEXT,
-  TRADE_SPECS,
   TREND_RANGES,
   WATCH_LIMIT,
   addAlert,
@@ -47,7 +45,6 @@ import {
   readWatchlist,
   removeAlert,
   removeWatch,
-  simulateMarketTick,
   sortedNews,
   writeRiskAck,
   type ChartPoint,
@@ -55,12 +52,22 @@ import {
   type Quote,
   type TrendRange,
 } from '@/mocks/market'
+import { feePerGram, salePriceOf, subscribeGoldPrice } from '@/mocks/pricing'
+import { productForGrams } from '@/mocks/goldShop'
 import { isMemberVerified, readMember } from '@/mocks/member'
-import { ChevronDown, ChevronUp, Info, Newspaper, ShieldAlert, Trash2 } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  Info,
+  Newspaper,
+  ShieldAlert,
+  Trash2,
+} from 'lucide-react'
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { buyDetailPath, paths } from '@/routes/paths'
+import { buyDetailPath, loginRedirectState, paths } from '@/routes/paths'
 
 type MarketScene = 'offline' | 'delay' | 'closed'
 
@@ -89,7 +96,7 @@ function getBeijingNow(date: Date) {
 }
 
 function buyProductFor(grams: number) {
-  return grams <= 10 ? 'bar-sheet' : 'bar-trapezoid'
+  return productForGrams(grams).id
 }
 
 export function MarketPage() {
@@ -155,7 +162,16 @@ function QuoteView({ demo }: { demo: string | null }) {
     setSubscribeOpen(true)
   }
 
-  useMarketTicker(scene === null && reviewPhase !== 'closed', () => {})
+  /** 交易入口需登录：未登录直接去登录页，登录后回跳当前页 */
+  const requireLogin = (action: () => void) => {
+    if (!loggedIn) {
+      navigate(paths.login, { state: loginRedirectState() })
+      return
+    }
+    action()
+  }
+
+  useMarketTicker(scene === null && reviewPhase !== 'closed')
 
   /** 统一顶部横幅的实时时钟（每秒更新一次） */
   const [clock, setClock] = useState(() => new Date())
@@ -215,8 +231,8 @@ function QuoteView({ demo }: { demo: string | null }) {
         <TradeCard
           scene={scene}
           marketOpen={marketOpen}
-          onBuy={(grams) => navigate(buyDetailPath(buyProductFor(grams)))}
-          onSell={(grams) => navigate(`${paths.quote}?category=bar&weight=${grams}`)}
+          onBuy={(grams) => requireLogin(() => navigate(buyDetailPath(buyProductFor(grams))))}
+          onMore={() => navigate(paths.buy)}
         />
 
         <NewsSummaryCard
@@ -254,7 +270,7 @@ function QuoteView({ demo }: { demo: string | null }) {
         cancelText="暂不"
         onConfirm={() => {
           setGate(null)
-          navigate(paths.login)
+          navigate(paths.login, { state: loginRedirectState() })
         }}
         onClose={() => setGate(null)}
       />
@@ -277,7 +293,9 @@ function QuoteView({ demo }: { demo: string | null }) {
 
 /** 金价走势：国内 / 国际展开分时走势，黄金实物展开投资金条报价 */
 function PriceTrendCard() {
-  const [expanded, setExpanded] = useState<'domestic' | 'international' | 'retail' | null>(null)
+  const [expanded, setExpanded] = useState<'domestic' | 'international' | 'retail' | null>(
+    'domestic',
+  )
   const domesticQuote = quoteByCode('au9999')!
   const internationalQuote = quoteByCode('xau')!
   const domestic = quoteChange(domesticQuote)
@@ -419,9 +437,7 @@ function BarPricePanel({ basePrice }: { basePrice: number }) {
             <span>{tier.grams}</span>
             <span className="text-right">{basePrice.toFixed(2)}</span>
             <span className="text-right text-price">{tier.fee}</span>
-            <span className="text-right">
-              {round2((basePrice + tier.fee) * tier.grams).toFixed(2)}
-            </span>
+            <span className="text-right">{salePriceOf(tier.grams, basePrice).toFixed(2)}</span>
           </div>
         ))}
       </div>
@@ -619,30 +635,13 @@ function TrendChart({ series }: { series: ChartPoint[] }) {
   )
 }
 
-/** 5 秒模拟刷新；页面隐藏时暂停，回到前台立即补一次 */
-function useMarketTicker(enabled: boolean, onTick: () => void) {
+/** 3 秒模拟刷新：与全站金价订阅共用同一节拍，页面隐藏时暂停 */
+function useMarketTicker(enabled: boolean) {
   const [, force] = useReducer((value: number) => value + 1, 0)
-  const onTickRef = useRef(onTick)
-  onTickRef.current = onTick
 
   useEffect(() => {
     if (!enabled) return
-    const tick = () => {
-      simulateMarketTick()
-      onTickRef.current()
-      force()
-    }
-    const timer = window.setInterval(() => {
-      if (!document.hidden) tick()
-    }, 5000)
-    const onVisible = () => {
-      if (!document.hidden) tick()
-    }
-    document.addEventListener('visibilitychange', onVisible)
-    return () => {
-      window.clearInterval(timer)
-      document.removeEventListener('visibilitychange', onVisible)
-    }
+    return subscribeGoldPrice(() => force())
   }, [enabled])
 }
 
@@ -696,27 +695,23 @@ function RelatedCard({ onTip }: { onTip: (message: string) => void }) {
   )
 }
 
+/** 行情交易卡固定展示 5 个常用规格，更多规格引导到买金页 */
+const TRADE_TABLE_SPECS = [5, 10, 20, 50, 100]
+
 function TradeCard({
   scene,
   marketOpen,
   onBuy,
-  onSell,
+  onMore,
 }: {
   scene: MarketScene | null
   marketOpen: boolean
   onBuy: (grams: number) => void
-  onSell: (grams: number) => void
+  onMore: () => void
 }) {
-  const [mode, setMode] = useState<'buy' | 'sell'>('buy')
   const [grams, setGrams] = useState(DEFAULT_TRADE_GRAMS)
   const buyPrice = getLivePrice('platform-buy')
-  const recyclePrice = getLivePrice('platform-recycle')
-  const buyTotal = round2(grams * buyPrice)
-  const sellTotal = round2(grams * recyclePrice)
-  const priceOptions = [
-    { value: 'buy' as const, priceLabel: '买入价', label: '我要买', price: buyPrice },
-    { value: 'sell' as const, priceLabel: '回购价', label: '我要卖', price: recyclePrice },
-  ]
+  const buyTotal = salePriceOf(grams, buyPrice)
   const locked = scene !== null || !marketOpen
   const reason =
     scene === 'offline'
@@ -729,110 +724,72 @@ function TradeCard({
 
   return (
     <Card padding="md" className="space-y-3">
-      <p className="text-card-title text-foreground">平台金条报价与交易</p>
-
-      {/* P0+P1 重写：统一选中态配色 / radio→pressed / 间距节奏 / 单位弱化 / 箭头替代圆点 / 语义色统一 */}
-      <div
-        role="radiogroup"
-        aria-label="交易方向"
-        className="divide-y divide-border-subtle overflow-hidden rounded-md ring-1 ring-border-subtle"
-      >
-        {priceOptions.map((option) => {
-          const active = mode === option.value
-          return (
-            <button
-              key={option.value}
-              type="button"
-              aria-pressed={active}
-              onClick={() => setMode(option.value)}
-              className={cn(
-                'flex w-full items-center gap-2 px-3 py-3 text-left transition',
-                active ? 'bg-primary-soft/40' : 'bg-card active:bg-surface-2',
-              )}
-            >
-              <span className="flex min-w-0 items-center gap-2">
-                {/* 价格主体：标签caption + 金额强调 + 单位弱化，单位比标签更弱 */}
-                <span className="shrink-0 text-caption text-subtle-foreground">
-                  {option.priceLabel}：
-                </span>
-                <span className="text-body-strong tabular text-foreground">
-                  ¥{option.price.toFixed(2)}
-                </span>
-                <span className="shrink-0 text-caption text-muted-foreground">元/克</span>
-                {/* 方向文字紧跟价格组，间距统一 */}
-                <span
-                  className={cn(
-                    'shrink-0 text-body',
-                    active ? 'text-foreground font-medium' : 'text-muted-foreground',
-                  )}
-                >
-                  {option.label}
-                </span>
-              </span>
-              {/* 右对齐箭头，替代圆点（圆点暗示独立控件，箭头只做选中锚点） */}
-              <span
-                aria-hidden="true"
-                className={cn(
-                  'ml-auto flex shrink-0 items-center text-lg leading-none transition',
-                  active ? 'text-primary' : 'text-border',
-                )}
-              >
-                ›
-              </span>
-            </button>
-          )
-        })}
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-card-title text-foreground">宏恩泽 · 投资金</p>
+        <span className="shrink-0 rounded-sm bg-gold-50 px-1.5 py-0.5 text-micro text-gold-800 ring-1 ring-gold-200">
+          实时报价
+        </span>
       </div>
 
-      <div>
-        <p className="text-caption text-subtle-foreground">
-          {mode === 'buy' ? '规格（克）' : '卖出克重（克）'}
-        </p>
-        <ChipRow className="mt-1.5">
-          {TRADE_SPECS.map((spec) => (
-            <Chip key={spec} active={spec === grams} onClick={() => setGrams(spec)}>
-              {spec}g
-            </Chip>
-          ))}
-        </ChipRow>
+      <div className="overflow-hidden rounded-md ring-1 ring-border-subtle">
+        <div className="grid grid-cols-4 gap-1 bg-surface-2 px-3 py-2 text-micro text-subtle-foreground">
+          <span>克重</span>
+          <span className="text-right">实时金价</span>
+          <span className="text-right">工费/克</span>
+          <span className="text-right">销售价（元）</span>
+        </div>
+        <div className="divide-y divide-border-subtle">
+          {TRADE_TABLE_SPECS.map((spec) => {
+            const active = spec === grams
+            return (
+              <button
+                key={spec}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setGrams(spec)}
+                className={cn(
+                  'grid w-full grid-cols-4 items-center gap-1 px-3 py-2 text-left text-caption tabular transition',
+                  active ? 'bg-gold-50' : 'text-foreground/80 active:bg-surface-2',
+                )}
+              >
+                <span
+                  className={cn('text-body-strong', active ? 'text-gold-800' : 'text-foreground')}
+                >
+                  {spec}克
+                </span>
+                <span className="text-right">{buyPrice.toFixed(2)}</span>
+                <span className="text-right text-price">{feePerGram(spec)}</span>
+                <span className="text-right">{salePriceOf(spec, buyPrice).toFixed(2)}</span>
+              </button>
+            )
+          })}
+        </div>
+        <button
+          type="button"
+          onClick={onMore}
+          className="flex w-full items-center justify-between gap-2 border-t border-border-subtle px-3 py-2.5 text-caption text-gold-700 transition active:bg-surface-2"
+        >
+          选购更多规格
+          <ChevronRight size={14} aria-hidden="true" />
+        </button>
       </div>
 
       <div className="flex items-end justify-between gap-3 border-t border-border-subtle pt-2.5">
-        <span className="text-caption text-subtle-foreground">
-          {mode === 'buy' ? `合计 · ${grams}g` : '预计到账'}
-        </span>
-        <p className="text-body-strong tabular text-foreground">
-          ¥{(mode === 'buy' ? buyTotal : sellTotal).toFixed(2)}
-        </p>
+        <span className="text-caption text-subtle-foreground">合计 · {grams}克</span>
+        <p className="text-body-strong tabular text-foreground">¥{buyTotal.toFixed(2)}</p>
       </div>
-
-      {mode === 'sell' ? (
-        <p className="-mt-1.5 text-caption text-subtle-foreground">
-          预计到账按当前回购价估算，最终以检测克重与确认时报价为准。
-        </p>
-      ) : null}
 
       {/* 休市提示统一收敛到主按钮上，不再单独占一行 */}
       {locked && reason !== '当前休市，开市后可交易' ? (
         <p className="text-caption text-warning">{reason}</p>
       ) : null}
 
-      <Button
-        variant="primary"
-        size="md"
-        block
-        disabled={locked}
-        onClick={() => (mode === 'buy' ? onBuy(grams) : onSell(grams))}
-      >
+      <Button variant="primary" size="md" block disabled={locked} onClick={() => onBuy(grams)}>
         {locked
           ? reason === '当前休市，开市后可交易'
             ? '当前休市，开市后可交易'
-            : mode === 'buy'
-              ? '暂不可买入'
-              : '暂不可卖出'
-          : mode === 'buy'
-            ? '立即买入'
-            : '立即卖金'}
+            : '暂不可买入'
+          : '立即买入'}
       </Button>
     </Card>
   )

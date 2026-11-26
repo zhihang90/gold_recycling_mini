@@ -13,13 +13,15 @@ import { useState } from 'react'
 import { Check, ShoppingCart } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
+import { useLiveGoldPrice } from '@/hooks/useLiveGoldPrice'
 import { DEMO_CART, readCart, writeCart, type CartItem } from '@/mocks/cart'
 import { writeCheckout } from '@/mocks/checkout'
 import { GOLD_PRODUCTS, findVariant } from '@/mocks/goldShop'
+import { readMember } from '@/mocks/member'
 import { cn } from '@/lib/utils'
 import { useDemoScene } from '@/lib/useDemoScene'
 import { useReviewState } from '@/lib/useReviewState'
-import { paths } from '@/routes/paths'
+import { loginRedirectState, paths } from '@/routes/paths'
 
 /** 圆形勾选：购物车逐项与全选共用，点击热区用伪元素补到 44。 */
 function CartCheck({
@@ -64,6 +66,8 @@ export function CartPage() {
   })
   const [managing, setManaging] = useState(modeReview === 'manage')
   const [toast, setToast] = useState<string | null>(null)
+  /** 金价刷新时重算行金额，与买金页、详情页同一模型 */
+  useLiveGoldPrice()
 
   const rows = items.flatMap((item) => {
     const product = GOLD_PRODUCTS.find((entry) => entry.id === item.productId)
@@ -102,12 +106,21 @@ export function CartPage() {
     update(items.filter((item) => item.variantId !== variantId))
   }
 
+  /** 结算与购物车管理需登录：未登录直接去登录页，登录后回跳当前页 */
+  const requireLogin = (action: () => void) => {
+    if (!readMember()) {
+      navigate(paths.login, { state: loginRedirectState() })
+      return
+    }
+    action()
+  }
+
   return (
     <TabPage
       title="购物车"
       right={
         empty ? undefined : (
-          <TextLink onClick={() => setManaging((prev) => !prev)}>
+          <TextLink onClick={() => requireLogin(() => setManaging((prev) => !prev))}>
             {managing ? '完成' : '管理'}
           </TextLink>
         )
@@ -148,7 +161,7 @@ export function CartPage() {
                   {managing ? (
                     <TextLink
                       className="text-destructive"
-                      onClick={() => removeItem(item.variantId)}
+                      onClick={() => requireLogin(() => removeItem(item.variantId))}
                     >
                       删除
                     </TextLink>
@@ -179,20 +192,22 @@ export function CartPage() {
           </div>
           <Button
             className="shrink-0"
-            onClick={() => {
-              if (selectedCount === 0) {
-                setToast('请先选择要结算的商品')
-                return
-              }
-              writeCheckout(
-                selectedRows.map(({ item, product, variant }) => ({
-                  productId: product.id,
-                  variantId: variant.id,
-                  quantity: item.quantity,
-                })),
-              )
-              navigate(paths.checkout)
-            }}
+            onClick={() =>
+              requireLogin(() => {
+                if (selectedCount === 0) {
+                  setToast('请先选择要结算的商品')
+                  return
+                }
+                writeCheckout(
+                  selectedRows.map(({ item, product, variant }) => ({
+                    productId: product.id,
+                    variantId: variant.id,
+                    quantity: item.quantity,
+                  })),
+                )
+                navigate(paths.checkout)
+              })
+            }
           >
             去结算({selectedCount})
           </Button>

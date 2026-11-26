@@ -22,10 +22,9 @@ export function SupportFab() {
     <Link
       to={routePath('support.home')}
       aria-label="在线客服"
-      className="absolute bottom-[76px] right-4 z-40 inline-flex h-12 items-center gap-2 rounded-full bg-gradient-to-b from-gold-500 to-gold-700 px-4 text-body-strong text-gold-50 shadow-lg ring-1 ring-gold-300/60 transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2"
+      className="absolute bottom-[76px] right-4 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-b from-gold-500 to-gold-700 text-gold-50 shadow-lg ring-1 ring-gold-300/60 transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2"
     >
-      <Headset size={18} strokeWidth={2.2} aria-hidden="true" />
-      在线客服
+      <Headset size={20} strokeWidth={2.2} aria-hidden="true" />
     </Link>,
     host,
   )

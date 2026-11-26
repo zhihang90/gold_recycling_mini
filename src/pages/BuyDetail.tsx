@@ -1,13 +1,35 @@
-import { Button, Card, DetailPage, Gallery, IconButton, MediaVisual, PriceText, ProductSkuSheet, SegmentedTabs, TextLink, Toast } from '@/components'
+import {
+  Button,
+  Card,
+  DetailPage,
+  Gallery,
+  IconButton,
+  MediaVisual,
+  PriceText,
+  SegmentedTabs,
+  TextLink,
+  Toast,
+} from '@/components'
 import { useEffect, useState } from 'react'
-import { ChevronRight, CircleAlert, Headphones, ShoppingCart } from 'lucide-react'
+import {
+  BadgeCheck,
+  CircleAlert,
+  Headphones,
+  QrCode,
+  ShieldCheck,
+  ShoppingCart,
+  Truck,
+} from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { images } from '@/assets/images'
 
+import { useLiveGoldPrice } from '@/hooks/useLiveGoldPrice'
 import { addToCart, cartCount, subscribeCart } from '@/mocks/cart'
 import { writeCheckout } from '@/mocks/checkout'
-import { findProduct, soldOf, taglineOf, variantsOf } from '@/mocks/goldShop'
-import { paths } from '@/routes/paths'
+import { findProduct, PRODUCT_PURITY, soldOf, variantsOf } from '@/mocks/goldShop'
+import { readMember } from '@/mocks/member'
+import { feePerGram } from '@/mocks/pricing'
+import { loginRedirectState, paths } from '@/routes/paths'
 
 const PARAMS = [
   ['品牌', '安盛华'],
@@ -19,6 +41,14 @@ const PARAMS = [
 
 const GALLERY_LABELS = ['商品主图', '工艺细节', '礼赠场景']
 
+/** 商品服务标签：与竞品一致，一物一证、可追溯、可复检、顺丰保价 */
+const SERVICE_TAGS = [
+  { icon: BadgeCheck, label: '质检证书' },
+  { icon: QrCode, label: '可溯源' },
+  { icon: ShieldCheck, label: '支持复检' },
+  { icon: Truck, label: '顺丰邮寄' },
+]
+
 type DetailTab = 'product' | 'scene' | 'price'
 
 const DETAIL_TABS: { value: DetailTab; label: string }[] = [
@@ -27,22 +57,19 @@ const DETAIL_TABS: { value: DetailTab; label: string }[] = [
   { value: 'price', label: '价格说明' },
 ]
 
-/** 商品详情：规格、数量、加购、立即购买在同一页闭环，购物车按「商品 + 规格」独立成行。 */
+/** 商品详情：每个商品只有一个克重，加购与立即购买直接使用该克重。 */
 export function BuyDetailPage() {
   const { productId = '' } = useParams()
   const navigate = useNavigate()
   const product = findProduct(productId)
-  const variants = product ? variantsOf(product) : []
 
-  const [variantId, setVariantId] = useState(variants[0]?.id ?? '')
-  const [quantity, setQuantity] = useState(1)
-  const [sheetOpen, setSheetOpen] = useState(false)
-  const [sheetPurpose, setSheetPurpose] = useState<'add' | 'edit'>('add')
   const [toast, setToast] = useState<string | null>(null)
   const [count, setCount] = useState(cartCount)
   const [detailTab, setDetailTab] = useState<DetailTab>('product')
 
   useEffect(() => subscribeCart(() => setCount(cartCount())), [])
+  /** 与列表页、行情页共用同一金价模型，报价刷新时同步重算售价 */
+  useLiveGoldPrice()
 
   if (!product) {
     return (
@@ -57,29 +84,19 @@ export function BuyDetailPage() {
     )
   }
 
-  const variant = variants.find((item) => item.id === variantId) ?? variants[0]
+  const variant = variantsOf(product)[0]
   const gallery = (product.gallery ?? [product.image]).map((src, index) => ({
     src,
     alt: `${product.name} · ${GALLERY_LABELS[index] ?? `图片 ${index + 1}`}`,
   }))
 
-  const selectVariant = (nextId: string) => {
-    setVariantId(nextId)
-    const next = variants.find((item) => item.id === nextId)
-    if (next) setQuantity((value) => Math.min(value, Math.min(20, next.stock)))
-  }
-
-  const openSku = (purpose: 'add' | 'edit') => {
-    setSheetPurpose(purpose)
-    setSheetOpen(true)
-  }
-
-  const confirmSku = () => {
-    if (sheetPurpose === 'add') {
-      addToCart(product.id, variant.id, quantity)
-      setToast(`已加入购物车 · ${variant.label}`)
+  /** 交易类操作需登录：未登录直接去登录页，登录后回跳当前商品详情 */
+  const requireLogin = (action: () => void) => {
+    if (!readMember()) {
+      navigate(paths.login, { state: loginRedirectState() })
+      return
     }
-    setSheetOpen(false)
+    action()
   }
 
   return (
@@ -105,17 +122,24 @@ export function BuyDetailPage() {
           <Button
             variant="secondary"
             className="flex-1"
-            onClick={() => openSku('add')}
+            onClick={() =>
+              requireLogin(() => {
+                addToCart(product.id, variant.id, 1)
+                setToast(`已加入购物车 · ${variant.label}`)
+              })
+            }
           >
             加入购物车
           </Button>
           <Button
             className="flex-1"
-            onClick={() => {
-              // 立即购买：写入 checkout storage 后跳转到全屏确认订单页
-              writeCheckout([{ productId: product.id, variantId: variant.id, quantity }])
-              navigate(paths.checkout)
-            }}
+            onClick={() =>
+              requireLogin(() => {
+                // 立即购买：写入 checkout storage 后跳转到全屏确认订单页
+                writeCheckout([{ productId: product.id, variantId: variant.id, quantity: 1 }])
+                navigate(paths.checkout)
+              })
+            }
           >
             立即购买
           </Button>
@@ -124,40 +148,43 @@ export function BuyDetailPage() {
     >
       <div className="bg-card pb-3">
         <Gallery images={gallery} label={`${product.name}图片，左右滑动查看`} />
-        <p className="px-4 pt-3 text-center text-caption text-subtle-foreground">
-          图片为效果与场景示意，请以实物为准
-        </p>
+        <div className="mt-3 flex items-center justify-between gap-1 px-4">
+          {SERVICE_TAGS.map(({ icon: Icon, label }) => (
+            <span key={label} className="flex items-center gap-1 text-caption text-foreground/85">
+              <Icon size={14} className="shrink-0 text-gold-700" aria-hidden="true" />
+              {label}
+            </span>
+          ))}
+        </div>
       </div>
 
       <div className="space-y-3 px-4">
-        <Card padding="md" className="space-y-2">
-          <h1 className="text-card-title text-foreground">{product.name}</h1>
-          <p className="text-caption text-gold-700">{taglineOf(product)}</p>
-          <div className="flex items-end justify-between gap-3 pt-1">
-            <PriceText value={variant.price} size="section" tone="price" />
-            <span className="text-caption text-subtle-foreground">已售 {soldOf(product)}</span>
-          </div>
-        </Card>
-
         <Card padding="none" className="overflow-hidden">
-          <button
-            type="button"
-            onClick={() => openSku('edit')}
-            className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
-          >
+          <div className="space-y-1 px-4 py-3">
+            <h1 className="text-card-title text-foreground">{product.name}</h1>
+            <div className="flex items-end justify-between gap-3">
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                <PriceText value={variant.price} size="section" tone="price" />
+                <span className="text-caption text-subtle-foreground">
+                  工费 {feePerGram(product.grams)} 元/克
+                </span>
+              </div>
+              <span className="shrink-0 text-caption text-subtle-foreground">
+                已售 {soldOf(product)}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-3 border-t border-border-subtle px-4 py-3">
             <span className="text-body text-foreground">
-              已选
+              规格
               <span className="ml-2 text-body-strong">
-                规格 {variant.label} · {quantity} 件
+                {variant.label} {PRODUCT_PURITY}
               </span>
             </span>
-            <ChevronRight size={18} className="shrink-0 text-subtle-foreground" />
-          </button>
+          </div>
           <div className="flex items-center justify-between gap-3 border-t border-border-subtle px-4 py-3">
             <span className="text-body text-foreground">配送</span>
-            <span className="text-body text-muted-foreground">
-              顺丰保价 · 预计 2–3 天送达
-            </span>
+            <span className="text-body text-muted-foreground">顺丰保价 · 预计 2–3 天送达</span>
           </div>
           <div className="border-t border-border-subtle px-4 py-3">
             <p className="text-caption text-primary">贵金属商品 · 不支持 7 天无理由退换</p>
@@ -210,10 +237,8 @@ export function BuyDetailPage() {
                     </div>
                   ))}
                   <div className="flex items-start justify-between gap-3">
-                    <dt className="shrink-0 text-body text-subtle-foreground">可选规格</dt>
-                    <dd className="text-right text-body text-foreground">
-                      {variants.map((item) => item.label).join(' / ')}
-                    </dd>
+                    <dt className="shrink-0 text-body text-subtle-foreground">克重</dt>
+                    <dd className="text-right text-body text-foreground">{variant.label}</dd>
                   </div>
                 </dl>
               </div>
@@ -249,13 +274,13 @@ export function BuyDetailPage() {
             {detailTab === 'price' ? (
               <div className="space-y-4">
                 <div className="rounded-md bg-gold-50 p-3 ring-1 ring-gold-200">
-                  <p className="text-caption text-gold-800">
-                    当前所选 {variant.label} × {quantity} 件
-                  </p>
+                  <p className="text-caption text-gold-800">当前商品 {variant.label}</p>
                   <div className="mt-1">
-                    <PriceText value={variant.price * quantity} size="section" tone="price" />
+                    <PriceText value={variant.price} size="section" tone="price" />
                   </div>
-                  <p className="mt-1 text-caption text-subtle-foreground">合计金额随规格与数量实时更新</p>
+                  <p className="mt-1 text-caption text-subtle-foreground">
+                    售价 =（实时金价 + 工费）× 克重
+                  </p>
                 </div>
                 <dl className="space-y-3">
                   <div>
@@ -285,18 +310,6 @@ export function BuyDetailPage() {
 
         <p className="pb-2 text-center text-caption text-subtle-foreground">已经到底了</p>
       </div>
-
-      <ProductSkuSheet
-        open={sheetOpen}
-        product={product}
-        variantId={variant.id}
-        quantity={quantity}
-        confirmLabel={sheetPurpose === 'add' ? '加入购物车' : '确认选择'}
-        onVariantChange={selectVariant}
-        onQuantityChange={setQuantity}
-        onClose={() => setSheetOpen(false)}
-        onConfirm={confirmSku}
-      />
 
       <Toast open={Boolean(toast)} message={toast ?? ''} onClose={() => setToast(null)} />
     </DetailPage>

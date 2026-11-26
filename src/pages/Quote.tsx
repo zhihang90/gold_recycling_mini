@@ -215,9 +215,9 @@ function QuoteDetailSheet({
                   tone="price"
                 />
                 <BreakdownLine
-                  label="预估服务费"
+                  label={`服务费（费率 ${(breakdown.serviceFeeRate * 100).toFixed(0)}%）`}
                   amount={-breakdown.serviceFee}
-                  formula={`预估总价值 × 服务费率 ${(breakdown.serviceFeeRate * 100).toFixed(0)}% = ${breakdown.estimatedValue.toFixed(2)} × ${(breakdown.serviceFeeRate * 100).toFixed(0)}%`}
+                  formula={`预估总价值 × ${(breakdown.serviceFeeRate * 100).toFixed(0)}% = ${breakdown.estimatedValue.toFixed(2)} × ${(breakdown.serviceFeeRate * 100).toFixed(0)}%`}
                 />
               </div>
             </Card>

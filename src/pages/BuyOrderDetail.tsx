@@ -1,20 +1,19 @@
 import {
   AddressCard,
-  BottomSheet,
   Button,
   Card,
+  ConfirmDialog,
   CountdownBar,
   DetailPage,
   EmptyState,
   KeyValueRow,
+  LogisticsSheet,
   MediaVisual,
   OrderStatusHeader,
   PaymentPasswordSheet,
   PriceText,
-  StatusTimeline,
-  TextLink,
+  SupportFab,
   Toast,
-  type TimelineItem,
 } from '@/components'
 import { useEffect, useState } from 'react'
 import { ClipboardList } from 'lucide-react'
@@ -24,6 +23,8 @@ import { maskPhone } from '@/mocks/addressBook'
 import { addToCart } from '@/mocks/cart'
 import { writeCheckoutResult } from '@/mocks/checkout'
 import { findProduct } from '@/mocks/goldShop'
+import { DEMO_LOGISTICS_GROUPS, formatShippingAddress, type LogisticsInfo } from '@/mocks/logistics'
+import { feePerGram } from '@/mocks/pricing'
 import {
   SALES_FILTERS,
   SALES_PAY_LABEL,
@@ -37,56 +38,31 @@ import {
   type SalesOrder,
   type SalesStatus,
 } from '@/mocks/salesOrders'
-import { paths, routePath } from '@/routes/paths'
+import { paths } from '@/routes/paths'
+import { useReviewState } from '@/lib/useReviewState'
 
-const LOGISTICS_STEPS: TimelineItem[] = [
-  {
-    key: 'picked',
-    title: '已揽收',
-    description: '顺丰速运深圳南山集散中心',
-    state: 'done',
-  },
-  {
-    key: 'transit',
-    title: '运输中',
-    description: '快件已发出，正在运往收货城市',
-    state: 'done',
-  },
-  {
-    key: 'delivering',
-    title: '派送中',
-    description: '快递员正在派送，请保持电话畅通',
-    state: 'current',
-  },
-]
+/** 评审切换「待收货」时补一条演示运单，避免物流卡缺失 */
+const DEMO_EXPRESS_FALLBACK = { company: '顺丰速运', no: 'SF1234567890123' }
 
 /** 底部操作标识：具体文案、样式与行为集中在视图内实现 */
-type OrderAction = 'cancel' | 'pay' | 'contact' | 'confirmReceipt' | 'rebuy'
+type OrderAction = 'cancel' | 'pay' | 'viewLogistics' | 'confirmReceipt' | 'rebuy'
 
 /**
  * 各状态的页面结构配置：结构差异只看这张表，不再散落在 JSX 条件里。
  * 新增/调整某个状态时只改对应一行，不影响其它状态。
  */
 interface StatusView {
-  /** 是否展示物流信息卡（订单有运单时生效） */
-  logistics: boolean
-  /** 金额区标签 */
-  amountLabel: '应付款' | '实付款'
   /** 底部操作按钮，按顺序展示 */
   actions: OrderAction[]
 }
 
 const STATUS_VIEWS: Record<SalesStatus, StatusView> = {
-  'pending-payment': { logistics: false, amountLabel: '应付款', actions: ['cancel', 'pay'] },
-  'pending-shipment': { logistics: false, amountLabel: '实付款', actions: ['contact'] },
-  'pending-receipt': {
-    logistics: true,
-    amountLabel: '实付款',
-    actions: ['contact', 'confirmReceipt'],
-  },
-  completed: { logistics: false, amountLabel: '实付款', actions: ['rebuy'] },
-  cancelled: { logistics: false, amountLabel: '实付款', actions: ['rebuy'] },
-  'after-sale': { logistics: false, amountLabel: '实付款', actions: ['contact'] },
+  'pending-payment': { actions: ['cancel', 'pay'] },
+  'pending-shipment': { actions: [] },
+  'pending-receipt': { actions: ['viewLogistics', 'confirmReceipt'] },
+  completed: { actions: ['viewLogistics', 'rebuy'] },
+  cancelled: { actions: ['rebuy'] },
+  'after-sale': { actions: ['viewLogistics'] },
 }
 
 /** 订单状态 → 订单列表对应的分类筛选；列表没有该筛选（如已取消）时回到全部 */
@@ -122,6 +98,7 @@ function OrderGoodsCard({ order }: { order: SalesOrder }) {
               </p>
               <p className="mt-1 text-caption text-subtle-foreground">
                 单价 ¥{line.price.toLocaleString()}
+                {product ? `（含工费 ${feePerGram(product.grams)} 元/克）` : ''}
               </p>
             </div>
             <PriceText
@@ -133,25 +110,6 @@ function OrderGoodsCard({ order }: { order: SalesOrder }) {
           </div>
         )
       })}
-    </Card>
-  )
-}
-
-/** 物流信息卡：仅在配置开启且订单带运单时由详情页渲染 */
-function OrderLogisticsCard({ order, onCopy }: { order: SalesOrder; onCopy: () => void }) {
-  if (!order.express) return null
-
-  return (
-    <Card padding="md" className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-body-strong text-foreground">物流信息</p>
-        <span className="text-caption text-subtle-foreground">{order.express.company}</span>
-      </div>
-      <div className="flex items-center justify-between gap-3 rounded-md bg-surface-2 px-3 py-2">
-        <span className="tabular text-body text-foreground">{order.express.no}</span>
-        <TextLink onClick={onCopy}>复制</TextLink>
-      </div>
-      <StatusTimeline items={LOGISTICS_STEPS} />
     </Card>
   )
 }
@@ -172,7 +130,12 @@ export function BuyOrderDetailPage() {
     setOrder(orderId ? findSalesOrder(orderId) : undefined)
   }, [orderId])
 
-  if (!order) {
+  // 桌面评审面板：可原地切换订单状态与「订单不存在」兜底
+  const review = useReviewState('orders.detail')
+  const reviewStatus = review.values.status
+  const missing = review.values.data === 'missing'
+
+  if (!order || missing) {
     return (
       <DetailPage title="订单详情">
         <EmptyState
@@ -185,13 +148,25 @@ export function BuyOrderDetailPage() {
     )
   }
 
+  const override = reviewStatus !== 'auto'
+  const displayed: SalesOrder = override
+    ? {
+        ...order,
+        status: reviewStatus as SalesStatus,
+        express:
+          order.express ?? (reviewStatus === 'pending-receipt' ? DEMO_EXPRESS_FALLBACK : undefined),
+      }
+    : order
+
   return (
     <BuyOrderDetailView
-      order={order}
+      order={displayed}
       onOrderChange={setOrder}
-      persist
+      persist={!override}
       onBack={
-        fromCheckout ? () => navigate(ordersListPath(order.status), { replace: true }) : undefined
+        fromCheckout
+          ? () => navigate(ordersListPath(displayed.status), { replace: true })
+          : undefined
       }
     />
   )
@@ -216,13 +191,24 @@ export function BuyOrderDetailView({
 }) {
   const navigate = useNavigate()
   const [cancelOpen, setCancelOpen] = useState(false)
+  const [receiptOpen, setReceiptOpen] = useState(false)
+  const [logisticsOpen, setLogisticsOpen] = useState(false)
   const [payOpen, setPayOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
   const total = salesTotal(order)
   const count = salesCount(order)
+  /** 已支付：有待付款以外的状态且存在支付时间；评审切到待付款时不展示支付信息 */
+  const showPaid = Boolean(order.paidAt) && order.status !== 'pending-payment'
   const view = STATUS_VIEWS[order.status]
-  const showLogistics = view.logistics && Boolean(order.express)
+
+  /** 物流弹层数据：与订单列表共用同一份演示轨迹，缺运单时用演示单号兜底 */
+  const logisticsInfo: LogisticsInfo = {
+    carrier: order.express?.company ?? DEMO_EXPRESS_FALLBACK.company,
+    trackingNo: order.express?.no ?? DEMO_EXPRESS_FALLBACK.no,
+    address: formatShippingAddress(order.address),
+    groups: DEMO_LOGISTICS_GROUPS,
+  }
 
   const applyStatus = (status: SalesStatus, patch: Partial<SalesOrder> = {}) => {
     if (!persist) {
@@ -233,11 +219,9 @@ export function BuyOrderDetailView({
     if (next) onOrderChange(next)
   }
 
-  const contact = () => navigate(`${routePath('support.chat')}?orderId=${order.id}&kind=sales`)
-
-  const copyExpress = async () => {
-    if (!order.express) return
-    await navigator.clipboard?.writeText(order.express.no)
+  const copyTracking = async (trackingNo: string) => {
+    if (!trackingNo) return
+    await navigator.clipboard?.writeText(trackingNo)
     setToast('运单号已复制')
   }
 
@@ -267,29 +251,31 @@ export function BuyOrderDetailView({
   > = {
     cancel: { label: '取消订单', variant: 'secondary', onClick: () => setCancelOpen(true) },
     pay: { label: '立即支付', onClick: () => setPayOpen(true) },
-    contact: { label: '联系客服', variant: 'secondary', onClick: contact },
+    viewLogistics: {
+      label: '查看物流',
+      variant: 'secondary',
+      onClick: () => setLogisticsOpen(true),
+    },
     confirmReceipt: {
       label: '确认收货',
-      onClick: () => {
-        applyStatus('completed')
-        setToast('已确认收货')
-      },
+      onClick: () => setReceiptOpen(true),
     },
     rebuy: { label: '再次购买', onClick: rebuy },
   }
 
-  const footer = (
-    <div className={view.actions.length > 1 ? 'grid grid-cols-2 gap-2' : undefined}>
-      {view.actions.map((action) => {
-        const { label, variant, onClick } = actionMap[action]
-        return (
-          <Button key={action} block variant={variant} onClick={onClick}>
-            {label}
-          </Button>
-        )
-      })}
-    </div>
-  )
+  const footer =
+    view.actions.length > 0 ? (
+      <div className={view.actions.length > 1 ? 'grid grid-cols-2 gap-2' : undefined}>
+        {view.actions.map((action) => {
+          const { label, variant, onClick } = actionMap[action]
+          return (
+            <Button key={action} block variant={variant} onClick={onClick}>
+              {label}
+            </Button>
+          )
+        })}
+      </div>
+    ) : undefined
 
   return (
     <DetailPage title="订单详情" footer={footer} onBack={onBack}>
@@ -326,18 +312,16 @@ export function BuyOrderDetailView({
 
       <OrderGoodsCard order={order} />
 
-      {showLogistics ? <OrderLogisticsCard order={order} onCopy={copyExpress} /> : null}
-
       <Card padding="md">
-        {showLogistics ? null : <KeyValueRow label="配送方式" value="顺丰速运" />}
+        <KeyValueRow label="配送方式" value="顺丰速运" />
         <KeyValueRow label="备注" value={order.note || '无'} />
       </Card>
 
       <Card padding="md">
-        <KeyValueRow label="商品总额" value={<PriceText value={total} size="body" tone="ink" />} />
+        <KeyValueRow label="商品总价" value={<PriceText value={total} size="body" tone="ink" />} />
         <KeyValueRow label="运费" value={<PriceText value={0} size="body" tone="ink" />} />
         <div className="mt-1 flex items-center justify-between border-t border-border-subtle pt-3">
-          <span className="text-body text-foreground">{view.amountLabel}</span>
+          <span className="text-body text-foreground">应付金额</span>
           <PriceText value={total} size="section" tone="price" />
         </div>
       </Card>
@@ -345,40 +329,47 @@ export function BuyOrderDetailView({
       <Card padding="md">
         <KeyValueRow label="订单号" value={<span className="tabular">{order.id}</span>} />
         <KeyValueRow label="下单时间" value={order.createdAt} />
+        {showPaid ? (
+          <KeyValueRow
+            label="支付金额"
+            value={<PriceText value={total} size="body" tone="ink" />}
+          />
+        ) : null}
         <KeyValueRow
           label="支付方式"
-          value={order.payMethod ? SALES_PAY_LABEL[order.payMethod] : '未选择'}
+          value={showPaid && order.payMethod ? SALES_PAY_LABEL[order.payMethod] : '未选择'}
         />
-        {order.paidAt ? <KeyValueRow label="支付时间" value={order.paidAt} /> : null}
+        {showPaid ? <KeyValueRow label="支付时间" value={order.paidAt} /> : null}
       </Card>
 
-      <BottomSheet
+      <ConfirmDialog
         open={cancelOpen}
-        onClose={() => setCancelOpen(false)}
         title="取消订单"
-        footer={
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="secondary" block onClick={() => setCancelOpen(false)}>
-              再想想
-            </Button>
-            <Button
-              variant="danger"
-              block
-              onClick={() => {
-                applyStatus('cancelled')
-                setCancelOpen(false)
-                setToast('订单已取消')
-              }}
-            >
-              确认取消
-            </Button>
-          </div>
-        }
-      >
-        <p className="text-body text-muted-foreground">
-          待付款订单取消后立即关闭，不会扣款；需要时可再次购买。
-        </p>
-      </BottomSheet>
+        description="待付款订单取消后立即关闭，不会扣款；需要时可在订单中再次购买。"
+        cancelText="再想想"
+        confirmText="确认取消"
+        tone="danger"
+        onConfirm={() => {
+          applyStatus('cancelled')
+          setCancelOpen(false)
+          setToast('订单已取消')
+        }}
+        onClose={() => setCancelOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={receiptOpen}
+        title="确认收货"
+        description="请确认已收到商品并检查无误。确认收货后订单将完成，该操作不可撤销。"
+        cancelText="再想想"
+        confirmText="确认收货"
+        onConfirm={() => {
+          applyStatus('completed')
+          setReceiptOpen(false)
+          setToast('已确认收货')
+        }}
+        onClose={() => setReceiptOpen(false)}
+      />
 
       <PaymentPasswordSheet
         open={payOpen}
@@ -390,6 +381,15 @@ export function BuyOrderDetailView({
           pay()
         }}
       />
+
+      <LogisticsSheet
+        open={logisticsOpen}
+        info={logisticsInfo}
+        onCopy={copyTracking}
+        onClose={() => setLogisticsOpen(false)}
+      />
+
+      <SupportFab />
 
       <Toast open={Boolean(toast)} message={toast ?? ''} onClose={() => setToast(null)} />
     </DetailPage>

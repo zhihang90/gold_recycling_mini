@@ -118,7 +118,7 @@ export const RECYCLE_STAGES: { key: RecycleStage; label: string; description: st
   { key: 'shipping', label: '邮寄运输', description: '上门取件、快递在途' },
   { key: 'testing', label: '专业检测', description: '到仓称重、成色与真伪检测' },
   { key: 'confirm', label: '确认终价', description: '30 分钟内确认终价' },
-  { key: 'done', label: '交易完成', description: '回收款已到账' },
+  { key: 'done', label: '已完成', description: '回收款已到账' },
 ]
 
 /** 阶段名称索引：列表卡片直接展示「订单审核 / 邮寄运输…」 */
@@ -127,7 +127,7 @@ export const RECYCLE_STAGE_LABEL: Record<RecycleStage, string> = {
   shipping: '邮寄运输',
   testing: '专业检测',
   confirm: '确认终价',
-  done: '交易完成',
+  done: '已完成',
 }
 
 /** 系统状态 → C 端阶段；已取消 / 已关闭按关闭前走到的阶段停留 */
@@ -159,7 +159,7 @@ export const RECYCLE_TABS: { value: RecycleTab; label: string }[] = [
   { value: 'pending-ship', label: '待寄出' },
   { value: 'pending-confirm', label: '待确认' },
   { value: 'completed', label: '已完成' },
-  { value: 'after-sale', label: '退货·取消' },
+  { value: 'after-sale', label: '已取消' },
 ]
 
 /** 状态归属的 Tab；审核中、待签收、检测中、待打款不单独设 Tab，返回 null */
@@ -211,7 +211,7 @@ export const DEMO_RECYCLE_ORDERS: RecycleOrder[] = [
     status: 'review',
     createdAt: '2026-11-19 09:12',
     category: '足金首饰',
-    weight: '15.2g',
+    weight: '15.2克',
     purity: '足金 999',
     estimate: 8900,
     method: '顺丰上门取件',
@@ -224,7 +224,7 @@ export const DEMO_RECYCLE_ORDERS: RecycleOrder[] = [
     status: 'pending-ship',
     createdAt: '2026-11-14 18:12',
     category: '足金首饰',
-    weight: '12.5g',
+    weight: '12.5克',
     purity: '足金 999',
     estimate: 7320,
     method: '顺丰上门取件',
@@ -248,7 +248,7 @@ export const DEMO_RECYCLE_ORDERS: RecycleOrder[] = [
     status: 'pending-receipt',
     createdAt: '2026-11-12 14:26',
     category: '投资金条',
-    weight: '20g',
+    weight: '20克',
     purity: '足金 999.9',
     estimate: 11860,
     method: '顺丰上门取件',
@@ -271,7 +271,7 @@ export const DEMO_RECYCLE_ORDERS: RecycleOrder[] = [
     status: 'testing',
     createdAt: '2026-11-09 10:35',
     category: '投资金条',
-    weight: '20g',
+    weight: '20克',
     purity: '足金 999.9',
     estimate: 11860,
     method: '顺丰上门取件',
@@ -295,7 +295,7 @@ export const DEMO_RECYCLE_ORDERS: RecycleOrder[] = [
     status: 'pending-confirm',
     createdAt: '2026-11-06 09:18',
     category: '足金首饰',
-    weight: '8.3g',
+    weight: '8.3克',
     purity: '足金 999',
     estimate: 4860,
     method: '顺丰上门取件',
@@ -313,7 +313,7 @@ export const DEMO_RECYCLE_ORDERS: RecycleOrder[] = [
       ],
     },
     inspection: {
-      weight: '8.16g',
+      weight: '8.16克',
       purity: '足金 999',
       amount: 4790,
       finishedAt: '2026-11-06 17:20',
@@ -325,7 +325,7 @@ export const DEMO_RECYCLE_ORDERS: RecycleOrder[] = [
     status: 'pending-payment',
     createdAt: '2026-11-03 15:47',
     category: '足金首饰',
-    weight: '8.2g',
+    weight: '8.2克',
     purity: '足金 999',
     estimate: 4820,
     method: '顺丰上门取件',
@@ -344,7 +344,7 @@ export const DEMO_RECYCLE_ORDERS: RecycleOrder[] = [
       ],
     },
     inspection: {
-      weight: '8.16g',
+      weight: '8.16克',
       purity: '足金 999',
       amount: 4790,
       finishedAt: '2026-11-03 17:20',
@@ -360,7 +360,7 @@ export const DEMO_RECYCLE_ORDERS: RecycleOrder[] = [
     status: 'completed',
     createdAt: '2026-10-26 09:20',
     category: '金币',
-    weight: '5g',
+    weight: '5克',
     purity: '足金 999',
     estimate: 2960,
     method: '顺丰上门取件',
@@ -379,7 +379,7 @@ export const DEMO_RECYCLE_ORDERS: RecycleOrder[] = [
       ],
     },
     inspection: {
-      weight: '4.96g',
+      weight: '4.96克',
       purity: '足金 999',
       amount: 2952,
       finishedAt: '2026-10-26 14:40',
@@ -395,7 +395,7 @@ export const DEMO_RECYCLE_ORDERS: RecycleOrder[] = [
     status: 'cancelled',
     createdAt: '2026-11-08 11:05',
     category: '足金首饰',
-    weight: '6.0g',
+    weight: '6.0克',
     purity: '足金 999',
     estimate: 3520,
     method: '顺丰上门取件',
@@ -419,7 +419,7 @@ export const DEMO_RECYCLE_ORDERS: RecycleOrder[] = [
     status: 'closed',
     createdAt: '2026-11-01 08:40',
     category: '金币',
-    weight: '5g',
+    weight: '5克',
     purity: '足金 999',
     estimate: 2960,
     method: '顺丰上门取件',
@@ -436,7 +436,7 @@ export const DEMO_RECYCLE_ORDERS: RecycleOrder[] = [
       ],
     },
     inspection: {
-      weight: '4.92g',
+      weight: '4.92克',
       purity: '足金 999',
       amount: 2940,
       finishedAt: '2026-11-01 12:10',
